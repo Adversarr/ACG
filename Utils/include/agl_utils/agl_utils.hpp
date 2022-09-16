@@ -7,5 +7,6 @@ inline void RTE(std::string_view msg) {
   std::exit(-1);
 }
 
+#define CHECK_ELSE_RETURN_NULLOPT(C) if (! ((bool) (C))) return std::nullopt
 
-#include "Serializer.h"
+namespace agl {}

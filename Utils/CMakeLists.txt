@@ -1,7 +1,9 @@
 project(Utilities)
 include(../cmake/CPM.cmake)
-file(GLOB srcs src/*.cpp)
-file(GLOB headers include/*.h)
+include(../cmake/spdlog.cmake)
+
+file(GLOB_RECURSE srcs src/*.cpp)
+file(GLOB_RECURSE headers include/*.h include/*.hpp)
 
 add_library(AGL_Utils ${srcs} ${headers})
 
