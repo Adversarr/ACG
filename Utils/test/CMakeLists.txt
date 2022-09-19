@@ -3,7 +3,7 @@ include(../../cmake/doctest.cmake)
 
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 add_executable(${PROJECT_NAME}_test ${sources})
-target_link_libraries(${PROJECT_NAME}_test doctest::doctest AGL_Utils)
+target_link_libraries(${PROJECT_NAME}_test doctest::doctest ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME}_test PROPERTIES CXX_STANDARD 17)
 
 # ---- Add GreeterTests ----

@@ -1,20 +1,23 @@
-#pragma once
-
+#include <array>
+#include <optional>
+#include <type_traits>
 #include "serializer_decl.hpp"
 
-#include <set>
+namespace acg::utils::details {
 
-namespace agl::utils::details {
-template <typename K> struct Serializer<std::set<K>> {
-  using T = std::set<K>;
-  std::ostream &Forward(const std::set<K> &v, std::ostream &o) const noexcept {
+template <typename V, int N> struct Serializer<std::array<V, N>> {
+
+  using T = std::array<V, N>;
+  std::ostream &Forward(const std::array<V, N> &v,
+                        std::ostream &os) const noexcept {
     if (v.empty()) {
-      o << "[]";
+      os << "[]";
     } else {
+      auto &o = os;
       o << "[";
       auto it = v.cbegin();
       while (it != v.end()) {
-        Serializer<K>{}.Forward(*it, o);
+        Serializer<V>{}.Forward(*it, o);
         ++it;
         if (it != v.end()) {
           o << ", ";
@@ -22,20 +25,20 @@ template <typename K> struct Serializer<std::set<K>> {
       }
       o << "]";
     }
-    return o;
+    return os;
   }
+
   std::optional<T> Backward(std::istream &is) const {
     consume_until(is, '[');
     T retval;
     while (extract_current(is) != ']') {
-      std::optional<K> item = deserialize<K>(is);
+      std::optional<V> item = deserialize<V>(is);
       // cannot deserialize
       CHECK_ELSE_RETURN_NULLOPT(item.has_value());
-      if constexpr (std::is_move_assignable_v<K> &&
-                    std::is_move_constructible_v<K>) {
-        retval.emplace(std::move(*item));
+      if constexpr (std::is_move_assignable_v<V> && std::is_move_constructible_v<V>) {
+        retval.emplace_back(std::move(*item));
       } else {
-        retval.emplace(*item);
+        retval.emplace_back(*item);
       }
       auto current_ch = extract_current(is);
       CHECK_ELSE_RETURN_NULLOPT(current_ch.has_value());

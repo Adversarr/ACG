@@ -14,7 +14,7 @@
 #define EXTRACT_TYPE(m) using __tp_##m = decltype(m)
 #define EXTRACT_TYPE_ALL(...) FOR_EACH(EXTRACT_TYPE, ;, __VA_ARGS__)
 
-#define SERIALIZE_MEMBER(m) o << "\"" #m "\": " << agl::utils::serialize(ref.m)
+#define SERIALIZE_MEMBER(m) o << "\"" #m "\": " << acg::utils::serialize(ref.m)
 
 #define GENERATE_SERIALIZE(...)                                                \
   static inline std::string Serialize(const __base_t &ref) noexcept {          \
@@ -27,7 +27,7 @@
 
 #define DESERIALIZE_MEMBER(m)                                                  \
   if (k == #m) {                                                               \
-    auto _result = agl::utils::details::Serializer<__tp_##m>{}.Backward(is);   \
+    auto _result = acg::utils::details::Serializer<__tp_##m>{}.Backward(is);   \
     if (!(_result.has_value()))                                                \
       return false;                                                            \
     object.m = *_result;                                                       \
@@ -55,18 +55,18 @@ public:                                                                        \
     static inline std::optional<__base_t>                                      \
     Deserialize(std::istringstream &ss) noexcept {                             \
       __base_t ret;                                                            \
-      CHECK_ELSE_RETURN_NULLOPT(agl::utils::details::consume_blank(ss));       \
-      CHECK_ELSE_RETURN_NULLOPT(agl::utils::details::consume_until(ss, '{'));  \
-      CHECK_ELSE_RETURN_NULLOPT(agl::utils::details::consume_blank(ss));       \
-      while (agl::utils::details::extract_current(ss) != '}') {                \
-        auto k = agl::utils::details::Serializer<std::string>{}.Backward(ss);  \
+      CHECK_ELSE_RETURN_NULLOPT(acg::utils::details::consume_blank(ss));       \
+      CHECK_ELSE_RETURN_NULLOPT(acg::utils::details::consume_until(ss, '{'));  \
+      CHECK_ELSE_RETURN_NULLOPT(acg::utils::details::consume_blank(ss));       \
+      while (acg::utils::details::extract_current(ss) != '}') {                \
+        auto k = acg::utils::details::Serializer<std::string>{}.Backward(ss);  \
         CHECK_ELSE_RETURN_NULLOPT(k.has_value());                              \
-        CHECK_ELSE_RETURN_NULLOPT(agl::utils::details::consume_blank(ss));     \
+        CHECK_ELSE_RETURN_NULLOPT(acg::utils::details::consume_blank(ss));     \
         CHECK_ELSE_RETURN_NULLOPT(                                             \
-            agl::utils::details::consume_until(ss, ':'));                      \
+            acg::utils::details::consume_until(ss, ':'));                      \
         CHECK_ELSE_RETURN_NULLOPT(StoreAttribute(ret, *k, ss));                \
-        CHECK_ELSE_RETURN_NULLOPT(agl::utils::details::consume_blank(ss));     \
-        auto current_ch = agl::utils::details::extract_current(ss);            \
+        CHECK_ELSE_RETURN_NULLOPT(acg::utils::details::consume_blank(ss));     \
+        auto current_ch = acg::utils::details::extract_current(ss);            \
         CHECK_ELSE_RETURN_NULLOPT(current_ch.has_value());                     \
         if (*current_ch == '}') {                                              \
           break;                                                               \

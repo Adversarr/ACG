@@ -5,16 +5,16 @@ Diagnostics:
   ClangTidy:
     Remove: modernize-use-trailing-return-type
     Add: modernize*
-  UnusedIncludes: Strict
+  # UnusedIncludes: Strict
 
 
 Completion:
   AllScopes: Yes
 
-InlayHints:
-  Enabled: Yes
-  ParameterNames: No
-  DeducedTypes: Yes
+# InlayHints:
+#   Enabled: Yes
+#   ParameterNames: No
+#   DeducedTypes: Yes
 
-Hover:
-  ShowAKA: Yes
+# Hover:
+#   ShowAKA: Yes

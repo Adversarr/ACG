@@ -4,9 +4,9 @@
 #include <ostream>
 #include <sstream>
 #include <optional>
-#include "../agl_utils.hpp"
+#include "../acg_utils.hpp"
 
-namespace agl::utils{
+namespace acg::utils{
 namespace details {
 
 inline std::optional<char> extract_current(std::istream &is) {

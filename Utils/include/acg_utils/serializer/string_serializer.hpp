@@ -1,12 +1,12 @@
 #pragma once
-#include "agl_utils/agl_utils.hpp"
+#include "acg_utils/acg_utils.hpp"
 #include "serializer_decl.hpp"
 #include <sstream>
 #include <string>
 
 /* --- For String. --- */
 
-namespace agl::utils::details {
+namespace acg::utils::details {
 
 static inline std::size_t replace_all(std::string &inout, std::string_view what,
                                       std::string_view with) noexcept {
@@ -77,4 +77,4 @@ template <int N> struct Serializer<char[N]> {
                                              os);
   }
 };
-} // namespace agl::utils::details
+} // namespace acg::utils::details

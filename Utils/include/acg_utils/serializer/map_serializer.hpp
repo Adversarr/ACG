@@ -4,7 +4,7 @@
 #include <optional>
 #include "serializer_decl.hpp"
 
-namespace agl::utils::details {
+namespace acg::utils::details {
 
 /* --- map --- */
 

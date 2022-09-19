@@ -1,16 +1,17 @@
-project(Utilities)
+project(acg_utils LANGUAGES CXX)
+set(MODULE_NAME agl_utils)
 include(../cmake/CPM.cmake)
 include(../cmake/spdlog.cmake)
 
 file(GLOB_RECURSE srcs src/*.cpp)
 file(GLOB_RECURSE headers include/*.h include/*.hpp)
 
-add_library(AGL_Utils ${srcs} ${headers})
+add_library(${PROJECT_NAME} ${srcs} ${headers})
 
-target_include_directories(AGL_Utils PUBLIC include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-if (PROJECT_IS_TOP_LEVEL OR AGL_Utils_TEST_ENABLE)
+if(PROJECT_IS_TOP_LEVEL OR ${PROJECT_NAME}_TEST_ENABLE)
   # enable test.
-  message(STATUS "Enable Test for Utilities")
+  message(STATUS "Enable Test for ${PROJECT_NAME}")
   add_subdirectory(test)
 endif()

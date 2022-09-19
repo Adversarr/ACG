@@ -1,14 +1,14 @@
-#include <array>
+#pragma once
+
+#include "serializer_decl.hpp"
+#include <deque>
 #include <optional>
 #include <type_traits>
-#include "serializer_decl.hpp"
 
-namespace agl::utils::details {
-
-template <typename V, int N> struct Serializer<std::array<V, N>> {
-
-  using T = std::array<V, N>;
-  std::ostream &Forward(const std::array<V, N> &v,
+namespace acg::utils::details{
+template <typename V> struct Serializer<std::deque<V>> {
+  using T = std::deque<V>;
+  std::ostream &Forward(const std::deque<V> &v,
                         std::ostream &os) const noexcept {
     if (v.empty()) {
       os << "[]";
@@ -27,7 +27,6 @@ template <typename V, int N> struct Serializer<std::array<V, N>> {
     }
     return os;
   }
-
   std::optional<T> Backward(std::istream &is) const {
     consume_until(is, '[');
     T retval;
@@ -35,7 +34,8 @@ template <typename V, int N> struct Serializer<std::array<V, N>> {
       std::optional<V> item = deserialize<V>(is);
       // cannot deserialize
       CHECK_ELSE_RETURN_NULLOPT(item.has_value());
-      if constexpr (std::is_move_assignable_v<V> && std::is_move_constructible_v<V>) {
+      if constexpr (std::is_move_assignable_v<V> &&
+                    std::is_move_constructible_v<V>) {
         retval.emplace_back(std::move(*item));
       } else {
         retval.emplace_back(*item);

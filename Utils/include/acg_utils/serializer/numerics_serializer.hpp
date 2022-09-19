@@ -1,7 +1,7 @@
 #pragma once
 #include "serializer_decl.hpp"
 
-namespace agl::utils::details {
+namespace acg::utils::details {
 /* --- For Numeric Types. --- */
 template <> struct Serializer<int> {
   using T = int;
@@ -147,4 +147,4 @@ template <> struct Serializer<long double> {
     return {x};
   }
 };
-} // namespace agl::utils::details
+} // namespace acg::utils::details

@@ -1,14 +1,11 @@
-#pragma once
-
 #include "serializer_decl.hpp"
-#include <deque>
-#include <optional>
+#include <list>
 #include <type_traits>
+namespace acg::utils::details {
 
-namespace agl::utils::details{
-template <typename V> struct Serializer<std::deque<V>> {
-  using T = std::deque<V>;
-  std::ostream &Forward(const std::deque<V> &v,
+template <typename V> struct Serializer<std::list<V>> {
+  using T = std::list<V>;
+  std::ostream &Forward(const std::list<V> &v,
                         std::ostream &os) const noexcept {
     if (v.empty()) {
       os << "[]";
@@ -53,4 +50,5 @@ template <typename V> struct Serializer<std::deque<V>> {
     return retval;
   }
 };
-}
+
+} // namespace acg::utils::details

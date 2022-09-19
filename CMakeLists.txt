@@ -17,9 +17,11 @@ include(cmake/dependencies.cmake)
 
 
 
-option(AGL_Utils_TEST_ENABLE "Enable test for utilities." ${PROJECT_IS_TOP_LEVEL})
+option(acg_utils_TEST_ENABLE "Enable test for utilities." ${PROJECT_IS_TOP_LEVEL})
 add_subdirectory(Utils)
 
 
-option(AGL_Core_TEST_ENABLE "Enable test for core." ${PROJECT_IS_TOP_LEVEL})
+option(acg_core_TEST_ENABLE "Enable test for core." ${PROJECT_IS_TOP_LEVEL})
 add_subdirectory(Core)
+
+add_subdirectory(Visualizer)
