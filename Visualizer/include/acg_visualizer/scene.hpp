@@ -2,5 +2,8 @@ namespace acg {
 
 
 
+class Scene {
+
+};
 
 }
