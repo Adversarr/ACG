@@ -18,5 +18,4 @@ constexpr bool release_mode = true;
 constexpr bool release_mode = false;
 #endif
 
-
 }

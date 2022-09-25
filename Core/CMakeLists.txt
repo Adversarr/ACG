@@ -13,7 +13,8 @@ target_include_directories(acg_core PUBLIC include)
 
 target_link_libraries(acg_core 
   PUBLIC 
-    Eigen3::Eigen)
+    Eigen3::Eigen
+    acg_utils)
 
 if (PROJECT_IS_TOP_LEVEL OR acg_core_TEST_ENABLE)
   # enable test

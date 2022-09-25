@@ -9,6 +9,7 @@ file(GLOB_RECURSE headers include/*.h include/*.hpp)
 add_library(${PROJECT_NAME} ${srcs} ${headers})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog)
 
 if(PROJECT_IS_TOP_LEVEL OR ${PROJECT_NAME}_TEST_ENABLE)
   # enable test.

@@ -17,6 +17,7 @@ DOCTEST_MAKE_STD_HEADERS_CLEAN_FROM_WARNINGS_ON_WALL_BEGIN
 #include <vector>
 DOCTEST_MAKE_STD_HEADERS_CLEAN_FROM_WARNINGS_ON_WALL_END
 
+
 class vec3 {
 public:
   float x_;
@@ -53,6 +54,7 @@ TEST_CASE("Serialize Vector") {
   CHECK(acg::utils::serialize(std::vector<int>{10}) == "[10]");
   CHECK(acg::utils::serialize(std::vector<int>{10, 20}) == "[10, 20]");
   CHECK(acg::utils::serialize(std::vector<int>{}) == "[]");
+
 }
 
 TEST_CASE("Serialize array") {
