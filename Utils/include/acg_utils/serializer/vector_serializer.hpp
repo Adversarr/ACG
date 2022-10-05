@@ -2,7 +2,6 @@
 #include "acg_utils/acg_utils.hpp"
 #include "serializer_decl.hpp"
 #include <vector>
-#include "../debug_message.hpp"
 
 namespace acg::utils::details{
 template <typename V> struct Serializer<std::vector<V>> {

@@ -12,10 +12,10 @@ TEST_CASE("test eigen") {
   CHECK(mat.rows() == 12);
   auto arr = mat.array();
   acg::geometry::TriangleMesh<float> mesh{};
-  mesh.vertices_.setRandom(3, 4);
-  std::cout << mesh.vertices_ << std::endl;
+  mesh->vertices_.setRandom(3, 4);
+  std::cout << mesh->vertices_ << std::endl;
   for (auto i = 0; i < 12; ++i) {
-    std::cout << mesh.vertices_.data()[i] << std::endl;
+    std::cout << mesh->vertices_.data()[i] << std::endl;
   }
   std::string_view a{"123"};
   TO_TEXT(1, 2, 3);

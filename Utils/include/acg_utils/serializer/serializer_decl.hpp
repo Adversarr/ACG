@@ -3,6 +3,7 @@
 #include <istream>
 #include <ostream>
 #include <sstream>
+#include <co/json.h>
 #include <optional>
 #include "../acg_utils.hpp"
 
@@ -55,6 +56,9 @@ template <typename T> struct Serializer {
 
 } // namespace details
 
+
+
+
 template <typename T, typename = typename T::_refl>
 inline std::string serialize(const T &o) noexcept {
   return T::_refl::Serialize(o);
@@ -68,6 +72,8 @@ serialize(const T &o) noexcept {
   details::Serializer<T>{}.Forward(o, output_stream);
   return output_stream.str();
 }
+
+
 
 template <typename T, typename = typename T::_refl>
 inline std::optional<T> deserialize(std::istream &is) noexcept {
@@ -93,4 +99,6 @@ deserialize(const std::string &s) noexcept {
   std::istringstream ss{s};
   return details::Serializer<T>{}.Backward(ss);
 }
+
+
 }

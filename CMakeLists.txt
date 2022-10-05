@@ -12,10 +12,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
  
 include(cmake/CPM.cmake)
-include(cmake/dependencies.cmake)
-
-
-
 
 option(acg_utils_TEST_ENABLE "Enable test for utilities." ${PROJECT_IS_TOP_LEVEL})
 add_subdirectory(Utils)
@@ -25,3 +21,6 @@ option(acg_core_TEST_ENABLE "Enable test for core." ${PROJECT_IS_TOP_LEVEL})
 add_subdirectory(Core)
 
 add_subdirectory(Visualizer)
+
+option(acg_port_TEST_ENABLE "Enable test for port." ${PROJECT_IS_TOP_LEVEL})
+add_subdirectory(Port)

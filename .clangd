@@ -3,13 +3,14 @@ Index:
 
 Diagnostics:
   ClangTidy:
-    Remove: modernize-use-trailing-return-type
     Add: modernize*
+    Remove: [modernize-use-trailing-return-type, modernize-use-nodiscard]
+
   # UnusedIncludes: Strict
 
 
 Completion:
-  AllScopes: Yes
+  AllScopes: No
 
 # InlayHints:
 #   Enabled: Yes

@@ -17,5 +17,6 @@ constexpr bool release_mode = true;
 #else
 constexpr bool release_mode = false;
 #endif
+namespace utils{}
 
 }
