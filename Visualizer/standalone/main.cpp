@@ -1,15 +1,16 @@
-#include <acg_visualizer/vkwindow.hpp>
-#include <acg_visualizer/vkinst.hpp>
-#include "co/co.h"
 #include <spdlog/spdlog.h>
+
+#include <acg_visualizer/renderer.hpp>
+
+#include "co/co.h"
 
 using namespace acg::visualizer::details;
 
 int main() {
   spdlog::set_level(spdlog::level::debug);
   try{
-    auto result = Visualizer::VkInstBuilder{}.Build();
-    while(result.RunOnce()) {
+    auto result = Renderer::Builder{}.Build();
+    while(result->RunOnce()) {
       // Do nothing.
       co::sleep(30);
     }

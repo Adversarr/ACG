@@ -49,3 +49,5 @@ file(GLOB exec_src standalone/*.cpp standalone/*.cxx)
 add_executable(${PROJECT_NAME}_exec ${exec_src})
 target_include_directories(${PROJECT_NAME}_exec PUBLIC standalone)
 target_link_libraries(${PROJECT_NAME}_exec PUBLIC ${PROJECT_NAME})
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DSPV_HOME="${CMAKE_CURRENT_SOURCE_DIR}/shader")

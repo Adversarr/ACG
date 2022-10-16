@@ -1,0 +1,167 @@
+#pragma once
+
+#include <acg_utils/def.hpp>
+#include <memory>
+#include <optional>
+
+#include "_vk.hpp"
+#include "acg_visualizer/window.hpp"
+
+namespace acg::visualizer::details {
+
+extern const std::vector<const char*> validation_layers;
+
+struct SwapChainSupportDetails {
+  vk::SurfaceCapabilitiesKHR capabilities;
+  std::vector<vk::SurfaceFormatKHR> formats;
+  std::vector<vk::PresentModeKHR> present_modes;
+};
+
+struct QueueFamilyIndices {
+  std::optional<uint32_t> graphics_family{std::nullopt};
+  std::optional<uint32_t> present_family{std::nullopt};
+  [[nodiscard]] bool IsComplete() const {
+    return graphics_family.has_value() && present_family.has_value();
+  }
+};
+struct RenderSyncObjects {
+  vk::Semaphore image_available;
+  vk::Semaphore render_finished;
+  vk::Fence in_flight_fence;
+};
+class Renderer {
+public:
+  struct Builder {
+    bool enable_validation{utils::get_build_type() == utils::BuildType::kDebug};
+
+    uint32_t swapchain_size{3 /*Default for triple buffering.*/};
+
+    Builder& SetValidation(bool enable);
+
+    Builder& SetSwapchainSize(uint32_t size);
+
+    [[nodiscard]] std::unique_ptr<Renderer> Build() const;
+  };
+
+  explicit Renderer(bool init = false);
+
+public:
+  Renderer(Renderer&&) = delete;
+  Renderer(const Renderer&) = delete;
+
+  ~Renderer();
+
+  bool RunOnce();
+
+private:
+  bool is_inited_{false};
+  bool enable_validation{true};
+
+  std::unique_ptr<VkWindow> window_{nullptr};
+  vk::Instance instance_;
+  vk::Device device_;
+  vk::PhysicalDevice physical_device_;
+
+  vk::DebugUtilsMessengerEXT debug_messenger_;
+
+  vk::SurfaceKHR surface_;
+  vk::Queue graphics_queue_;
+  vk::Queue present_queue_;
+
+  vk::CommandPool command_pool_;
+  std::vector<vk::CommandBuffer >command_buffers_;
+  // Swapchain
+  vk::SwapchainKHR swapchain_;
+  vk::Format swapchain_image_format_;
+  vk::Extent2D swapchain_extent_;
+  std::vector<vk::Image> swapchain_images_;
+  std::vector<vk::ImageView> swapchain_image_views_;
+  std::vector<vk::Framebuffer> swapchain_framebuffers_;
+  std::vector<RenderSyncObjects> semaphores_;
+  size_t current_frame_;
+  uint32_t swapchain_size_{3};
+
+
+  // TODO: buffer and buffer memories for ubo, vertices, and indices are created in other class.
+  // TODO: descriptor pool also.
+
+  // Render pass and Pipeline
+  vk::RenderPass render_pass_;
+  vk::DescriptorSetLayout descriptor_set_layout_;
+  vk::DescriptorPool descriptor_pool_;
+  vk::PipelineLayout pipeline_layout_;
+  vk::Pipeline graphics_pipeline_;
+
+public:
+  const vk::Instance& GetInstance() const;
+  const vk::Device& GetDevice() const;
+  const vk::PhysicalDevice& GetPhysicalDevice() const;
+  const vk::SurfaceKHR& GetSurface() const;
+  const vk::Queue& GetGraphicsQueue() const;
+  const vk::Queue& GetPresentQueue() const;
+  const vk::CommandPool& GetCommandPool() const;
+
+private:
+  QueueFamilyIndices device_related_indices_;
+
+  const std::vector<const char*> device_extension_enabled = {
+      VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+  };
+
+  std::string title_{"ACG Visualizer (Vulkan)"};
+
+private:
+
+  [[nodiscard]] std::vector<const char*> GetRequiredExtensions() const;
+
+  vk::DebugUtilsMessengerCreateInfoEXT PopulateDebugMessengerCreateInfo();
+
+  static bool IsValidationSupport();
+  // Initializers:
+  void Init();
+  void CreateInstance();
+  void SetupDebugMessenger();
+  void CreateSurface();
+  void PickPhysicalDevice();
+  void CreateLogicalDevice();
+  void CreateCommandPool();
+
+  // Physical Device Checkers:
+  [[nodiscard]] bool IsSuitable(const vk::PhysicalDevice& physical_device) const;
+  [[nodiscard]] bool CheckDeviceExtensionSupport(const vk::PhysicalDevice& physical_device) const;
+  [[nodiscard]] QueueFamilyIndices FindQueueFamilies(
+      const vk::PhysicalDevice& physical_device) const;
+  [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupport(
+      const vk::PhysicalDevice& physical_device) const;
+
+  [[nodiscard]] vk::SurfaceFormatKHR ChooseSwapSurfaceFormat(
+      const std::vector<vk::SurfaceFormatKHR>& formats) const;
+  [[nodiscard]] vk::PresentModeKHR ChooseSwapPresentMode(
+      const std::vector<vk::PresentModeKHR>& modes) const;
+  [[nodiscard]] vk::Extent2D ChooseSwapExtent(vk::SurfaceCapabilitiesKHR& capacities) const;
+
+  void CreateSwapchain();
+  void CreateImageViews();
+  void CreateGraphicsPipeline();
+  void CreateRenderPass();
+  void CreateFramebuffers();
+  // TODO: Modify needed.
+  void CreateCommandBuffers();
+
+  void BeginDraw();
+  void BeginRenderPass();
+
+  void EndDraw();
+  void EndRenderPass();
+
+  void CreateSyncObjects();
+  void RecreateSwapchain();
+  void CleanupSwapchain();
+  void CreateDescriptorPool();
+  void CreateDescriptorSets();
+  void CreateDescriptorLayout();
+
+  [[nodiscard]] vk::ShaderModule CreateShaderModule(const std::vector<char>& code) const;
+};
+
+}  // namespace acg::visualizer::details

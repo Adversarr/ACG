@@ -17,3 +17,5 @@ _install
 out
 .idea
 cmake-build-*
+
+*.spv

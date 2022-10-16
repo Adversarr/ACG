@@ -13,7 +13,7 @@
 namespace acg::utils::details {
 
 template <int valid> void make_assert_details(
-    bool value, std::string_view cond_text, std::string_view position, int line, const char* message) {
+    bool value, std::string_view cond_text, std::string_view position, int line, std::string message) {
   if constexpr (valid) {
     if (!value) {
       std::cerr << "Assertion(" << cond_text << ") Failed: " << message << std::endl;
@@ -32,10 +32,10 @@ template <int valid> void make_assert_details(
 #ifndef ACG_DEBUG_CHECK
 #  define ACG_DEBUG_CHECK(condition, message)                      \
     acg::utils::details::make_assert_details<is_debug_mode>( \
-        (condition), #condition, __FILE__ , __LINE__, message)
+        static_cast<bool>(condition), #condition, __FILE__ , __LINE__, message)
 #endif
 
 #ifndef ACG_CHECK
 #  define ACG_CHECK(condition, message) \
-    acg::utils::details::make_assert_details<1>((condition), #condition, __FILE__, __LINE__, message)
+    acg::utils::details::make_assert_details<1>(static_cast<bool>(condition), #condition, __FILE__, __LINE__, message)
 #endif

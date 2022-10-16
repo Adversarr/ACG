@@ -16,6 +16,9 @@ public:
 
   explicit VkWindow(std::string_view title) noexcept;
 
+  VkWindow(VkWindow&& ) = delete;
+  VkWindow(const VkWindow& ) = delete;
+
   ~VkWindow() noexcept;
 
   [[nodiscard]] inline bool IsResized() const noexcept;
