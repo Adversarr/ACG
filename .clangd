@@ -3,8 +3,8 @@ Index:
 
 Diagnostics:
   ClangTidy:
-    Add: modernize*
-    Remove: [modernize-use-trailing-return-type, modernize-use-nodiscard]
+    # Add: modernize*
+    Remove: [modernize-use-trailing-return-type]
 
   # UnusedIncludes: Strict
 
