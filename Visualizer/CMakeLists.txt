@@ -1,6 +1,7 @@
 project(agl_visualizer)
 
 include(../cmake/CPM.cmake)
+include(../cmake/target_include_shader_directory.cmake)
 
 file(GLOB_RECURSE srcs src/*.cpp)
 file(GLOB_RECURSE headers include/*.h include/*.hpp)
@@ -47,7 +48,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES LANGUAGE CXX LINKER_LANGUAGE CX
 
 file(GLOB exec_src standalone/*.cpp standalone/*.cxx)
 add_executable(${PROJECT_NAME}_exec ${exec_src})
+
 target_include_directories(${PROJECT_NAME}_exec PUBLIC standalone)
 target_link_libraries(${PROJECT_NAME}_exec PUBLIC ${PROJECT_NAME})
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE -DSPV_HOME="${CMAKE_CURRENT_SOURCE_DIR}/shader")
+
+
+target_include_shader_directory(${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/shader")

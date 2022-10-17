@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "_vk.hpp"
+#include "acg_visualizer/camera.hpp"
 #include "acg_visualizer/window.hpp"
 
 namespace acg::visualizer::details {
@@ -29,6 +30,10 @@ struct RenderSyncObjects {
   vk::Semaphore render_finished;
   vk::Fence in_flight_fence;
 };
+
+
+// TODO: Add Imgui Support.
+
 class Renderer {
 public:
   struct Builder {
@@ -52,6 +57,11 @@ public:
   ~Renderer();
 
   bool RunOnce();
+
+  struct BufferWithMemory {
+    vk::Buffer buffer;
+    vk::DeviceMemory memory;
+  };
 
 private:
   bool is_inited_{false};
@@ -78,30 +88,24 @@ private:
   std::vector<vk::ImageView> swapchain_image_views_;
   std::vector<vk::Framebuffer> swapchain_framebuffers_;
   std::vector<RenderSyncObjects> semaphores_;
-  size_t current_frame_;
+  std::vector<BufferWithMemory> uniform_buffers_; // Uniform Buffer Memories.
+  size_t current_frame_{0};
   uint32_t swapchain_size_{3};
-
+  bool draw_started_{false};
+  uint32_t current_image_index_;
+  vk::ClearColorValue background_color_{std::array{0.0f, 0.0f, 0.0f, 1.0f}};
 
   // TODO: buffer and buffer memories for ubo, vertices, and indices are created in other class.
-  // TODO: descriptor pool also.
 
   // Render pass and Pipeline
   vk::RenderPass render_pass_;
-  vk::DescriptorSetLayout descriptor_set_layout_;
+  vk::DescriptorSetLayout ubo_layout_;
+  std::vector<vk::DescriptorSet> ubo_descriptor_sets_;
   vk::DescriptorPool descriptor_pool_;
   vk::PipelineLayout pipeline_layout_;
   vk::Pipeline graphics_pipeline_;
+  
 
-public:
-  const vk::Instance& GetInstance() const;
-  const vk::Device& GetDevice() const;
-  const vk::PhysicalDevice& GetPhysicalDevice() const;
-  const vk::SurfaceKHR& GetSurface() const;
-  const vk::Queue& GetGraphicsQueue() const;
-  const vk::Queue& GetPresentQueue() const;
-  const vk::CommandPool& GetCommandPool() const;
-
-private:
   QueueFamilyIndices device_related_indices_;
 
   const std::vector<const char*> device_extension_enabled = {
@@ -145,23 +149,39 @@ private:
   void CreateGraphicsPipeline();
   void CreateRenderPass();
   void CreateFramebuffers();
-  // TODO: Modify needed.
   void CreateCommandBuffers();
-
-  void BeginDraw();
-  void BeginRenderPass();
-
-  void EndDraw();
-  void EndRenderPass();
 
   void CreateSyncObjects();
   void RecreateSwapchain();
   void CleanupSwapchain();
   void CreateDescriptorPool();
-  void CreateDescriptorSets();
-  void CreateDescriptorLayout();
+  void CreateUboDescriptorSets();
+  void CreateUboDescriptorLayout();
+  void CreateUniformBuffers();
+  // Memory Management
+  Renderer::BufferWithMemory CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
+  uint32_t FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties);
 
   [[nodiscard]] vk::ShaderModule CreateShaderModule(const std::vector<char>& code) const;
+  
+
+public:
+  [[nodiscard]] const vk::Instance& GetInstance() const;
+  [[nodiscard]] const vk::Device& GetDevice() const;
+  [[nodiscard]] const vk::PhysicalDevice& GetPhysicalDevice() const;
+  [[nodiscard]] const vk::SurfaceKHR& GetSurface() const;
+  [[nodiscard]] const vk::Queue& GetGraphicsQueue() const;
+  [[nodiscard]] const vk::Queue& GetPresentQueue() const;
+  [[nodiscard]] const vk::CommandPool& GetCommandPool() const;
+
+
+  vk::CommandBuffer BeginDraw();
+  void BeginRenderPass();
+  void SetCamera(const Camera& camera);
+  void EndRenderPass();
+  void EndDrawSubmit();
+
+  
 };
 
 }  // namespace acg::visualizer::details

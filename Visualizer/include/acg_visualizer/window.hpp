@@ -33,6 +33,8 @@ public:
 
   vk::SurfaceKHR CreateWindowSurface(vk::Instance& instance);
 
+  void UpdateWindowSize();
+
 private:
   static void WindowResizeCallback(GLFWwindow* window, int width, int height);
 

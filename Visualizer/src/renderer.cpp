@@ -8,17 +8,18 @@
 
 #include <acg_utils/debugger.hpp>
 #include <acg_utils/log.hpp>
+#include <acg_visualizer/scene.hpp>
 #include <fstream>
 
 std::vector<char> read_file(std::string path) {
   std::ifstream input_file{path, std::ios::ate | std::ios::binary};
-  ACG_CHECK(input_file.is_open(), "Failed to open file.");
+  ACG_CHECK(input_file.is_open(), "Failed to open file: {}", path);
   size_t buffer_size = input_file.tellg();
 
   input_file.seekg(0);
   std::vector<char> buffer(buffer_size);
   input_file.read(buffer.data(), buffer_size);
-  ACG_CHECK(input_file, "Failed to read from file: " + path);
+  ACG_CHECK(input_file, "Failed to read from file: {}", path);
 
   input_file.close();  // (optional) Explicitly close input file
   return buffer;
@@ -127,9 +128,23 @@ Renderer::~Renderer() {
   device_.waitIdle();
   CleanupSwapchain();
 
+  // Cleanup the semaphores
+  for (auto &sync : semaphores_) {
+    device_.destroy(sync.image_available);
+    device_.destroy(sync.render_finished);
+    device_.destroy(sync.in_flight_fence);
+  }
+  semaphores_.clear();
+
+  for (auto &buf : uniform_buffers_) {
+    device_.destroy(buf.buffer);
+    device_.free(buf.memory);
+  }
+  uniform_buffers_.clear();
+
   // Clean Up Device
   device_.destroy(descriptor_pool_);
-  device_.destroy(descriptor_set_layout_);
+  device_.destroy(ubo_layout_);
   device_.destroy(render_pass_);
   device_.destroyCommandPool(command_pool_);
   device_.destroy();
@@ -145,6 +160,9 @@ Renderer::~Renderer() {
 }
 
 void Renderer::Init() {
+  if (is_inited_) {
+    return;
+  }
   window_ = std::make_unique<VkWindow>(title_);
   CreateInstance();
   SetupDebugMessenger();
@@ -152,18 +170,26 @@ void Renderer::Init() {
   PickPhysicalDevice();
   CreateLogicalDevice();
   CreateCommandPool();
+  
+  // Render Pipeline, Present Swapchain, and sync
   CreateSwapchain();
   CreateCommandBuffers();
   CreateImageViews();
   CreateRenderPass();
-  CreateDescriptorLayout();
-  CreateDescriptorPool();
-  // TODO: CreateDescriptorLayout.
   CreateGraphicsPipeline();
-//  CreateFramebuffers();
-  // TODO: Vertex, index, ubo...
-//  CreateSyncObjects();
+  CreateSyncObjects();
+  
+  // Init Buffers
+  CreateUniformBuffers();
+  CreateFramebuffers();
+  CreateCommandBuffers();
 
+  // UBO Descriptor:
+  CreateUboDescriptorLayout();
+  CreateDescriptorPool();
+  CreateUboDescriptorSets();
+
+  // TODO: Vertex, index... not processed here.  
   is_inited_ = true;
 }
 
@@ -459,7 +485,6 @@ vk::PresentModeKHR Renderer::ChooseSwapPresentMode(
 
     if (mode == vk::PresentModeKHR::eImmediate) {
       best = mode;
-      break;
     }
   }
   if (best != vk::PresentModeKHR::eMailbox) {
@@ -539,18 +564,96 @@ void Renderer::CreateImageViews() {
   }
 }
 void Renderer::CreateGraphicsPipeline() {
-  auto vert_shader_code = read_file(SPV_HOME "/vert.spv");
-  auto frag_shader_code = read_file(SPV_HOME "/frag.spv");
-
+  // Setup Shaders.
+  auto vert_shader_code = read_file(SPV_HOME "/3d.vert.spv");
+  auto frag_shader_code = read_file(SPV_HOME "/3d.frag.spv");
   auto vert_module = CreateShaderModule(vert_shader_code);
   auto frag_module = CreateShaderModule(frag_shader_code);
-
   vk::PipelineShaderStageCreateInfo vert_stage_info;
   vert_stage_info.setStage(vk::ShaderStageFlagBits::eVertex)
       .setModule(vert_module)
       .setPName("main");
+  vk::PipelineShaderStageCreateInfo frag_stage_info;
+  frag_stage_info.setStage(vk::ShaderStageFlagBits::eFragment)
+      .setModule(frag_module)
+      .setPName("main");
+  auto shader_stages = std::array{vert_stage_info, frag_stage_info};
 
-  // TODO: Need more implementation.
+  // Setup Vertex input
+  vk::PipelineVertexInputStateCreateInfo vertex_input_create_info;
+  auto vertex_binding_desc = Vertex::GetBindingDescriptions();
+  auto vertex_attr_desc = Vertex::GetAttributeDescriptions();
+  vertex_input_create_info.setVertexBindingDescriptions(vertex_binding_desc)
+      .setVertexAttributeDescriptions(vertex_attr_desc);
+
+  vk::PipelineInputAssemblyStateCreateInfo input_assembly_info;
+  input_assembly_info.setTopology(vk::PrimitiveTopology::eTriangleList)
+      .setPrimitiveRestartEnable(VK_FALSE);
+  
+  // Setup Viewport
+  vk::PipelineViewportStateCreateInfo viewport_info;
+  viewport_info.setViewportCount(1)
+      .setScissorCount(1);
+  
+  // Setup Rasterization
+  vk::PipelineRasterizationStateCreateInfo rasterizer_info;
+  rasterizer_info.setDepthBiasEnable(VK_TRUE)
+      .setRasterizerDiscardEnable(VK_FALSE)
+      .setLineWidth(1.0f)
+      .setPolygonMode(vk::PolygonMode::eFill) // TODO: Line Only mode support.
+      .setCullMode(vk::CullModeFlagBits::eNone) // TODO: Double mode.
+      .setFrontFace(vk::FrontFace::eCounterClockwise) // TODO: Clock wise support needed.
+      .setDepthBiasEnable(VK_FALSE);
+  
+  // Setup Multi sampling: No multisampling for better performance.
+  vk::PipelineMultisampleStateCreateInfo multi_sample_info;
+  multi_sample_info.setSampleShadingEnable(VK_FALSE)
+      .setRasterizationSamples(vk::SampleCountFlagBits::e1);
+
+  // Setup alpha blending: We do not use color blend. although options are set
+  vk::PipelineColorBlendAttachmentState color_blend_attachment;
+  color_blend_attachment.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
+      .setBlendEnable(VK_FALSE)
+      .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+      .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+      .setColorBlendOp(vk::BlendOp::eAdd)
+      .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+      .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
+      .setAlphaBlendOp(vk::BlendOp::eAdd);
+
+  vk::PipelineColorBlendStateCreateInfo color_blend_info;
+  color_blend_info.setLogicOpEnable(VK_FALSE)
+      .setLogicOp(vk::LogicOp::eCopy)
+      .setAttachments(color_blend_attachment)
+      .setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f});
+
+  auto dynamic_states = std::array{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+  vk::PipelineDynamicStateCreateInfo dynamic_state_info;
+  dynamic_state_info.setDynamicStates(dynamic_states);
+
+  vk::PipelineLayoutCreateInfo pipeline_layout_info;
+  pipeline_layout_info.setSetLayouts(ubo_layout_)
+      .setPushConstantRangeCount(0);
+
+  pipeline_layout_ = device_.createPipelineLayout(pipeline_layout_info);
+  vk::GraphicsPipelineCreateInfo info;
+  info.setStages(shader_stages)
+      .setPVertexInputState(&vertex_input_create_info)
+      .setPInputAssemblyState(&input_assembly_info)
+      .setPViewportState(&viewport_info)
+      .setPRasterizationState(&rasterizer_info)
+      .setPMultisampleState(&multi_sample_info)
+      .setPDepthStencilState(nullptr)
+      .setPDynamicState(&dynamic_state_info)
+      .setLayout(pipeline_layout_)
+      .setRenderPass(render_pass_)
+      .setSubpass(0)
+      .setBasePipelineHandle(VK_NULL_HANDLE)
+      .setBasePipelineIndex(-1);
+  
+  auto rv = device_.createGraphicsPipeline(VK_NULL_HANDLE, info);
+  ACG_CHECK(rv.result == vk::Result::eSuccess, "Failed to create graphics pipeline");
+  graphics_pipeline_ = rv.value;
 
   device_.destroy(vert_module);
   device_.destroy(frag_module);
@@ -611,7 +714,7 @@ void Renderer::CreateRenderPass() {
   info.setAttachments(color_attachment).setSubpasses(subpass).setDependencies(dependency);
   render_pass_ = device_.createRenderPass(info);
 }
-void Renderer::CreateDescriptorLayout() {
+void Renderer::CreateUboDescriptorLayout() {
   vk::DescriptorSetLayoutBinding ubo_layout_binding;
   ubo_layout_binding.setBinding(0)
       .setDescriptorCount(1)
@@ -622,18 +725,167 @@ void Renderer::CreateDescriptorLayout() {
   vk::DescriptorSetLayoutCreateInfo layout_create_info;
   layout_create_info.setBindingCount(1).setBindings(ubo_layout_binding);
 
-  descriptor_set_layout_ = device_.createDescriptorSetLayout(layout_create_info);
+  ubo_layout_ = device_.createDescriptorSetLayout(layout_create_info);
 }
 void Renderer::CreateDescriptorPool() {
   vk::DescriptorPoolSize pool_size;
-  pool_size.setType(vk::DescriptorType::eUniformBuffer)
-      .setDescriptorCount(swapchain_size_);
+  pool_size.setType(vk::DescriptorType::eUniformBuffer).setDescriptorCount(swapchain_size_);
 
   vk::DescriptorPoolCreateInfo pool_create_info;
-  pool_create_info.setPoolSizes(pool_size)
-      .setMaxSets(swapchain_size_);
+  pool_create_info.setPoolSizes(pool_size).setMaxSets(swapchain_size_);
 
   descriptor_pool_ = device_.createDescriptorPool(pool_create_info);
 }
+void Renderer::CreateSyncObjects() {
+  vk::SemaphoreCreateInfo semaphore_info;
+  vk::FenceCreateInfo fence_info;
+  fence_info.flags = vk::FenceCreateFlagBits::eSignaled;
+
+  for (size_t i = 0; i < swapchain_size_; ++i) {
+    semaphores_.push_back({.image_available = device_.createSemaphore(semaphore_info),
+                           .render_finished = device_.createSemaphore(semaphore_info),
+                           .in_flight_fence = device_.createFence(fence_info)});
+  }
+}
+void Renderer::CreateFramebuffers() {
+  for (const auto &swapchain_image_view : swapchain_image_views_) {
+    vk::FramebufferCreateInfo frame_buffer_info;
+    frame_buffer_info.setRenderPass(render_pass_)
+        .setAttachments(swapchain_image_view)
+        .setWidth(swapchain_extent_.width)
+        .setHeight(swapchain_extent_.height)
+        .setLayers(1);
+    swapchain_framebuffers_.emplace_back(device_.createFramebuffer(frame_buffer_info));
+  }
+}
+void Renderer::CreateUboDescriptorSets() {
+  std::vector<vk::DescriptorSetLayout> layouts(swapchain_size_, ubo_layout_);
+  vk::DescriptorSetAllocateInfo alloc_info;
+  alloc_info.setDescriptorPool(descriptor_pool_)
+      .setSetLayouts(layouts)
+      .setDescriptorSetCount(swapchain_size_);
+  ubo_descriptor_sets_ = device_.allocateDescriptorSets(alloc_info);
+
+  for (size_t i = 0; i < swapchain_size_; ++i) {
+    vk::DescriptorBufferInfo buffer_info;
+    buffer_info.buffer = uniform_buffers_[i].buffer;
+    buffer_info.offset = 0;
+    buffer_info.range = sizeof(Ubo);
+
+    vk::WriteDescriptorSet descriptor_write;
+    descriptor_write.dstSet = ubo_descriptor_sets_[i];
+    descriptor_write.dstBinding = 0;
+    descriptor_write.dstArrayElement = 0;
+    descriptor_write.descriptorCount = 1;
+    descriptor_write.descriptorType = vk::DescriptorType::eUniformBuffer;
+    descriptor_write.pBufferInfo = &buffer_info;
+    descriptor_write.pImageInfo = nullptr;
+    descriptor_write.pTexelBufferView = nullptr;
+    device_.updateDescriptorSets(descriptor_write, nullptr);
+  }
+}
+void Renderer::CreateUniformBuffers() {
+  vk::DeviceSize buf_size = sizeof(Ubo);
+  uniform_buffers_.clear();
+  for (size_t i = 0; i < swapchain_size_; ++i) {
+    auto b = CreateBuffer(
+        buf_size, vk::BufferUsageFlagBits::eUniformBuffer,
+        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+    uniform_buffers_.emplace_back(b);
+  }
+}
+
+Renderer::BufferWithMemory Renderer::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
+                                                  vk::MemoryPropertyFlags properties) {
+  vk::BufferCreateInfo buffer_info;
+  buffer_info.size = size;
+  buffer_info.usage = usage;
+  buffer_info.sharingMode = vk::SharingMode::eExclusive;
+  auto buf = device_.createBuffer(buffer_info);
+  auto mem_requirements = device_.getBufferMemoryRequirements(buf);
+  vk::MemoryAllocateInfo alloc_info(mem_requirements.size,
+                                    FindMemoryType(mem_requirements.memoryTypeBits, properties));
+
+  auto mem = device_.allocateMemory(alloc_info);
+  device_.bindBufferMemory(buf, mem, 0);
+  return {buf, mem};
+}
+
+uint32_t Renderer::FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties) {
+  auto memory_properties = physical_device_.getMemoryProperties();
+  for (uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
+    if ((type_filter & (1 << i))
+        && (memory_properties.memoryTypes[i].propertyFlags & properties) == properties) {
+      return i;
+    }
+  }
+  spdlog::error("Cannot Find Memory type for {}", type_filter);
+  exit(-1);
+  return -1;
+}
+
+vk::CommandBuffer Renderer::BeginDraw() {
+  ACG_CHECK(! draw_started_, "Draw has already started.");
+  // Timeout = infinity.
+  ACG_CHECK(device_.waitForFences(semaphores_[current_frame_].in_flight_fence, VK_TRUE, 
+    std::numeric_limits<uint64_t>::max()) == vk::Result::eSuccess, "Failed to wait for fence.");
+  
+  // Acquire Image
+  auto rv = device_.acquireNextImageKHR(swapchain_, std::numeric_limits<uint64_t>::max(), 
+      semaphores_[current_frame_].image_available, VK_NULL_HANDLE);
+  
+  if (rv.result == vk::Result::eErrorOutOfDateKHR) {
+    RecreateSwapchain();
+    return nullptr;
+  }
+
+  ACG_CHECK(rv.result == vk::Result::eSuccess || rv.result == vk::Result::eSuboptimalKHR,
+    "Acquire next image failed, with result = {}", vk::to_string(rv.result));
+  current_image_index_ = rv.value;
+  draw_started_ = true;
+  device_.resetFences(semaphores_[current_frame_].in_flight_fence);
+  command_buffers_[current_frame_].reset();
+  vk::CommandBufferBeginInfo begin_info;
+  begin_info.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+  begin_info.pInheritanceInfo = nullptr;
+  command_buffers_[current_frame_].begin(begin_info);
+
+
+  return command_buffers_[current_frame_];
+}
+
+void Renderer::BeginRenderPass() {
+  ACG_CHECK(draw_started_, "Draw not started, cannot begin render pass.");
+  auto& cmd_buffer = command_buffers_[current_frame_];
+  vk::RenderPassBeginInfo render_pass_info;
+  render_pass_info.renderPass = render_pass_;
+  render_pass_info.framebuffer = swapchain_framebuffers_[current_image_index_];
+  render_pass_info.renderArea.offset.setX(0);
+  render_pass_info.renderArea.offset.setY(0);
+  render_pass_info.renderArea.extent = swapchain_extent_;
+  vk::ClearValue clear_value = background_color_;
+  render_pass_info.clearValueCount = 1;
+  render_pass_info.pClearValues = &clear_value;
+  cmd_buffer.beginRenderPass(render_pass_info, vk::SubpassContents::eInline);
+  // Do some basic stuff...
+  cmd_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphics_pipeline_);
+  vk::Viewport viewport(0.0, 0.0, swapchain_extent_.width, swapchain_extent_.height, 0.0, 1.0);
+  cmd_buffer.setViewport(0, viewport);
+  vk::Rect2D scissor{{0, 0}, swapchain_extent_};
+  cmd_buffer.setScissor(0, scissor);
+}
+
+void Renderer::RecreateSwapchain() {
+  // when the window is minimized, recreate the swapchain after the application is visiable.
+  window_->UpdateWindowSize();
+  device_.waitIdle();
+  CleanupSwapchain();
+  CreateSwapchain();
+  CreateImageViews();
+  CreateFramebuffers();
+}
+
+
+
 
 }  // namespace acg::visualizer::details

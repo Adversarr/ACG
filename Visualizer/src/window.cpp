@@ -38,4 +38,12 @@ void VkWindow::WindowResizeCallback(GLFWwindow* window, int width, int height) {
   ACG_DEBUG_LOG("Window resized. (w: {}, h: {})", width, height);
 }
 
+void VkWindow::UpdateWindowSize() {
+  width_ = height_ = 0;
+  while (width_ == 0 || height_ == 0) {
+    glfwGetFramebufferSize(window_, &width_, &height_);
+    glfwWaitEvents();
+  }
+}
+
 }  // namespace acg::visualizer
