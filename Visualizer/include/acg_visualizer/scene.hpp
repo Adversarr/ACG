@@ -17,9 +17,9 @@ namespace acg::visualizer::details {
 
 struct Vertex {
   // Note: In our program, no texture is needed.
-  alignas(16) glm::vec3 position;
-  alignas(16) glm::vec3 color;
-  alignas(16) glm::vec3 normal;
+  glm::vec3 position;
+  glm::vec3 color;
+  glm::vec3 normal;
 
   static std::vector<vk::VertexInputBindingDescription> GetBindingDescriptions();
 
@@ -36,9 +36,9 @@ struct Ubo {
   alignas(16) glm::mat4 model;
   alignas(16) glm::mat4 view;
   alignas(16) glm::mat4 projection;
-  alignas(16) glm::vec4 ambient_light_color{1.f, 1.f, 1.f, .02f};  // w is intensity
-  alignas(16) glm::vec4  light_position;
-  alignas(16) glm::vec4  light_color;
+//  alignas(16) glm::vec4 ambient_light_color{1.f, 1.f, 1.f, .02f};  // w is intensity
+//  alignas(16) glm::vec4  light_position;
+//  alignas(16) glm::vec4  light_color;
 };
 
 using VertexIndex = uint32_t;

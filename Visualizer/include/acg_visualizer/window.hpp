@@ -8,18 +8,18 @@
 
 namespace acg::visualizer::details {
 
-class VkWindow {
+class Window {
 public:
   static constexpr int DEFAULT_WIDTH = 800;
 
   static constexpr int DEFAULT_HEIGHT = 600;
 
-  explicit VkWindow(std::string_view title) noexcept;
+  explicit Window(std::string_view title) noexcept;
 
-  VkWindow(VkWindow&& ) = delete;
-  VkWindow(const VkWindow& ) = delete;
+  Window(Window&& ) = delete;
+  Window(const Window& ) = delete;
 
-  ~VkWindow() noexcept;
+  ~Window() noexcept;
 
   [[nodiscard]] inline bool IsResized() const noexcept;
 
@@ -49,14 +49,14 @@ private:
   bool resized_{false};
 };
 
-inline bool VkWindow::IsResized() const noexcept { return resized_; }
+inline bool Window::IsResized() const noexcept { return resized_; }
 
-void VkWindow::ResetResizeFlag() noexcept { resized_ = false; }
+void Window::ResetResizeFlag() noexcept { resized_ = false; }
 
-inline std::pair<uint32_t, uint32_t> VkWindow::GetWindowSize() const noexcept { return {width_, height_}; }
+inline std::pair<uint32_t, uint32_t> Window::GetWindowSize() const noexcept { return {width_, height_}; }
 
-inline GLFWwindow* VkWindow::GetWindow() const noexcept { return window_; }
+inline GLFWwindow* Window::GetWindow() const noexcept { return window_; }
 
-inline bool VkWindow::ShouldClose() const { return glfwWindowShouldClose(window_); }
+inline bool Window::ShouldClose() const { return glfwWindowShouldClose(window_); }
 
 }  // namespace acg::visualizer

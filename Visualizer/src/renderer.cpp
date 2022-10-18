@@ -147,7 +147,7 @@ Renderer::~Renderer() {
   device_.destroy(pipeline_layout_);
   device_.destroy(graphics_pipeline_);
   device_.destroy(descriptor_pool_);
-  device_.destroy(ubo_layout_);
+  device_.destroy(descriptor_set_layout_);
   device_.destroy(render_pass_);
   device_.destroyCommandPool(command_pool_);
   device_.destroy();
@@ -166,7 +166,7 @@ void Renderer::Init() {
   if (is_inited_) {
     return;
   }
-  window_ = std::make_unique<VkWindow>(title_);
+  window_ = std::make_unique<Window>(title_);
   CreateInstance();
   SetupDebugMessenger();
   CreateSurface();
@@ -178,16 +178,16 @@ void Renderer::Init() {
   CreateImageViews();
   CreateCommandPool();
   CreateRenderPass();
-  CreateDepthResources();
 
   // UBO Descriptor:
   CreateUboDescriptorLayout();
   // Graphics Pipeline.
   CreateGraphicsPipeline();
 
+  CreateDepthResources();
   // Init Buffers
-  CreateUniformBuffers();
   CreateFramebuffers();
+  CreateUniformBuffers();
   CreateCommandBuffers();
 
   // Descriptor Pool and UBO Descriptors.
@@ -197,7 +197,6 @@ void Renderer::Init() {
   CreateCommandBuffers();
   // Sync
   CreateSyncObjects();
-
   // TODO: Vertex, index... not processed here.
   is_inited_ = true;
 }
@@ -621,7 +620,7 @@ void Renderer::CreateGraphicsPipeline() {
 
   // Setup Rasterization
   vk::PipelineRasterizationStateCreateInfo rasterizer_info;
-  rasterizer_info.setDepthBiasEnable(VK_TRUE)
+  rasterizer_info.setDepthBiasEnable(VK_FALSE)
       .setRasterizerDiscardEnable(VK_FALSE)
       .setLineWidth(1.0f)
       .setPolygonMode(vk::PolygonMode::eFill)          // TODO: Line Only mode support.
@@ -658,7 +657,7 @@ void Renderer::CreateGraphicsPipeline() {
   dynamic_state_info.setDynamicStates(dynamic_states);
 
   vk::PipelineLayoutCreateInfo pipeline_layout_info;
-  pipeline_layout_info.setSetLayouts(ubo_layout_).setPushConstantRangeCount(0);
+  pipeline_layout_info.setSetLayouts(descriptor_set_layout_);
 
   // Depth Testing.
   vk::PipelineDepthStencilStateCreateInfo depth_stencil;
@@ -780,7 +779,7 @@ void Renderer::CreateUboDescriptorLayout() {
   vk::DescriptorSetLayoutCreateInfo layout_create_info;
   layout_create_info.setBindingCount(1).setBindings(ubo_layout_binding);
 
-  ubo_layout_ = device_.createDescriptorSetLayout(layout_create_info);
+  descriptor_set_layout_ = device_.createDescriptorSetLayout(layout_create_info);
 }
 void Renderer::CreateDescriptorPool() {
   vk::DescriptorPoolSize pool_size;
@@ -815,7 +814,7 @@ void Renderer::CreateFramebuffers() {
   }
 }
 void Renderer::CreateUboDescriptorSets() {
-  std::vector<vk::DescriptorSetLayout> layouts(swapchain_size_, ubo_layout_);
+  std::vector<vk::DescriptorSetLayout> layouts(swapchain_size_, descriptor_set_layout_);
   vk::DescriptorSetAllocateInfo alloc_info;
   alloc_info.setDescriptorPool(descriptor_pool_)
       .setSetLayouts(layouts)
@@ -905,10 +904,7 @@ vk::CommandBuffer Renderer::BeginDraw() {
   device_.resetFences(semaphores_[current_frame_].in_flight_fence);
   command_buffers_[current_frame_].reset();
   vk::CommandBufferBeginInfo begin_info;
-  begin_info.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-  begin_info.pInheritanceInfo = nullptr;
   command_buffers_[current_frame_].begin(begin_info);
-
   return command_buffers_[current_frame_];
 }
 
@@ -940,8 +936,8 @@ void Renderer::RecreateSwapchain() {
   CleanupSwapchain();
   CreateSwapchain();
   CreateImageViews();
-  CreateFramebuffers();
   CreateDepthResources();
+  CreateFramebuffers();
 }
 
 std::pair<vk::Image, vk::DeviceMemory> Renderer::CreateImage(uint32_t width, uint32_t height,
@@ -1082,6 +1078,60 @@ vk::Format Renderer::FindDepthFormat() {
 
 bool Renderer::HasStencilComponent(vk::Format format) {
   return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
+}
+void Renderer::DestroyBufferWithMemory(Renderer::BufferWithMemory buffer_with_memory) {
+  device_.destroy(buffer_with_memory.buffer);
+  device_.free(buffer_with_memory.memory);
+}
+
+void Renderer::CopyToBuffer(void *mem_data, BufferWithMemory buffer_with_memory, size_t size) {
+  auto data = device_.mapMemory(buffer_with_memory.memory, 0, size);
+  memcpy(data, mem_data, size);
+  device_.unmapMemory(buffer_with_memory.memory);
+}
+void Renderer::EndRenderPass() { command_buffers_[current_frame_].endRenderPass(); }
+void Renderer::EndDrawSubmit() {
+  command_buffers_[current_frame_].end();
+  vk::SubmitInfo submitInfo{};
+  auto wait_sem = std::array{semaphores_[current_frame_].image_available};
+  auto signal_sem = std::array{semaphores_[current_frame_].render_finished};
+  vk::PipelineStageFlags wait_stages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+  submitInfo.setWaitSemaphores(wait_sem)
+      .setWaitDstStageMask(wait_stages)
+      .setCommandBuffers(command_buffers_[current_frame_])
+      .setSignalSemaphores(signal_sem);
+  graphics_queue_.submit(submitInfo, semaphores_[current_frame_].in_flight_fence);
+
+  vk::PresentInfoKHR present_info;
+  present_info.setWaitSemaphores(signal_sem)
+      .setPSwapchains(&swapchain_)
+      .setSwapchainCount(1)
+      .setPImageIndices(&current_image_index_);
+
+  auto result = present_queue_.presentKHR(&present_info);
+  ACG_DEBUG_LOG("Present Queue result {}", vk::to_string(result));
+
+  if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR
+      || window_->IsResized()) {
+    window_->ResetResizeFlag();
+    RecreateSwapchain();
+  } else {
+    ACG_CHECK(result == vk::Result::eSuccess, "Failed to present swapchain image");
+  }
+  current_frame_ = (current_frame_ + 1) % swapchain_size_;
+  draw_started_ = false;
+}
+void Renderer::BindUboLayout() {
+  command_buffers_[current_frame_].bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                                                      pipeline_layout_, 0,
+                                                      ubo_descriptor_sets_[current_frame_], {});
+}
+void Renderer::SetCamera(const Camera &camera) {
+  Ubo ubo{};
+  ubo.model = glm::mat4(1.0f);
+  ubo.view = camera.GetView();
+  ubo.projection = camera.GetProjection(swapchain_extent_.width, swapchain_extent_.height);
+  CopyToBuffer(&ubo, uniform_buffers_[current_frame_], sizeof(ubo));
 }
 
 }  // namespace acg::visualizer::details

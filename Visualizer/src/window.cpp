@@ -7,7 +7,7 @@
 
 namespace acg::visualizer::details {
 
-VkWindow::VkWindow(std::string_view title) noexcept : title_(title) {
+Window::Window(std::string_view title) noexcept : title_(title) {
   ACG_CHECK(glfwInit() == GLFW_TRUE, "Failed to init GLFW.");
   glfwInit();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -18,27 +18,27 @@ VkWindow::VkWindow(std::string_view title) noexcept : title_(title) {
   glfwSetFramebufferSizeCallback(window_, WindowResizeCallback);
 }
 
-VkWindow::~VkWindow() noexcept {
+Window::~Window() noexcept {
   glfwDestroyWindow(window_);
   window_ = nullptr;
   glfwTerminate();
 }
 
-vk::SurfaceKHR VkWindow::CreateWindowSurface(vk::Instance& instance) {
+vk::SurfaceKHR Window::CreateWindowSurface(vk::Instance& instance) {
   VkSurfaceKHR surface;
   VK_CHECK_SUCCESS(glfwCreateWindowSurface(instance, window_, nullptr, &surface));
   return surface;
 }
 
-void VkWindow::WindowResizeCallback(GLFWwindow* window, int width, int height) {
-  auto w = reinterpret_cast<VkWindow*>(glfwGetWindowUserPointer(window));
+void Window::WindowResizeCallback(GLFWwindow* window, int width, int height) {
+  auto w = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   w->resized_ = true;
   w->height_ = height;
   w->width_ = width;
   ACG_DEBUG_LOG("Window resized. (w: {}, h: {})", width, height);
 }
 
-void VkWindow::UpdateWindowSize() {
+void Window::UpdateWindowSize() {
   width_ = height_ = 0;
   while (width_ == 0 || height_ == 0) {
     glfwGetFramebufferSize(window_, &width_, &height_);

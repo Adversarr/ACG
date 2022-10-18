@@ -66,7 +66,7 @@ private:
   bool is_inited_{false};
   bool enable_validation{true};
 
-  std::unique_ptr<VkWindow> window_{nullptr};
+  std::unique_ptr<Window> window_{nullptr};
   vk::Instance instance_;
   vk::Device device_;
   vk::PhysicalDevice physical_device_;
@@ -101,7 +101,7 @@ private:
 
   // Render pass and Pipeline
   vk::RenderPass render_pass_;
-  vk::DescriptorSetLayout ubo_layout_;
+  vk::DescriptorSetLayout descriptor_set_layout_;
   std::vector<vk::DescriptorSet> ubo_descriptor_sets_;
   vk::DescriptorPool descriptor_pool_;
   vk::PipelineLayout pipeline_layout_;
@@ -164,11 +164,16 @@ private:
   void CreateUboDescriptorLayout();
   void CreateUniformBuffers();
   // Memory Management
-  Renderer::BufferWithMemory CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
-                                          vk::MemoryPropertyFlags properties);
   uint32_t FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties);
 
   [[nodiscard]] vk::ShaderModule CreateShaderModule(const std::vector<char>& code) const;
+
+    vk::ImageView CreateImageView(vk::Image image, vk::Format format,
+                                  vk::ImageAspectFlags aspectFlags);
+    std::pair<vk::Image, vk::DeviceMemory> CreateImage(uint32_t width, uint32_t height,
+                                                       vk::Format format, vk::ImageTiling tiling,
+                                                       vk::ImageUsageFlags usage,
+                                                       vk::MemoryPropertyFlags properties);
 
 public:
   [[nodiscard]] const vk::Instance& GetInstance() const;
@@ -179,18 +184,18 @@ public:
   [[nodiscard]] const vk::Queue& GetPresentQueue() const;
   [[nodiscard]] const vk::CommandPool& GetCommandPool() const;
 
+  Renderer::BufferWithMemory CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
+                                          vk::MemoryPropertyFlags properties);
+  void DestroyBufferWithMemory(BufferWithMemory buffer_with_memory);
+  void CopyToBuffer(void* mem_data, BufferWithMemory buffer_with_memory, size_t size);
+
+
   vk::CommandBuffer BeginDraw();
   void BeginRenderPass();
   void SetCamera(const Camera& camera);
+  void BindUboLayout();
   void EndRenderPass();
   void EndDrawSubmit();
-
-  vk::ImageView CreateImageView(vk::Image image, vk::Format format,
-                                vk::ImageAspectFlags aspectFlags);
-  std::pair<vk::Image, vk::DeviceMemory> CreateImage(uint32_t width, uint32_t height,
-                                                     vk::Format format, vk::ImageTiling tiling,
-                                                     vk::ImageUsageFlags usage,
-                                                     vk::MemoryPropertyFlags properties);
 
   vk::CommandBuffer BeginSingleTimeCommands();
   void TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout,

@@ -30,6 +30,6 @@ std::vector<vk::VertexInputAttributeDescription> Vertex::GetAttributeDescription
   desc3.format = vk::Format::eR32G32B32Sfloat;
   desc3.offset = offsetof(Vertex, normal);
   
-  return {desc1, desc2};
+  return {desc1, desc2, desc3};
 }
 }
