@@ -31,7 +31,6 @@ struct RenderSyncObjects {
   vk::Fence in_flight_fence;
 };
 
-
 // TODO: Add Imgui Support.
 
 class Renderer {
@@ -79,7 +78,7 @@ private:
   vk::Queue present_queue_;
 
   vk::CommandPool command_pool_;
-  std::vector<vk::CommandBuffer >command_buffers_;
+  std::vector<vk::CommandBuffer> command_buffers_;
   // Swapchain
   vk::SwapchainKHR swapchain_;
   vk::Format swapchain_image_format_;
@@ -88,12 +87,15 @@ private:
   std::vector<vk::ImageView> swapchain_image_views_;
   std::vector<vk::Framebuffer> swapchain_framebuffers_;
   std::vector<RenderSyncObjects> semaphores_;
-  std::vector<BufferWithMemory> uniform_buffers_; // Uniform Buffer Memories.
+  std::vector<BufferWithMemory> uniform_buffers_;  // Uniform Buffer Memories.
   size_t current_frame_{0};
   uint32_t swapchain_size_{3};
   bool draw_started_{false};
   uint32_t current_image_index_;
   vk::ClearColorValue background_color_{std::array{0.0f, 0.0f, 0.0f, 1.0f}};
+  vk::Image depth_image_;
+  vk::DeviceMemory depth_image_memory_;
+  vk::ImageView depth_image_view_;
 
   // TODO: buffer and buffer memories for ubo, vertices, and indices are created in other class.
 
@@ -104,7 +106,6 @@ private:
   vk::DescriptorPool descriptor_pool_;
   vk::PipelineLayout pipeline_layout_;
   vk::Pipeline graphics_pipeline_;
-  
 
   QueueFamilyIndices device_related_indices_;
 
@@ -115,7 +116,6 @@ private:
   std::string title_{"ACG Visualizer (Vulkan)"};
 
 private:
-
   [[nodiscard]] std::vector<const char*> GetRequiredExtensions() const;
 
   vk::DebugUtilsMessengerCreateInfoEXT PopulateDebugMessengerCreateInfo();
@@ -129,6 +129,11 @@ private:
   void PickPhysicalDevice();
   void CreateLogicalDevice();
   void CreateCommandPool();
+  void CreateDepthResources();
+  vk::Format FindSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling,
+                                 vk::FormatFeatureFlags features);
+  vk::Format FindDepthFormat();
+  bool HasStencilComponent(vk::Format format);
 
   // Physical Device Checkers:
   [[nodiscard]] bool IsSuitable(const vk::PhysicalDevice& physical_device) const;
@@ -159,11 +164,11 @@ private:
   void CreateUboDescriptorLayout();
   void CreateUniformBuffers();
   // Memory Management
-  Renderer::BufferWithMemory CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
+  Renderer::BufferWithMemory CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
+                                          vk::MemoryPropertyFlags properties);
   uint32_t FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties);
 
   [[nodiscard]] vk::ShaderModule CreateShaderModule(const std::vector<char>& code) const;
-  
 
 public:
   [[nodiscard]] const vk::Instance& GetInstance() const;
@@ -174,14 +179,24 @@ public:
   [[nodiscard]] const vk::Queue& GetPresentQueue() const;
   [[nodiscard]] const vk::CommandPool& GetCommandPool() const;
 
-
   vk::CommandBuffer BeginDraw();
   void BeginRenderPass();
   void SetCamera(const Camera& camera);
   void EndRenderPass();
   void EndDrawSubmit();
 
-  
+  vk::ImageView CreateImageView(vk::Image image, vk::Format format,
+                                vk::ImageAspectFlags aspectFlags);
+  std::pair<vk::Image, vk::DeviceMemory> CreateImage(uint32_t width, uint32_t height,
+                                                     vk::Format format, vk::ImageTiling tiling,
+                                                     vk::ImageUsageFlags usage,
+                                                     vk::MemoryPropertyFlags properties);
+
+  vk::CommandBuffer BeginSingleTimeCommands();
+  void TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout,
+                             vk::ImageLayout newLayout);
+  void EndSingleTimeCommands(vk::CommandBuffer buffer);
+  void CopyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size);
 };
 
 }  // namespace acg::visualizer::details

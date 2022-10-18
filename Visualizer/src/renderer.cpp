@@ -10,6 +10,7 @@
 #include <acg_utils/log.hpp>
 #include <acg_visualizer/scene.hpp>
 #include <fstream>
+#include <vulkan/vulkan_handles.hpp>
 
 std::vector<char> read_file(std::string path) {
   std::ifstream input_file{path, std::ios::ate | std::ios::binary};
@@ -143,6 +144,8 @@ Renderer::~Renderer() {
   uniform_buffers_.clear();
 
   // Clean Up Device
+  device_.destroy(pipeline_layout_);
+  device_.destroy(graphics_pipeline_);
   device_.destroy(descriptor_pool_);
   device_.destroy(ubo_layout_);
   device_.destroy(render_pass_);
@@ -169,27 +172,33 @@ void Renderer::Init() {
   CreateSurface();
   PickPhysicalDevice();
   CreateLogicalDevice();
-  CreateCommandPool();
-  
-  // Render Pipeline, Present Swapchain, and sync
+
+  // Swapchain, ImageViews
   CreateSwapchain();
-  CreateCommandBuffers();
   CreateImageViews();
+  CreateCommandPool();
   CreateRenderPass();
+  CreateDepthResources();
+
+  // UBO Descriptor:
+  CreateUboDescriptorLayout();
+  // Graphics Pipeline.
   CreateGraphicsPipeline();
-  CreateSyncObjects();
-  
+
   // Init Buffers
   CreateUniformBuffers();
   CreateFramebuffers();
   CreateCommandBuffers();
 
-  // UBO Descriptor:
-  CreateUboDescriptorLayout();
+  // Descriptor Pool and UBO Descriptors.
   CreateDescriptorPool();
   CreateUboDescriptorSets();
+  // Command Buffer
+  CreateCommandBuffers();
+  // Sync
+  CreateSyncObjects();
 
-  // TODO: Vertex, index... not processed here.  
+  // TODO: Vertex, index... not processed here.
   is_inited_ = true;
 }
 
@@ -551,6 +560,22 @@ void Renderer::CreateSwapchain() {
   swapchain_image_format_ = format.format;
   swapchain_extent_ = extent;
 }
+
+vk::ImageView Renderer::CreateImageView(vk::Image image, vk::Format format,
+                                        vk::ImageAspectFlags aspectFlags) {
+  // TODO: Reformat.
+  vk::ImageViewCreateInfo viewInfo{};
+  viewInfo.image = image;
+  viewInfo.viewType = vk::ImageViewType::e2D;
+  viewInfo.format = format;
+  viewInfo.subresourceRange.aspectMask = aspectFlags;
+  viewInfo.subresourceRange.baseMipLevel = 0;
+  viewInfo.subresourceRange.levelCount = 1;
+  viewInfo.subresourceRange.baseArrayLayer = 0;
+  viewInfo.subresourceRange.layerCount = 1;
+  return device_.createImageView(viewInfo);
+}
+
 void Renderer::CreateImageViews() {
   for (auto &image : swapchain_images_) {
     vk::ImageViewCreateInfo info;
@@ -589,30 +614,31 @@ void Renderer::CreateGraphicsPipeline() {
   vk::PipelineInputAssemblyStateCreateInfo input_assembly_info;
   input_assembly_info.setTopology(vk::PrimitiveTopology::eTriangleList)
       .setPrimitiveRestartEnable(VK_FALSE);
-  
+
   // Setup Viewport
   vk::PipelineViewportStateCreateInfo viewport_info;
-  viewport_info.setViewportCount(1)
-      .setScissorCount(1);
-  
+  viewport_info.setViewportCount(1).setScissorCount(1);
+
   // Setup Rasterization
   vk::PipelineRasterizationStateCreateInfo rasterizer_info;
   rasterizer_info.setDepthBiasEnable(VK_TRUE)
       .setRasterizerDiscardEnable(VK_FALSE)
       .setLineWidth(1.0f)
-      .setPolygonMode(vk::PolygonMode::eFill) // TODO: Line Only mode support.
-      .setCullMode(vk::CullModeFlagBits::eNone) // TODO: Double mode.
-      .setFrontFace(vk::FrontFace::eCounterClockwise) // TODO: Clock wise support needed.
+      .setPolygonMode(vk::PolygonMode::eFill)          // TODO: Line Only mode support.
+      .setCullMode(vk::CullModeFlagBits::eNone)        // TODO: Double mode.
+      .setFrontFace(vk::FrontFace::eCounterClockwise)  // TODO: Clock wise support needed.
       .setDepthBiasEnable(VK_FALSE);
-  
+
   // Setup Multi sampling: No multisampling for better performance.
   vk::PipelineMultisampleStateCreateInfo multi_sample_info;
-  multi_sample_info.setSampleShadingEnable(VK_FALSE)
-      .setRasterizationSamples(vk::SampleCountFlagBits::e1);
+  multi_sample_info.setSampleShadingEnable(VK_FALSE).setRasterizationSamples(
+      vk::SampleCountFlagBits::e1);
 
   // Setup alpha blending: We do not use color blend. although options are set
   vk::PipelineColorBlendAttachmentState color_blend_attachment;
-  color_blend_attachment.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
+  color_blend_attachment
+      .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG
+                         | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
       .setBlendEnable(VK_FALSE)
       .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
       .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
@@ -632,8 +658,15 @@ void Renderer::CreateGraphicsPipeline() {
   dynamic_state_info.setDynamicStates(dynamic_states);
 
   vk::PipelineLayoutCreateInfo pipeline_layout_info;
-  pipeline_layout_info.setSetLayouts(ubo_layout_)
-      .setPushConstantRangeCount(0);
+  pipeline_layout_info.setSetLayouts(ubo_layout_).setPushConstantRangeCount(0);
+
+  // Depth Testing.
+  vk::PipelineDepthStencilStateCreateInfo depth_stencil;
+  depth_stencil.setDepthTestEnable(VK_TRUE)
+      .setDepthWriteEnable(VK_TRUE)
+      .setDepthCompareOp(vk::CompareOp::eLess)
+      .setDepthBoundsTestEnable(VK_FALSE)
+      .setStencilTestEnable(VK_FALSE);
 
   pipeline_layout_ = device_.createPipelineLayout(pipeline_layout_info);
   vk::GraphicsPipelineCreateInfo info;
@@ -642,15 +675,16 @@ void Renderer::CreateGraphicsPipeline() {
       .setPInputAssemblyState(&input_assembly_info)
       .setPViewportState(&viewport_info)
       .setPRasterizationState(&rasterizer_info)
+      .setPColorBlendState(&color_blend_info)
       .setPMultisampleState(&multi_sample_info)
-      .setPDepthStencilState(nullptr)
+      .setPDepthStencilState(&depth_stencil)
       .setPDynamicState(&dynamic_state_info)
       .setLayout(pipeline_layout_)
       .setRenderPass(render_pass_)
       .setSubpass(0)
       .setBasePipelineHandle(VK_NULL_HANDLE)
       .setBasePipelineIndex(-1);
-  
+
   auto rv = device_.createGraphicsPipeline(VK_NULL_HANDLE, info);
   ACG_CHECK(rv.result == vk::Result::eSuccess, "Failed to create graphics pipeline");
   graphics_pipeline_ = rv.value;
@@ -659,6 +693,9 @@ void Renderer::CreateGraphicsPipeline() {
   device_.destroy(frag_module);
 }
 void Renderer::CleanupSwapchain() {
+  device_.destroy(depth_image_view_);
+  device_.destroy(depth_image_);
+  device_.free(depth_image_memory_);
   for (const auto &buf : swapchain_framebuffers_) {
     device_.destroy(buf);
   }
@@ -697,21 +734,39 @@ void Renderer::CreateRenderPass() {
   vk::AttachmentReference color_attachment_ref;
   color_attachment_ref.setAttachment(0).setLayout(vk::ImageLayout::eAttachmentOptimal);
 
+  vk::AttachmentDescription depth_attachment;
+  depth_attachment.setFormat(FindDepthFormat())
+      .setSamples(vk::SampleCountFlagBits::e1)
+      .setLoadOp(vk::AttachmentLoadOp::eClear)
+      .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+      .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+      .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+      .setInitialLayout(vk::ImageLayout::eUndefined)
+      .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+  vk::AttachmentReference depth_ref;
+  depth_ref.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal).setAttachment(1);
+
   vk::SubpassDescription subpass;
   subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
       .setColorAttachmentCount(1)
-      .setPColorAttachments(&color_attachment_ref);
+      .setPColorAttachments(&color_attachment_ref)
+      .setPDepthStencilAttachment(&depth_ref);
 
   vk::SubpassDependency dependency;
   dependency.setSrcSubpass(VK_SUBPASS_EXTERNAL)
       .setDstSubpass(0)
-      .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+      .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput
+                       | vk::PipelineStageFlagBits::eEarlyFragmentTests)
       .setSrcAccessMask(vk::AccessFlagBits::eNone)
-      .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-      .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+      .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput
+                       | vk::PipelineStageFlagBits::eEarlyFragmentTests)
+      .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite
+                        | vk::AccessFlagBits::eDepthStencilAttachmentWrite);
 
   vk::RenderPassCreateInfo info;
-  info.setAttachments(color_attachment).setSubpasses(subpass).setDependencies(dependency);
+  auto attachments = std::array{color_attachment, depth_attachment};
+  info.setAttachments(attachments).setSubpasses(subpass).setDependencies(dependency);
   render_pass_ = device_.createRenderPass(info);
 }
 void Renderer::CreateUboDescriptorLayout() {
@@ -749,9 +804,10 @@ void Renderer::CreateSyncObjects() {
 }
 void Renderer::CreateFramebuffers() {
   for (const auto &swapchain_image_view : swapchain_image_views_) {
+    auto attachments = std::array{swapchain_image_view, depth_image_view_};
     vk::FramebufferCreateInfo frame_buffer_info;
     frame_buffer_info.setRenderPass(render_pass_)
-        .setAttachments(swapchain_image_view)
+        .setAttachments(attachments)
         .setWidth(swapchain_extent_.width)
         .setHeight(swapchain_extent_.height)
         .setLayers(1);
@@ -825,22 +881,25 @@ uint32_t Renderer::FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags 
 }
 
 vk::CommandBuffer Renderer::BeginDraw() {
-  ACG_CHECK(! draw_started_, "Draw has already started.");
+  ACG_CHECK(!draw_started_, "Draw has already started.");
   // Timeout = infinity.
-  ACG_CHECK(device_.waitForFences(semaphores_[current_frame_].in_flight_fence, VK_TRUE, 
-    std::numeric_limits<uint64_t>::max()) == vk::Result::eSuccess, "Failed to wait for fence.");
-  
+  ACG_CHECK(device_.waitForFences(semaphores_[current_frame_].in_flight_fence, VK_TRUE,
+                                  std::numeric_limits<uint64_t>::max())
+                == vk::Result::eSuccess,
+            "Failed to wait for fence.");
+
   // Acquire Image
-  auto rv = device_.acquireNextImageKHR(swapchain_, std::numeric_limits<uint64_t>::max(), 
-      semaphores_[current_frame_].image_available, VK_NULL_HANDLE);
-  
+  auto rv
+      = device_.acquireNextImageKHR(swapchain_, std::numeric_limits<uint64_t>::max(),
+                                    semaphores_[current_frame_].image_available, VK_NULL_HANDLE);
+
   if (rv.result == vk::Result::eErrorOutOfDateKHR) {
     RecreateSwapchain();
     return nullptr;
   }
 
   ACG_CHECK(rv.result == vk::Result::eSuccess || rv.result == vk::Result::eSuboptimalKHR,
-    "Acquire next image failed, with result = {}", vk::to_string(rv.result));
+            "Acquire next image failed, with result = {}", vk::to_string(rv.result));
   current_image_index_ = rv.value;
   draw_started_ = true;
   device_.resetFences(semaphores_[current_frame_].in_flight_fence);
@@ -850,22 +909,21 @@ vk::CommandBuffer Renderer::BeginDraw() {
   begin_info.pInheritanceInfo = nullptr;
   command_buffers_[current_frame_].begin(begin_info);
 
-
   return command_buffers_[current_frame_];
 }
 
 void Renderer::BeginRenderPass() {
   ACG_CHECK(draw_started_, "Draw not started, cannot begin render pass.");
-  auto& cmd_buffer = command_buffers_[current_frame_];
+  auto &cmd_buffer = command_buffers_[current_frame_];
   vk::RenderPassBeginInfo render_pass_info;
   render_pass_info.renderPass = render_pass_;
   render_pass_info.framebuffer = swapchain_framebuffers_[current_image_index_];
   render_pass_info.renderArea.offset.setX(0);
   render_pass_info.renderArea.offset.setY(0);
   render_pass_info.renderArea.extent = swapchain_extent_;
-  vk::ClearValue clear_value = background_color_;
-  render_pass_info.clearValueCount = 1;
-  render_pass_info.pClearValues = &clear_value;
+  auto clear_value
+      = std::array<vk::ClearValue, 2>{background_color_, vk::ClearDepthStencilValue{{1.0f, 0}}};
+  render_pass_info.setClearValues(clear_value);
   cmd_buffer.beginRenderPass(render_pass_info, vk::SubpassContents::eInline);
   // Do some basic stuff...
   cmd_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphics_pipeline_);
@@ -883,9 +941,147 @@ void Renderer::RecreateSwapchain() {
   CreateSwapchain();
   CreateImageViews();
   CreateFramebuffers();
+  CreateDepthResources();
 }
 
+std::pair<vk::Image, vk::DeviceMemory> Renderer::CreateImage(uint32_t width, uint32_t height,
+                                                             vk::Format format,
+                                                             vk::ImageTiling tiling,
+                                                             vk::ImageUsageFlags usage,
+                                                             vk::MemoryPropertyFlags properties) {
+  vk::ImageCreateInfo imageInfo{};
+  imageInfo.imageType = vk::ImageType::e2D;
+  imageInfo.extent.width = width;
+  imageInfo.extent.height = height;
+  imageInfo.extent.depth = 1;
+  imageInfo.mipLevels = 1;
+  imageInfo.arrayLayers = 1;
+  imageInfo.format = format;
+  imageInfo.tiling = tiling;
+  imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+  imageInfo.usage = usage;
+  imageInfo.samples = vk::SampleCountFlagBits::e1;
+  imageInfo.sharingMode = vk::SharingMode::eExclusive;
 
+  auto image = device_.createImage(imageInfo);
 
+  auto mem_requirements = device_.getImageMemoryRequirements(image);
+
+  vk::MemoryAllocateInfo allocInfo{};
+  allocInfo.allocationSize = mem_requirements.size;
+  allocInfo.memoryTypeIndex = FindMemoryType(mem_requirements.memoryTypeBits, properties);
+
+  auto mem = device_.allocateMemory(allocInfo);
+  device_.bindImageMemory(image, mem, 0);
+  return {image, mem};
+}
+
+void Renderer::TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout,
+                                     vk::ImageLayout newLayout) {
+  vk::CommandBuffer commandBuffer = BeginSingleTimeCommands();
+
+  vk::ImageMemoryBarrier barrier{};
+  barrier.oldLayout = oldLayout;
+  barrier.newLayout = newLayout;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.image = image;
+  barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+  barrier.subresourceRange.baseMipLevel = 0;
+  barrier.subresourceRange.levelCount = 1;
+  barrier.subresourceRange.baseArrayLayer = 0;
+  barrier.subresourceRange.layerCount = 1;
+
+  vk::PipelineStageFlags sourceStage;
+  vk::PipelineStageFlags destinationStage;
+
+  if (oldLayout == vk::ImageLayout::eUndefined
+      && newLayout == vk::ImageLayout::eTransferDstOptimal) {
+    barrier.srcAccessMask = {};
+    barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+
+    sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+    destinationStage = vk::PipelineStageFlagBits::eTransfer;
+  } else if (oldLayout == vk::ImageLayout::eTransferDstOptimal
+             && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+    barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+    barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+    sourceStage = vk::PipelineStageFlagBits::eTransfer;
+    destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
+  } else {
+    ACG_CHECK(false, "Unsupported Layout");
+  }
+
+  commandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, {}, barrier);
+
+  EndSingleTimeCommands(commandBuffer);
+}
+
+vk::CommandBuffer Renderer::BeginSingleTimeCommands() {
+  vk::CommandBufferAllocateInfo allocInfo{};
+  allocInfo.level = vk::CommandBufferLevel::ePrimary;
+  allocInfo.commandPool = command_pool_;
+  allocInfo.commandBufferCount = 1;
+
+  auto buf = device_.allocateCommandBuffers(allocInfo).front();
+
+  vk::CommandBufferBeginInfo beginInfo{};
+  beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+  buf.begin(beginInfo);
+
+  return buf;
+}
+
+void Renderer::EndSingleTimeCommands(vk::CommandBuffer buffer) {
+  buffer.end();
+  vk::SubmitInfo submit_info;
+  submit_info.setCommandBuffers(buffer);
+  graphics_queue_.submit(submit_info);
+  graphics_queue_.waitIdle();
+  device_.freeCommandBuffers(command_pool_, buffer);
+}
+
+void Renderer::CopyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) {
+  auto cmd_buf = BeginSingleTimeCommands();
+  vk::BufferCopy copy_region;
+  copy_region.setSize(size);
+  cmd_buf.copyBuffer(src, dst, copy_region);
+  EndSingleTimeCommands(cmd_buf);
+}
+void Renderer::CreateDepthResources() {
+  auto depth_format = FindDepthFormat();
+  std::tie(depth_image_, depth_image_memory_) = CreateImage(
+      swapchain_extent_.width, swapchain_extent_.height, depth_format, vk::ImageTiling::eOptimal,
+      vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+  depth_image_view_ = CreateImageView(depth_image_, depth_format, vk::ImageAspectFlagBits::eDepth);
+}
+
+vk::Format Renderer::FindSupportedFormat(const std::vector<vk::Format> &candidates,
+                                         vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
+  for (const auto &format : candidates) {
+    auto props = physical_device_.getFormatProperties(format);
+
+    if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
+      return format;
+    } else if (tiling == vk::ImageTiling::eOptimal
+               && (props.optimalTilingFeatures & features) == features) {
+      return format;
+    }
+  }
+  ACG_CHECK(false, "Failed to find a supported format");
+  return {};
+}
+
+vk::Format Renderer::FindDepthFormat() {
+  return FindSupportedFormat(
+      {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
+      vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+}
+
+bool Renderer::HasStencilComponent(vk::Format format) {
+  return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
+}
 
 }  // namespace acg::visualizer::details
