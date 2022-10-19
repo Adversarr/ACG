@@ -24,10 +24,6 @@ struct Vertex {
   static std::vector<vk::VertexInputBindingDescription> GetBindingDescriptions();
 
   static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions();
-
-  inline bool operator==(const Vertex &other) const {
-    return position == other.position && color == other.color && normal == other.normal;
-  }
 };
 
 

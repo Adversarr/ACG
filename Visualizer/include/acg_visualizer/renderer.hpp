@@ -102,7 +102,7 @@ private:
   // Render pass and Pipeline
   vk::RenderPass render_pass_;
   vk::DescriptorSetLayout descriptor_set_layout_;
-  std::vector<vk::DescriptorSet> ubo_descriptor_sets_;
+  std::vector<vk::DescriptorSet> descriptor_sets_;
   vk::DescriptorPool descriptor_pool_;
   vk::PipelineLayout pipeline_layout_;
   vk::Pipeline graphics_pipeline_;
@@ -160,20 +160,22 @@ private:
   void RecreateSwapchain();
   void CleanupSwapchain();
   void CreateDescriptorPool();
-  void CreateUboDescriptorSets();
-  void CreateUboDescriptorLayout();
+  void CreateDescriptorSets();
+  void CreateDescriptorSetLayout();
   void CreateUniformBuffers();
   // Memory Management
   uint32_t FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties);
 
   [[nodiscard]] vk::ShaderModule CreateShaderModule(const std::vector<char>& code) const;
 
-    vk::ImageView CreateImageView(vk::Image image, vk::Format format,
-                                  vk::ImageAspectFlags aspectFlags);
-    std::pair<vk::Image, vk::DeviceMemory> CreateImage(uint32_t width, uint32_t height,
-                                                       vk::Format format, vk::ImageTiling tiling,
-                                                       vk::ImageUsageFlags usage,
-                                                       vk::MemoryPropertyFlags properties);
+  vk::ImageView CreateImageView(vk::Image image, vk::Format format,
+                                vk::ImageAspectFlags aspectFlags);
+  std::pair<vk::Image, vk::DeviceMemory> CreateImage(uint32_t width, uint32_t height,
+                                                     vk::Format format, vk::ImageTiling tiling,
+                                                     vk::ImageUsageFlags usage,
+                                                     vk::MemoryPropertyFlags properties);
+
+  inline vk::CommandBuffer& GetCurrentCommandBuffer() { return command_buffers_[current_frame_]; }
 
 public:
   [[nodiscard]] const vk::Instance& GetInstance() const;
@@ -187,8 +189,7 @@ public:
   Renderer::BufferWithMemory CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
                                           vk::MemoryPropertyFlags properties);
   void DestroyBufferWithMemory(BufferWithMemory buffer_with_memory);
-  void CopyToBuffer(void* mem_data, BufferWithMemory buffer_with_memory, size_t size);
-
+  void CopyToBuffer(const void* mem_data, BufferWithMemory buffer_with_memory, size_t size);
 
   vk::CommandBuffer BeginDraw();
   void BeginRenderPass();
@@ -202,6 +203,15 @@ public:
                              vk::ImageLayout newLayout);
   void EndSingleTimeCommands(vk::CommandBuffer buffer);
   void CopyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size);
+
+
+// *** IMGUI ***
+  void SetupImgui();
+  vk::CommandBuffer BeginImGuiRenderPass();
+  std::vector<vk::CommandBuffer> imgui_cmdbuf_;
+  vk::RenderPass imgui_render_pass_;
+  std::vector<vk::Framebuffer> imgui_framebuffers_;
+  std::vector<vk::ImageView> imgui_imageviews_;
 };
 
 }  // namespace acg::visualizer::details

@@ -26,6 +26,7 @@ Window::~Window() noexcept {
 
 vk::SurfaceKHR Window::CreateWindowSurface(vk::Instance& instance) {
   VkSurfaceKHR surface;
+  ACG_CHECK(glfwVulkanSupported(), "Glfw has no vulkan support");
   VK_CHECK_SUCCESS(glfwCreateWindowSurface(instance, window_, nullptr, &surface));
   return surface;
 }

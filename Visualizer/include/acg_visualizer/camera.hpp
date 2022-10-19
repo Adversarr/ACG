@@ -17,8 +17,8 @@ public:
   // TODO: add camera movement handles.
 
 private:
-  glm::vec3 position_{1.0f, 1.0f, 2.0f};
-  glm::vec3 front_{-1.0f, -1.0f, -2.0f};
+  glm::vec3 position_{1.0f, 1.0f, 1.0f};
+  glm::vec3 front_{-1.0f, -1.0f, -1.0f};
   glm::vec3 up_{0.0f, 0.0f, 1.0f};
   float fov_{45.0};
   float near_{0.1f};
