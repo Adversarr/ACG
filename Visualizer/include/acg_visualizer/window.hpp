@@ -21,15 +21,15 @@ public:
 
   ~Window() noexcept;
 
-  [[nodiscard]] inline bool IsResized() const noexcept;
+  inline bool IsResized() const noexcept;
 
   inline void ResetResizeFlag() noexcept;
 
-  [[nodiscard]] inline std::pair<uint32_t, uint32_t> GetWindowSize() const noexcept;
+  inline std::pair<uint32_t, uint32_t> GetWindowSize() const noexcept;
 
-  [[nodiscard]] inline GLFWwindow* GetWindow() const noexcept;
+  inline GLFWwindow* GetWindow() const noexcept;
 
-  [[nodiscard]] inline bool ShouldClose() const;
+  inline bool ShouldClose() const;
 
   vk::SurfaceKHR CreateWindowSurface(vk::Instance& instance);
 

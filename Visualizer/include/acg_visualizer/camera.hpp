@@ -11,8 +11,8 @@ class Camera {
 public:
   explicit Camera() = default;
 
-  [[nodiscard]] glm::mat4 GetView() const;
-  [[nodiscard]] glm::mat4 GetProjection(float width, float height, bool inverted_y_axis=true) const;
+  glm::mat4 GetView() const;
+  glm::mat4 GetProjection(float width, float height, bool inverted_y_axis=true) const;
 
   // TODO: add camera movement handles.
 

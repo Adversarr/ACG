@@ -29,9 +29,9 @@ struct Vertex {
 
 // TODO: may add multiple lights support.
 struct Ubo {
-  alignas(16) glm::mat4 model;
-  alignas(16) glm::mat4 view;
-  alignas(16) glm::mat4 projection;
+ alignas(16) glm::mat4 model;
+ alignas(16) glm::mat4 view;
+ alignas(16) glm::mat4 projection;
 //  alignas(16) glm::vec4 ambient_light_color{1.f, 1.f, 1.f, .02f};  // w is intensity
 //  alignas(16) glm::vec4  light_position;
 //  alignas(16) glm::vec4  light_color;
@@ -50,7 +50,7 @@ public:
   template<typename T>
   void AddColoredMesh(const geometry::TriangleMesh<T> & mesh, Eigen::MatrixX3f color_per_vertex);
 
-  [[nodiscard]] inline const std::vector<Vertex>& GetVertices() const noexcept;
+  inline const std::vector<Vertex>& GetVertices() const noexcept;
 
 private:
   std::vector<Vertex> vertices_;

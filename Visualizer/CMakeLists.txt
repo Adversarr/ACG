@@ -14,6 +14,10 @@ CPMAddPackage(NAME glm
   GITHUB_REPOSITORY g-truc/glm
   GIT_TAG "0.9.9.8")
 
+CPMAddPackage(NAME VulkanMemoryAllocator
+  GITHUB_REPOSITORY GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+  GIT_TAG "v3.0.1")
+
 # Dependency: GLFW3
 find_package(glfw3 REQUIRED)
 

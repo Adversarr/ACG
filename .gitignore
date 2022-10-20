@@ -13,6 +13,7 @@ build
 _install
 .DS_Store
 .cache
+imgui.ini
 .vs
 out
 .idea
