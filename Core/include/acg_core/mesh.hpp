@@ -2,7 +2,6 @@
 #include "acg_core.hpp"
 #include <Eigen/Eigen>
 #include <spdlog/spdlog.h>
-#include <acg_utils/debugger.hpp>
 #include <memory>
 
 

@@ -355,8 +355,8 @@ void MeshPipeline::RecreateSwapchain() {
 vk::CommandBuffer &MeshPipeline::BeginRender() {
   ACG_CHECK(!is_render_pass_begin_, "Render pass has begin.");
   auto extent = renderer_.GetSwapchainExtent();
-  current_index_ = renderer_.GetCurrentIndex();
-  auto &current_command_buffer = command_buffers_[current_index_];
+  auto current_index = renderer_.GetCurrentIndex();
+  auto &current_command_buffer = command_buffers_[current_index];
   auto clear_value = std::array<vk::ClearValue, 2>{background_color_, depth_stencil_value_};
 
   // Begin Command Buffer
@@ -383,7 +383,7 @@ vk::CommandBuffer &MeshPipeline::BeginRender() {
   
   // Bind UBO inline.
   current_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout_, 0,
-                                            descriptor_sets_[current_index_], {});
+                                            descriptor_sets_[renderer_.GetCurrentIndex()], {});
   is_render_pass_begin_ = true;
   return current_command_buffer;
 }
@@ -391,7 +391,7 @@ vk::CommandBuffer &MeshPipeline::BeginRender() {
 
 vk::CommandBuffer& MeshPipeline::EndRender() {
   ACG_CHECK(is_render_pass_begin_, "Render pass has not begin.");
-  auto &current_command_buffer = command_buffers_[current_index_];
+  auto &current_command_buffer = command_buffers_[renderer_.GetCurrentIndex()];
   current_command_buffer.endRenderPass();
   current_command_buffer.end();
   is_render_pass_begin_ = false;
@@ -401,15 +401,11 @@ vk::CommandBuffer& MeshPipeline::EndRender() {
 void MeshPipeline::SetCamera(const Camera &camera) {
   auto extent = renderer_.GetSwapchainExtent();
   auto current_index = renderer_.GetCurrentIndex();
-  static auto start_time = std::chrono::high_resolution_clock::now();
-  auto current_time = std::chrono::high_resolution_clock::now();
-  float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time)
-                   .count();
   Ubo ubo{};
-  ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.model = camera.GetModel();
   ubo.view = camera.GetView();
   ubo.projection = camera.GetProjection(extent.width, extent.height);
-  renderer_.CopyHostToBuffer(&ubo, uniform_buffers_[current_index_], sizeof(ubo));
+  renderer_.CopyHostToBuffer(&ubo, uniform_buffers_[renderer_.GetCurrentIndex()], sizeof(ubo));
 }
 
 }  // namespace acg::visualizer::details

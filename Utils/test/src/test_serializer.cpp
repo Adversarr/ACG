@@ -1,7 +1,7 @@
 #include <doctest/doctest.h>
 
 #include <ostream>
-#include "acg_utils/debugger.hpp"
+#include "acg_utils/log.hpp"
 
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #include <acg_utils/serializer/all.hpp>

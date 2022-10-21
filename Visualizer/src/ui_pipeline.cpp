@@ -1,5 +1,5 @@
 #include "acg_visualizer/ui_pipeline.hpp"
-
+#include "acg_utils/log.hpp"
 
 static void check_vk_result(VkResult err) {
   ACG_CHECK(err == VK_SUCCESS, "error detected: {}", vk::to_string((vk::Result)err));

@@ -243,6 +243,8 @@ public:
    */
   Renderer::BufMem CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
                                 vk::MemoryPropertyFlags properties);
+  
+  void DestroyBufmem(BufMem& bufmem);
 
   /**
    * @brief Copy from Host To Device

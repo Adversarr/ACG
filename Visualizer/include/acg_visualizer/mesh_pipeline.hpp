@@ -9,7 +9,6 @@ public:
   explicit MeshPipeline(Renderer& renderer, bool is_present = true);
   
   // ~MeshPipeline();
-
   void Init();
 
   void Cleanup();
@@ -17,10 +16,20 @@ public:
   void RecreateSwapchain();
 
   void SetCamera(const Camera& cam);
-  // Running functions.
+  
+  /**
+   * @brief Begin render pass, and return the command buffer in use.
+   * 
+   * @return vk::CommandBuffer& 
+   */
   vk::CommandBuffer& BeginRender();
+
+  /**
+   * @brief End render pass.
+   * 
+   * @return vk::CommandBuffer& 
+   */
   vk::CommandBuffer& EndRender();
-  // TODO: manage vertex buffers?
 
 private:
 
@@ -63,8 +72,6 @@ private:
   Renderer& renderer_;
   vk::CommandPool command_pool_;
   std::vector<vk::CommandBuffer> command_buffers_;
-
-  size_t current_index_{0};
 };
 
 }

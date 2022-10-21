@@ -55,6 +55,8 @@ int main() {
   ImGuiPipeline ui_ppl{*renderer};
   mesh_ppl.Init();
   ui_ppl.Init();
+  auto start = std::chrono::steady_clock::now();
+  int i = 0;
   while (! renderer->GetWindow()->ShouldClose()) {
     glfwPollEvents();
     // Do nothing.
@@ -75,12 +77,16 @@ int main() {
     cb.bindIndexBuffer(ibuf.GetBuffer(), 0, vk::IndexType::eUint32);
     cb.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
     buffer_submit.emplace_back(mesh_ppl.EndRender());
-
+    uint32_t fps = (1000000000.0 / (std::chrono::steady_clock::now() - start).count()) * i;
+    i += 1;
     // Imgui
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
     ImGui::ShowDemoWindow();
+    ImGui::Begin("Fps");
+    ImGui::Text("Value = %d Frame Count = %d", fps, i);
+    ImGui::End();
     ImGuiIO& io = ImGui::GetIO();
     ImGui::Render();
     auto *data = ImGui::GetDrawData();

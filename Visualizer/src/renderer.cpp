@@ -514,7 +514,6 @@ void Renderer::CreateSwapchain() {
 
 vk::ImageView Renderer::CreateImageView(vk::Image image, vk::Format format,
                                         vk::ImageAspectFlags aspectFlags) {
-  // TODO: Reformat.
   vk::ImageViewCreateInfo view_info{};
   view_info.image = image;
   view_info.viewType = vk::ImageViewType::e2D;

@@ -1,5 +1,3 @@
-// TODO: need implementation.
-
 #pragma once
 
 #include "decl.hpp"

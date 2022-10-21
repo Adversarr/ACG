@@ -1,8 +1,6 @@
 #include <co/log.h>
 
 #include <acg_utils/log.hpp>
-
-#include "acg_utils/debugger.hpp"
 #include "acg_visualizer/window.hpp"
 
 namespace acg::visualizer::details {
