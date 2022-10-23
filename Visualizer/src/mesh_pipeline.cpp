@@ -121,10 +121,10 @@ void MeshPipeline::CreateGraphicsPipeline() {
   {
     auto code = read_file(SPV_HOME "/3d.vert.spv");
     vk::ShaderModuleCreateInfo info;
-    info.setPCode((uint32_t *)code.data()).setCodeSize(code.size());
+    info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     vert_module = renderer_.GetDevice().createShaderModule(info);
     code = read_file(SPV_HOME "/3d.frag.spv");
-    info.setPCode((uint32_t *)code.data()).setCodeSize(code.size());
+    info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     frag_module = renderer_.GetDevice().createShaderModule(info);
   }
 
@@ -398,14 +398,21 @@ vk::CommandBuffer& MeshPipeline::EndRender() {
   return current_command_buffer;
 }
 
-void MeshPipeline::SetCamera(const Camera &camera) {
+void MeshPipeline::SetCamera(const Camera &camera, bool all_update) {
   auto extent = renderer_.GetSwapchainExtent();
   auto current_index = renderer_.GetCurrentIndex();
   Ubo ubo{};
   ubo.model = camera.GetModel();
   ubo.view = camera.GetView();
   ubo.projection = camera.GetProjection(extent.width, extent.height);
-  renderer_.CopyHostToBuffer(&ubo, uniform_buffers_[renderer_.GetCurrentIndex()], sizeof(ubo));
+  ubo.eye_position = camera.GetPosition();
+  if (all_update) {
+    for (auto ub: uniform_buffers_) {
+      renderer_.CopyHostToBuffer(&ubo, ub, sizeof(ubo));
+    }
+  } else {
+    renderer_.CopyHostToBuffer(&ubo, uniform_buffers_[renderer_.GetCurrentIndex()], sizeof(ubo));
+  }
 }
 
 }  // namespace acg::visualizer::details

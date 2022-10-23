@@ -1,5 +1,5 @@
 function(target_include_shader_directory TARGET_NAME DIRECTORY)
-  file(GLOB shader_source CONFIGURE_DEPENDS
+  file(GLOB_RECURSE shader_source CONFIGURE_DEPENDS
     "${DIRECTORY}/*.vert"
     "${DIRECTORY}/*.frag"
     "${DIRECTORY}/*.comp"

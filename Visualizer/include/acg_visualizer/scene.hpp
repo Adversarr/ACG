@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include <acg_core/mesh.hpp>
+#include <acg_core/geometry/mesh.hpp>
 #include "acg_visualizer/camera.hpp"
 
 
@@ -12,6 +12,7 @@
 #include <glm/gtc/constants.hpp>
 
 #include "_vk.hpp"
+#include "point_light.hpp"
 
 namespace acg::visualizer::details {
 
@@ -32,9 +33,10 @@ struct Ubo {
  alignas(16) glm::mat4 model;
  alignas(16) glm::mat4 view;
  alignas(16) glm::mat4 projection;
-//  alignas(16) glm::vec4 ambient_light_color{1.f, 1.f, 1.f, .02f};  // w is intensity
-//  alignas(16) glm::vec4  light_position;
-//  alignas(16) glm::vec4  light_color;
+ alignas(16) glm::vec3 eye_position;
+ alignas(16) glm::vec4 ambient_light_color{1.f, 1.f, 1.f, .01f};  // w is intensity
+ alignas(16) glm::vec3 light_color{1.0, 1.0, 1.0};
+ alignas(16) glm::vec3 light_position{2.0, 0.0, 1.0};
 };
 
 using VertexIndex = uint32_t;

@@ -7,10 +7,10 @@ static void check_vk_result(VkResult err) {
 
 namespace acg::visualizer::details {
 
-ImGuiPipeline::ImGuiPipeline(Renderer& renderer):
+UiPipeline::UiPipeline(Renderer& renderer):
   renderer_(renderer) {}
 
-void ImGuiPipeline::Init() {
+void UiPipeline::Init() {
   if (is_inited_) {
     return;
   }
@@ -57,7 +57,8 @@ void ImGuiPipeline::Init() {
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
         .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setInitialLayout(
+          !is_ui_only_ ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::eUndefined)
         .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
     vk::AttachmentReference color_attachment = {};
@@ -104,7 +105,7 @@ void ImGuiPipeline::Init() {
   is_inited_ = true;
 }
 
-void ImGuiPipeline::CreateFramebuffers() {
+void UiPipeline::CreateFramebuffers() {
   for (auto imageview : renderer_.GetSwapchainImageviews()) {
     auto attachments = std::array{imageview};
 
@@ -120,7 +121,7 @@ void ImGuiPipeline::CreateFramebuffers() {
   }
 }
 
-vk::CommandBuffer& ImGuiPipeline::Render(ImDrawData* data) {
+vk::CommandBuffer& UiPipeline::Render(ImDrawData* data) {
   size_t current_index = renderer_.GetCurrentIndex();
   size_t current_image_index = renderer_.GetAcquiredImageIndex();
   auto& current_command_buffer = command_buffers_[current_index];
@@ -146,7 +147,7 @@ vk::CommandBuffer& ImGuiPipeline::Render(ImDrawData* data) {
   return current_command_buffer;
 }
 
-void ImGuiPipeline::Cleanup() {
+void UiPipeline::Cleanup() {
   if (!is_inited_) {
     return ;
   }
@@ -159,7 +160,7 @@ void ImGuiPipeline::Cleanup() {
   is_inited_ = false;
 }
 
-void ImGuiPipeline::CleanupSwapchain(){
+void UiPipeline::CleanupSwapchain(){
   for (auto fb: framebuffers_) {
     renderer_.GetDevice().destroy(fb);
   }
@@ -167,7 +168,7 @@ void ImGuiPipeline::CleanupSwapchain(){
 }
 
 
-void ImGuiPipeline::RecreateSwapchain(){
+void UiPipeline::RecreateSwapchain(){
   CleanupSwapchain();
   CreateFramebuffers();
 }

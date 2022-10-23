@@ -62,11 +62,6 @@ public:
     std::unique_ptr<Renderer> Build() const;
   };
 
-  /**
-   * @brief DO NOT CALL This INITIALIZER DIRECTLY! Construct a new Renderer object
-   *
-   */
-  Renderer() = default;
 
   Renderer(Renderer&&) = delete;
   Renderer(const Renderer&) = delete;
@@ -308,6 +303,13 @@ public:
   void RecreateSwapchain();
 
 private:
+
+  /**
+   * @brief DO NOT CALL This INITIALIZER DIRECTLY! Construct a new Renderer object
+   *
+   */
+  Renderer() = default;
+
   // Initializers:
   void Init();
   void CreateInstance();

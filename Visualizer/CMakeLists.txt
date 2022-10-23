@@ -50,7 +50,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LANGUAGE CXX LINKER_LANGUAGE CXX)
 
-file(GLOB exec_src standalone/*.cpp standalone/*.cxx)
+file(GLOB_RECURSE exec_src standalone/*.cpp standalone/*.cxx)
 add_executable(${PROJECT_NAME}_exec ${exec_src})
 
 target_include_directories(${PROJECT_NAME}_exec PUBLIC standalone)

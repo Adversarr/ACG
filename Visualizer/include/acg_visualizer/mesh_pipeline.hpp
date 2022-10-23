@@ -15,7 +15,7 @@ public:
 
   void RecreateSwapchain();
 
-  void SetCamera(const Camera& cam);
+  void SetCamera(const Camera& cam, bool all_update=false);
   
   /**
    * @brief Begin render pass, and return the command buffer in use.

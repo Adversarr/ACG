@@ -27,4 +27,8 @@ glm::mat4 Camera::GetModel() const {
   return glm::rotate(glm::mat4(1.0f), glm::radians(model_rotate_angle_), model_rotate_axis_);
 }
 
+glm::vec3 Camera::GetPosition() const {
+  return position_;
+}
+
 }

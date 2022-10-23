@@ -10,9 +10,9 @@
 namespace acg::visualizer::details {
 
 
-class ImGuiPipeline {
+class UiPipeline {
 public:
-  explicit ImGuiPipeline(Renderer& renderer);
+  explicit UiPipeline(Renderer& renderer);
 
   void Init();
 
@@ -26,6 +26,8 @@ public:
 
 private:
   void CreateFramebuffers();
+  bool is_ui_only_{false};
+  bool is_inited_{false};
 
   Renderer& renderer_;
   vk::CommandPool command_pool_;
@@ -33,7 +35,6 @@ private:
   vk::RenderPass render_pass_;
   vk::DescriptorPool imgui_pool_;
   std::vector<vk::Framebuffer> framebuffers_;
-  bool is_inited_{false};
 };
 
 }

@@ -1,7 +1,7 @@
 project(acg_core LANGUAGES CXX)
 include(../cmake/CPM.cmake)
-file(GLOB srcs src/*.cpp)
-file(GLOB headers include/*.h)
+file(GLOB_RECURSE srcs src/*.cpp)
+file(GLOB_RECURSE headers include/*.h)
 
 
 

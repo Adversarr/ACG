@@ -382,7 +382,7 @@ void Renderer::CreateCommandPool() {
 }
 
 std::unique_ptr<Renderer> Renderer::Builder::Build() const {
-  auto inst = std::make_unique<Renderer>();
+  std::unique_ptr<Renderer> inst(new Renderer);
   inst->enable_validation_ = enable_validation;
   inst->swapchain_size_ = swapchain_size;
   inst->Init();
@@ -777,6 +777,7 @@ bool Renderer::EndDrawSubmitPresent(std::vector<vk::CommandBuffer> command_buffe
       || window_->IsResized()) {
     window_->ResetResizeFlag();
     need_recreate_swapchain = true;
+    ACG_DEBUG_LOG("Set Recreate Swapchain.");
   } else {
     ACG_CHECK(result == vk::Result::eSuccess, "Failed to present swapchain image");
   }

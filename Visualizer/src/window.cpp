@@ -45,4 +45,9 @@ void Window::UpdateWindowSize() {
   }
 }
 
+bool Window::IsKeyPressed(int glfw_key) const {
+  return glfwGetKey(window_, glfw_key) == GLFW_PRESS;
+}
+
+
 }  // namespace acg::visualizer

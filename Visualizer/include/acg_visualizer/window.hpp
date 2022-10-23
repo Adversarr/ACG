@@ -33,6 +33,8 @@ public:
 
   vk::SurfaceKHR CreateWindowSurface(vk::Instance& instance);
 
+  bool IsKeyPressed(int glfw_key) const;
+
   void UpdateWindowSize();
 
 private:
