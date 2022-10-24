@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <acg_core/geometry/mesh.hpp>
+#include "acg_core/math.hpp"
 #include "acg_visualizer/camera.hpp"
 
 
@@ -16,6 +17,10 @@
 
 namespace acg::visualizer::details {
 
+/**
+ * @brief Element of Vertex Buffer.
+ * 
+ */
 struct Vertex {
   // Note: In our program, no texture is needed.
   glm::vec3 position;
@@ -27,8 +32,10 @@ struct Vertex {
   static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions();
 };
 
-
-// TODO: may add multiple lights support.
+/**
+ * @brief Content of Uniform Buffer
+ * 
+ */
 struct Ubo {
  alignas(16) glm::mat4 model;
  alignas(16) glm::mat4 view;
@@ -39,27 +46,59 @@ struct Ubo {
  alignas(16) glm::vec3 light_position{2.0, 0.0, 1.0};
 };
 
-using VertexIndex = uint32_t;
-
-
-class Scene {
+/**
+ * @brief An valid mesh for rendering.
+ * 
+ */
+class VertIdxBuffer {
 public:
-  void Reset();
+  vk::DeviceSize GetRequiredVertexBufferSize() const;
 
-  template<typename T>
-  void AddMesh(const geometry::TriangleMesh<T>& mesh, Eigen::Vector3f color);
+  vk::DeviceSize GetRequiredIndexBufferSize() const;
 
-  template<typename T>
-  void AddColoredMesh(const geometry::TriangleMesh<T> & mesh, Eigen::MatrixX3f color_per_vertex);
-
-  inline const std::vector<Vertex>& GetVertices() const noexcept;
+  // TODO: Binding Function.
+  // TODO: VertIdxBuffer& AppendVertex();
+  // TODO: VertIdxBuffer& AppendIdx();
 
 private:
-  std::vector<Vertex> vertices_;
+  std::vector<Vertex> vertices;
+
+  std::vector<Idx> indices;
 };
 
-inline const std::vector<Vertex>& Scene::GetVertices() const noexcept {
-  return vertices_;
-}
+class Scene {
+  // todo: add marching cube support.
+public:
+  void Swap(Scene& another);
+
+  void Copy(const Scene& another);
+
+  void Reset();
+
+  /**
+   * @brief add a given triangle mesh to the scene for rendering.
+   * 
+   * @param mesh 
+   * @param color
+   */
+  void AddMesh(const geometry::TriangleMesh<F32>& mesh,
+    Vec3f color);
+
+  /**
+   * @brief add a given triangle mesh to the scene, with given color map.
+   * 
+   * @param mesh 
+   * @param color_per_vertex 
+   */
+  void AddColoredMesh(const geometry::TriangleMesh<F32> & mesh, 
+    Eigen::MatrixX3<F32> color_per_vertex);
+
+  // TODO: void AddParticleSystem(const )
+
+private:
+  VertIdxBuffer meshes_;
+};
+
+
 
 }

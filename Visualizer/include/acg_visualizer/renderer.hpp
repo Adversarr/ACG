@@ -34,12 +34,14 @@ class Renderer {
 public:
   class BufMem {
   public:
-    BufMem(Renderer& renderer, vk::Buffer buffer, vk::DeviceMemory memory);
+    BufMem(Renderer& renderer, vk::Buffer buffer, vk::DeviceMemory memory,
+      vk::DeviceSize size);
     BufMem(const BufMem&) = default;  // disable copy
     BufMem(BufMem&&) = default;       // enable  move
 
     vk::Buffer GetBuffer();
 
+    vk::DeviceSize GetSize() const;
     vk::DeviceMemory GetMemory();
 
     void Release();
@@ -47,6 +49,7 @@ public:
   private:
     vk::Buffer buffer_{VK_NULL_HANDLE};
     vk::DeviceMemory memory_{VK_NULL_HANDLE};
+    vk::DeviceSize size_;
     Renderer& renderer_;
   };
 
@@ -64,6 +67,7 @@ public:
 
 
   Renderer(Renderer&&) = delete;
+
   Renderer(const Renderer&) = delete;
 
   ~Renderer();

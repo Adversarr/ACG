@@ -1,38 +1,51 @@
 #pragma once
+
 #include "./renderer.hpp"
 
 namespace acg::visualizer::details {
 
 class MeshPipeline {
-
 public:
-  explicit MeshPipeline(Renderer& renderer, bool is_present = true);
-  
-  // ~MeshPipeline();
-  void Init();
+  class Builder;
 
-  void Cleanup();
+  ~MeshPipeline();
 
   void RecreateSwapchain();
 
-  void SetCamera(const Camera& cam, bool all_update=false);
-  
+  void SetCamera(const Camera& cam, bool all_update = false);
+
   /**
    * @brief Begin render pass, and return the command buffer in use.
-   * 
-   * @return vk::CommandBuffer& 
+   *
+   * @return vk::CommandBuffer&
    */
   vk::CommandBuffer& BeginRender();
 
   /**
    * @brief End render pass.
-   * 
-   * @return vk::CommandBuffer& 
+   *
+   * @return vk::CommandBuffer&
    */
   vk::CommandBuffer& EndRender();
 
-private:
 
+private:
+  /**
+   * @brief Construct a new Mesh Pipeline object
+   *
+   * @param renderer
+   * @param is_present
+   * @param polygon
+   * @param cull
+   * @param front
+   */
+  explicit MeshPipeline(Renderer& renderer, bool is_present = true,
+                        vk::PolygonMode polygon = vk::PolygonMode::eFill,
+                        vk::CullModeFlags cull = vk::CullModeFlagBits::eNone,
+                        vk::FrontFace front = vk::FrontFace::eClockwise);
+
+  void Init();
+  void Cleanup();
   void CreateCommandPool();
   void CreateRenderPass();
   void CreateDescriptorSetLayout();
@@ -50,11 +63,14 @@ private:
 
   // Render pass and Pipeline
   bool is_inited_{false};
-  bool is_dst_present_{false};
   bool is_render_pass_begin_{false};
-  vk::ClearColorValue background_color_
-    {std::array{0.0f, 0.0f, 0.0f, 1.0f}};
-  vk::ClearDepthStencilValue depth_stencil_value_ {{1.0f, 0}};
+  const bool is_dst_present_{false};
+  const vk::PolygonMode polygon_mode_{vk::PolygonMode::eFill};
+  const vk::CullModeFlags cull_mode_{vk::CullModeFlagBits::eNone};
+  const vk::FrontFace front_face_{vk::FrontFace::eCounterClockwise};
+
+  vk::ClearColorValue background_color_{std::array{0.0f, 0.0f, 0.0f, 1.0f}};
+  vk::ClearDepthStencilValue depth_stencil_value_{{1.0f, 0}};
   std::vector<vk::Framebuffer> framebuffers_;
   vk::Image depth_image_;
   vk::DeviceMemory depth_image_memory_;
@@ -74,4 +90,37 @@ private:
   std::vector<vk::CommandBuffer> command_buffers_;
 };
 
-}
+class MeshPipeline::Builder {
+private:
+  bool is_dst_present_{false};
+  vk::PolygonMode polygon_mode_{vk::PolygonMode::eFill};
+  vk::CullModeFlags cull_mode_{vk::CullModeFlagBits::eNone};
+  vk::FrontFace front_face_{vk::FrontFace::eCounterClockwise};
+
+public:
+  inline Builder& SetIsDstPresent(bool is_present) {
+    is_dst_present_ = is_present;
+    return *this;
+  }
+  inline Builder& SetCullMode(vk::CullModeFlags cull_mode) {
+    cull_mode_ = cull_mode;
+    return *this;
+  }
+  inline Builder& SetPolygonMode(vk::PolygonMode mode) {
+    polygon_mode_ = mode;
+    return *this;
+  }
+  inline Builder& SetFrontFace(vk::FrontFace face) {
+    front_face_ = face;
+    return *this;
+  }
+
+  inline std::unique_ptr<MeshPipeline> Build(Renderer& renderer) const {
+    auto retval = std::unique_ptr<MeshPipeline>(
+        new MeshPipeline(renderer, is_dst_present_, polygon_mode_, cull_mode_, front_face_));
+    retval->Init();
+    return retval;
+  }
+};
+
+}  // namespace acg::visualizer::details

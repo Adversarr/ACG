@@ -21,8 +21,15 @@ static std::vector<char> read_file(std::string path) {
 
 namespace acg::visualizer::details {
 
-MeshPipeline::MeshPipeline(Renderer &renderer, bool is_present)
-    : renderer_(renderer), is_dst_present_(is_present) {}
+MeshPipeline::MeshPipeline(Renderer &renderer, bool is_present,
+    vk::PolygonMode polygon,
+    vk::CullModeFlags cull,
+    vk::FrontFace front)
+    : renderer_(renderer), 
+      is_dst_present_(is_present),
+      polygon_mode_(polygon),
+      cull_mode_(cull),
+      front_face_(front) {}
 
 void MeshPipeline::Init() {
   if (is_inited_) {
@@ -121,10 +128,10 @@ void MeshPipeline::CreateGraphicsPipeline() {
   {
     auto code = read_file(SPV_HOME "/3d.vert.spv");
     vk::ShaderModuleCreateInfo info;
-    info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
+    info.setPCode(reinterpret_cast<Idx *>(code.data())).setCodeSize(code.size());
     vert_module = renderer_.GetDevice().createShaderModule(info);
     code = read_file(SPV_HOME "/3d.frag.spv");
-    info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
+    info.setPCode(reinterpret_cast<Idx *>(code.data())).setCodeSize(code.size());
     frag_module = renderer_.GetDevice().createShaderModule(info);
   }
 
@@ -158,9 +165,9 @@ void MeshPipeline::CreateGraphicsPipeline() {
   rasterizer_info.setDepthBiasEnable(VK_FALSE)
       .setRasterizerDiscardEnable(VK_FALSE)
       .setLineWidth(1.0f)
-      .setPolygonMode(vk::PolygonMode::eFill)          // TODO: Line Only mode support.
-      .setCullMode(vk::CullModeFlagBits::eNone)        // TODO: Double mode.
-      .setFrontFace(vk::FrontFace::eCounterClockwise)  // TODO: Clock wise support needed.
+      .setPolygonMode(polygon_mode_)
+      .setCullMode(cull_mode_)
+      .setFrontFace(front_face_)
       .setDepthBiasEnable(VK_FALSE);
 
   // Setup Multi sampling: No multisampling for better performance.
@@ -324,7 +331,6 @@ void MeshPipeline::Cleanup() {
     buf.Release();
   }
   uniform_buffers_.clear();
-
   device.destroy(pipeline_layout_);
   device.destroy(graphics_pipeline_);
   device.destroy(descriptor_set_layout_);
@@ -401,6 +407,7 @@ vk::CommandBuffer& MeshPipeline::EndRender() {
 void MeshPipeline::SetCamera(const Camera &camera, bool all_update) {
   auto extent = renderer_.GetSwapchainExtent();
   auto current_index = renderer_.GetCurrentIndex();
+  //TODO: Ubo should be updated explicitely,
   Ubo ubo{};
   ubo.model = camera.GetModel();
   ubo.view = camera.GetView();
@@ -414,5 +421,12 @@ void MeshPipeline::SetCamera(const Camera &camera, bool all_update) {
     renderer_.CopyHostToBuffer(&ubo, uniform_buffers_[renderer_.GetCurrentIndex()], sizeof(ubo));
   }
 }
+
+
+MeshPipeline::~MeshPipeline(){
+  Cleanup();
+}
+
+
 
 }  // namespace acg::visualizer::details

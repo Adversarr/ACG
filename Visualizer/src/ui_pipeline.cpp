@@ -173,4 +173,9 @@ void UiPipeline::RecreateSwapchain(){
   CreateFramebuffers();
 }
 
+UiPipeline::~UiPipeline() {
+  Cleanup();
+}
+
+
 }

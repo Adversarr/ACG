@@ -31,4 +31,17 @@ glm::vec3 Camera::GetPosition() const {
   return position_;
 }
 
+glm::vec3 Camera::GetFront() const {
+  return front_;
+}
+
+void Camera::SetPosition(glm::vec3 position){
+  position_ = position;
+}
+
+void Camera::SetFrontDirection(glm::vec3 front) {
+  front_ = front;
+}
+
+
 }

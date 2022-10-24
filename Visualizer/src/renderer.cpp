@@ -571,7 +571,7 @@ Renderer::BufMem Renderer::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlag
 
   auto mem = device_.allocateMemory(alloc_info);
   device_.bindBufferMemory(buf, mem, 0);
-  return BufMem(*this, buf, mem);
+  return BufMem(*this, buf, mem, size);
 }
 
 uint32_t Renderer::FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties) {
@@ -809,8 +809,8 @@ std::vector<vk::ImageView> Renderer::GetSwapchainImageviews() const {
 }
 const std::unique_ptr<Window> &Renderer::GetWindow() const { return window_; }
 
-Renderer::BufMem::BufMem(Renderer &renderer, vk::Buffer buffer, vk::DeviceMemory memory)
-    : renderer_(renderer), buffer_(buffer), memory_(memory) {}
+Renderer::BufMem::BufMem(Renderer &renderer, vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize size)
+    : renderer_(renderer), buffer_(buffer), memory_(memory), size_(size) {}
 
 vk::Buffer Renderer::BufMem::GetBuffer() { return buffer_; }
 
@@ -827,6 +827,8 @@ void Renderer::BufMem::Release() {
     memory_ = VK_NULL_HANDLE;
   }
 }
+
+
 
 
 }  // namespace acg::visualizer::details
