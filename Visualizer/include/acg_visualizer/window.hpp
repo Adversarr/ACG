@@ -2,9 +2,11 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include "_vk.hpp"
+
 #include <string>
 #include <tuple>
+
+#include "avk.hpp"
 
 namespace acg::visualizer::details {
 

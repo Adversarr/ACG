@@ -4,9 +4,9 @@
 #include <memory>
 #include <optional>
 
-#include "_vk.hpp"
 #include "acg_visualizer/camera.hpp"
 #include "acg_visualizer/window.hpp"
+#include "avk.hpp"
 
 namespace acg::visualizer::details {
 

@@ -11,5 +11,6 @@ public:
 private:
   Vec3f light_position;
   Vec3f light_color;
+  Vec3f ambient_light_color;
 };
 }

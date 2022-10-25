@@ -1,6 +1,9 @@
-#include "acg_visualizer/scene.hpp"
+#include <vector>
 
-namespace acg::visualizer::details {
+#include "acg_visualizer/avk.hpp"
+#include "acg_visualizer/buffer_def.hpp"
+
+namespace acg::visualizer{
 
 std::vector<vk::VertexInputBindingDescription> Vertex::GetBindingDescriptions() {
   vk::VertexInputBindingDescription binding;
