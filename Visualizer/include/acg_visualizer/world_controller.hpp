@@ -73,18 +73,16 @@ private:
 
   details::Renderer::BufMem staging_vertice_buffer_;
 
-  struct SyncedObjects {
-    details::Scene scene;
-    int frame_count;
-  } synced_objects_;
-  std::mutex scene_read_;
-  std::mutex scene_write_;
+  details::Scene scene_;
+  int frame_count_;
+  std::mutex scene_read_mtx_;
+  std::mutex scene_write_mtx_;
 
   uint32_t fps_limit_{60};
 
   bool is_running_{false};
 
-  std::map<KeyboardType, std::function<bool()>> keyboard_callback_;
+  std::map<KeyboardType, std::function<bool()>> keyboard_callbacks_;
 };
 
 }
