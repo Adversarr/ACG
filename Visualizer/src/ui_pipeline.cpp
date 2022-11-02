@@ -115,7 +115,6 @@ void UiPipeline::CreateFramebuffers() {
         .setWidth(renderer_.GetSwapchainExtent().width)
         .setHeight(renderer_.GetSwapchainExtent().height)
         .setLayers(1);
-
     framebuffers_.emplace_back(
       renderer_.GetDevice().createFramebuffer(info));
   }

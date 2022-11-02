@@ -21,6 +21,9 @@ public:
   // TODO: add camera movement handles.
   void SetPosition(glm::vec3 position);
   
+  /**
+   * @brief Set the front direction for the camera
+  */
   void SetFrontDirection(glm::vec3 front);
 
 private:

@@ -6,7 +6,6 @@ namespace acg::models {
 
 using geometry::TriangleMesh;
 
-// TODO: move to cpp.
 /**
  * @brief Return a UV based sphere
  *

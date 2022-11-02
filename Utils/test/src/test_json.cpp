@@ -5,7 +5,6 @@
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #include <acg_utils/json_serialize/all.hpp>
 
-
 DOCTEST_MAKE_STD_HEADERS_CLEAN_FROM_WARNINGS_ON_WALL_BEGIN
 #include <algorithm>
 #include <array>
@@ -23,14 +22,19 @@ TEST_CASE("basic") {
   }
 
   {
-    auto ret = acg::utils::to_json(std::map<std::string, int> {{"123", 2}});
+    auto ret = acg::utils::to_json(std::map<std::string, int>{{"123", 2}});
     std::cout << ret.dbg() << std::endl;
   }
-}
 
+  std::vector<int> vec = {1, 3, 2};
+  auto length = vec.size();
+
+}
 
 class Cls {
 public:
-  int x; float y; std::string c;
+  int x;
+  float y;
+  std::string c;
   ENABLE_JSON_SERIALIZE_FOR(Cls, x, y, c);
 };

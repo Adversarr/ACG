@@ -1,15 +1,27 @@
 #include <spdlog/spdlog.h>
 
+#include <acg_core/geometry/common_models.hpp>
 #include <acg_visualizer/renderer.hpp>
 
 #include "acg_utils/log.hpp"
-#include <acg_core/geometry/common_models.hpp>
 #include "acg_visualizer/mesh_pipeline.hpp"
 #include "acg_visualizer/ui_pipeline.hpp"
 #include "co/co.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 
+char logo[]
+    = "      ___           ___           ___     \n"
+      "     /\\  \\         /\\__\\         /\\__\\    \n"
+      "    /::\\  \\       /:/  /        /:/ _/_   \n"
+      "   /:/\\:\\  \\     /:/  /        /:/ /\\  \\  \n"
+      "  /:/ /::\\  \\   /:/  /  ___   /:/ /::\\  \\ \n"
+      " /:/_/:/\\:\\__\\ /:/__/  /\\__\\ /:/__\\/\\:\\__\\\n"
+      " \\:\\/:/  \\/__/ \\:\\  \\ /:/  / \\:\\  \\ /:/  /\n"
+      "  \\::/__/       \\:\\  /:/  /   \\:\\  /:/  / \n"
+      "   \\:\\  \\        \\:\\/:/  /     \\:\\/:/  /  \n"
+      "    \\:\\__\\        \\::/  /       \\::/  /   \n"
+      "     \\/__/         \\/__/         \\/__/    \n";
 
 using namespace acg::visualizer::details;
 using namespace acg::visualizer;
@@ -19,17 +31,17 @@ std::vector<Vertex> vertices;
 
 std::vector<acg::Idx> indices;
 
-std::tuple<std::vector<Vertex>, std::vector<acg::Idx>> from_mesh(const acg::models::TriangleMesh<acg::F32>& mesh) {
+std::tuple<std::vector<Vertex>, std::vector<acg::Idx>> from_mesh(
+    const acg::models::TriangleMesh<acg::F32>& mesh) {
   std::vector<acg::Idx> indices(mesh.GetIndices().cols() * 3);
-  std::memcpy(indices.data(), mesh.GetIndices().data(), mesh.GetIndices().size() * sizeof(acg::Idx));
+  std::memcpy(indices.data(), mesh.GetIndices().data(),
+              mesh.GetIndices().size() * sizeof(acg::Idx));
   std::vector<Vertex> vertices;
   for (acg::Idx i = 0; i < mesh.GetVertices().cols(); ++i) {
     Vertex v{
-      .position={
-        mesh.GetVertices().col(i).x(),
-        mesh.GetVertices().col(i).y(),
-        mesh.GetVertices().col(i).z()
-      },};
+        .position = {mesh.GetVertices().col(i).x(), mesh.GetVertices().col(i).y(),
+                     mesh.GetVertices().col(i).z()},
+    };
     v.color = v.position;
     // v.normal = v.position;
     std::cout << v.position.x << v.position.y << v.position.z << std::endl;
@@ -74,7 +86,7 @@ int main() {
   int i = 0;
 
   mesh_ppl.SetCamera(camera, true);
-  while (! renderer->GetWindow()->ShouldClose()) {
+  while (!renderer->GetWindow()->ShouldClose()) {
     uint32_t fps = (1000000000.0 / (std::chrono::steady_clock::now() - start).count()) * i;
     glfwPollEvents();
     // Do nothing.
@@ -103,14 +115,14 @@ int main() {
     ImGui::End();
     ImGuiIO& io = ImGui::GetIO();
     ImGui::Render();
-    auto *data = ImGui::GetDrawData();
+    auto* data = ImGui::GetDrawData();
     buffer_submit.emplace_back(ui_ppl.Render(data));
 
     auto recreation = renderer->EndDrawSubmitPresent(buffer_submit);
     if (recreation) {
       renderer->RecreateSwapchain();
       mesh_ppl.RecreateSwapchain();
-      ui_ppl.RecreateSwapchain(); 
+      ui_ppl.RecreateSwapchain();
     }
   }
   renderer->GetDevice().waitIdle();

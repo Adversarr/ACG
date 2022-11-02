@@ -3,11 +3,3 @@ Index:
 
 Completion:
   AllScopes: No
-
-# InlayHints:
-#   Enabled: Yes
-#   ParameterNames: No
-#   DeducedTypes: Yes
-
-# Hover:
-#   ShowAKA: Yes

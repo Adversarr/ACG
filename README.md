@@ -15,9 +15,14 @@
 
 ## Todo Lists
 
+### Build System
+
+- [ ] (Important!) Transfer everything to `xmake`
+
 ### Core
 
 - [ ] Half Edge data structure for high performance neighbour query.
 - [ ] Physics engine part has not been implemented
 - [ ] Spatial Data structure
 - [ ] Math libraries
+
