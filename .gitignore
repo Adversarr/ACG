@@ -22,3 +22,7 @@ cmake-build-*
 *.spv
 
 logs
+
+**/.xmake
+**/build
+.xmake
