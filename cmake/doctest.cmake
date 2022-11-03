@@ -1,1 +1,0 @@
-CPMAddPackage("gh:onqtam/doctest@2.4.8")

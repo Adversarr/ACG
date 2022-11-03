@@ -1,3 +1,6 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <co/unitest.h>
 
-#include <doctest/doctest.h>
+int main() {
+  unitest::run_all_tests();
+  return 0;
+}

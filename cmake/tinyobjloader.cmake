@@ -1,1 +1,0 @@
-CPMAddPackage("gh:tinyobjloader/tinyobjloader@1.0.6")
