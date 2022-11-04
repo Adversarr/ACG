@@ -1,5 +1,6 @@
 #include <vector>
 
+#include "acg_visualizer/scene.hpp"
 #include "acg_visualizer/avk.hpp"
 #include "acg_visualizer/buffer_def.hpp"
 

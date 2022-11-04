@@ -2,17 +2,18 @@ local spv_home = '$(buildir)/shader/outputs/'
 
 
 add_requires("glslang", {configs = {binaryonly = true}})
-add_requires('glm')
+add_requires('glm', {system=false})
 add_requires('glfw')
 add_requires('coost')
-add_requires("cmake::Vulkan", { alias = 'vulkansdk', system = true })
+add_requires('vulkansdk', {system=true})
 
 target('acg_visualizer')
   set_kind('static')
+  set_languages('cxx17')
   add_includedirs('include', { public = true })
   add_files('src/**.cpp')
-  add_packages('vulkansdk', 'glm', 'glfw')
-  add_deps('acg_core', 'acg_utils', 'imgui-glfw-vulkan')
+  add_packages('vulkansdk', 'glm', 'glfw', 'imgui', {public=true})
+  add_deps('acg_core', 'acg_utils')
   add_defines('SPV_HOME=\"' ..  spv_home .. '\"')
 target_end()
 
