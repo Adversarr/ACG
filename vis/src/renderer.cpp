@@ -830,6 +830,4 @@ void VkContext::BufMem::Release() {
   }
 }
 
-VkContext &get_context() { return Singleton<VkContext>{}.GetRef(); }
-
 }  // namespace acg::visualizer::details

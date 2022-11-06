@@ -36,7 +36,7 @@ public:
    *
    * @warning Double Check if you really need this constructor.
    */
-  __attribute__((warning("The Default Constructor may be not safe."))) TriangleMesh() = default;
+  TriangleMesh() = default;
 
   /**
    * @brief Enable Copy Constructor

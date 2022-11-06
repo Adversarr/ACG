@@ -18,6 +18,7 @@ public:
 
   void RecreateSwapchain();
 
+  [[nodiscard("The recorded command buffer should not be discarded.")]]
   vk::CommandBuffer& Render(ImDrawData* data);
 
 private:

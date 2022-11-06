@@ -8,7 +8,12 @@
 namespace acg::visualizer::details {
 
 class TheWorld {
-  using KeyboardType = int;
+  using KeyType = int;
+
+  struct KeyboardCallback {
+    const char* description;
+    std::function<bool()> callback;
+  };
 
 private:
   /**
@@ -25,11 +30,34 @@ private:
    * @return true no interruption is detected.
    * @return false interruption occurs.
    */
-  virtual void RunUiImpl() = 0;
+  virtual void RunUiImpl();
 
+  /**
+   * @brief this function is called before world loop start.
+   * 
+   */
   virtual void PreRun();
 
+  /**
+   * @brief this function is called, after world loop ends.
+   * 
+   */
   virtual void PostRun();
+
+  /**
+   * @brief This function render the scene use the mesh pipeline
+   * 
+   */
+  virtual void DrawScene();
+
+  /**
+   * @brief This function is called whever swapchain is recreated.
+   * 
+   */
+  virtual void RecreateSwapchainCallback();
+
+  virtual void CleanUpCallback();
+  virtual void InitCallback();
 
 public:
   TheWorld();
@@ -41,8 +69,11 @@ public:
   void RunAsync();
 
 protected:
-  void UpdateCamera();
-  void RefitBuffer();
+  /**
+   * @brief Recreate Swapchain.
+   * 
+   */
+  void RecreateSwapchain();
 
   void SetupCameraKeyboardCallback();
 
@@ -50,23 +81,22 @@ protected:
 
   void RunDraw();
 
-  void RunUI();
+  vk::CommandBuffer DrawUI();
 
   void ProcessInput();
 
 private:
   void Init();
+
   void CleanUp();
 
   Camera camera_;
 
   // Physical Time step in second.
-  F32 time_step_{.01};
-  uint32_t render_per_steps_{3};
+  F64 time_step_{.01};
 
-  std::unique_ptr<details::MeshPipeline> mesh_ppl_;
-
-  std::unique_ptr<details::UiPipeline> ui_ppl_;
+  // NOTE: Ui Pipeline is the last pipeline.
+  std::unique_ptr<details::UiPipeline> ui_ppl_{nullptr};
 
   // TODO: Force use staging buffers.
   details::VkContext::BufMem staging_index_buffer_;
@@ -77,8 +107,6 @@ private:
 
   // TODO: Support async physics run.
   bool is_async_{false};
-  std::mutex scene_read_mtx_;
-  std::mutex scene_write_mtx_;
 
   uint32_t fps_limit_{60};
 
@@ -88,7 +116,8 @@ private:
   // Indicate whether physical simulation is running.
   bool is_physics_running_{false};
 
-  std::map<KeyboardType, std::function<bool()>> keyboard_callbacks_;
+  // Hooks for keyboard callback.
+  std::map<KeyType, KeyboardCallback> keyboard_callbacks_;
 
   spdlog::stopwatch single_frame_watch_;
 };

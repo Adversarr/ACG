@@ -26,7 +26,8 @@ public:
 
   static void Release() {
     // If double release is ok
-    data_.release();
+    if (static_cast<bool>(data_))
+      data_.reset();
   }
 
   T& GetRef() { return *data_.get(); }

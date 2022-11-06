@@ -385,7 +385,7 @@ private:
       VK_KHR_SWAPCHAIN_EXTENSION_NAME,
   };
 };
-VkContext& get_vk_context();
+inline VkContext &get_vk_context() { return acg::utils::Singleton<VkContext>{}.GetRef(); }
 }  // namespace acg::visualizer::details
 
 }
