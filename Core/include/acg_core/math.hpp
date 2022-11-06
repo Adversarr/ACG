@@ -5,6 +5,16 @@
 
 namespace acg {
 
+
+template<typename T>
+using Vec2 = Eigen::Vector2<T>;
+
+template<typename T>
+using Vec3 = Eigen::Vector3<T>;
+
+template<typename T>
+using Vec4 = Eigen::Vector4<T>;
+
 using Vec4f = Eigen::Vector4<F32>;
 
 using Vec4d = Eigen::Vector4<F64>;
@@ -27,5 +37,6 @@ template<typename F>
 constexpr F pi = 3.14159292035;
 
 }
+
 
 }

@@ -58,8 +58,6 @@ public:
    */
   inline Idx GetNumEdges() const;
 
-  inline bool IsGood() const;
-
   inline const VerticeListType& GetVertices() const;
 
   inline const IndexListType& GetIndices() const;
@@ -75,7 +73,6 @@ private:
   // the same for indice.
   IndexListType indices_;
 
-  bool is_good_{false};
 };
 
 template<typename T> 
