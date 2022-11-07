@@ -1,7 +1,12 @@
 #pragma once
-
-#include "renderer.hpp"
-#include <acg_utils/singleton.hpp>
 namespace acg::visualizer{
+
+namespace details {
+struct VkContextHooker {
+  static void Hook() noexcept;
+};
+}
+
+using VkContextHooker=details::VkContextHooker;
 
 }

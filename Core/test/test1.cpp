@@ -6,6 +6,9 @@
 #include <iostream>
 #include <string_view>
 #include <vector>
+#include <co/fastream.h>
+#include <co/fastring.h>
+
 
 namespace test {
 
@@ -19,6 +22,11 @@ DEF_test(test1) {
     };
     std::cout << particlesystem.to_string();
     
+  }
+
+  DEF_case(cofastream) {
+    fastream fs;
+    fs.append('\n');
   }
 }
 

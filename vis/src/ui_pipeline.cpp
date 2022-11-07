@@ -1,6 +1,9 @@
 #include "acg_vis/ui_pipeline.hpp"
 #include "acg_utils/log.hpp"
 
+#include <acg_utils/singleton.hpp>
+#include <spdlog/spdlog.h>
+
 static void check_vk_result(VkResult err) {
   ACG_CHECK(err == VK_SUCCESS, "error detected: {}", vk::to_string((vk::Result)err));
 }
@@ -53,13 +56,15 @@ void UiPipeline::Init() {
     vk::AttachmentDescription attachment = {};
     attachment.setFormat(renderer_.GetSwapchainImageFormat())
         .setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eLoad)
+        .setLoadOp(is_ui_only_? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
         .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
         .setInitialLayout(
           !is_ui_only_ ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::eUndefined)
         .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+
+    ACG_DEBUG_LOG("Ui Only? : {}", is_ui_only_);
 
     vk::AttachmentReference color_attachment = {};
     color_attachment.setAttachment(0).setLayout(vk::ImageLayout::eColorAttachmentOptimal);

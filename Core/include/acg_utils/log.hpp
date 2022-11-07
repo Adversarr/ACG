@@ -2,16 +2,16 @@
 
 #include <fmt/format.h>
 #include <iostream>
-
-#include "def.hpp"
 #include "acg_utils.hpp"
-#include "singleton.hpp"
+
 
 #ifndef ACG_IS_DEBUG
 #  define ACG_IS_DEBUG (1 - ACG_IS_RELEASE)
 #endif
 
 #ifndef NDEBUG
+  // TODO: Replace debug.
+#include <spdlog/spdlog.h>
 #  define ACG_DEBUG_LOG(...) spdlog::debug(__VA_ARGS__)
 #  define LOG_FUNCTION_CALL_DEBUG \
     acg::utils::details::FunctionDeferredLogger ___(__PRETTY_FUNCTION__, __FILE__, __LINE__)

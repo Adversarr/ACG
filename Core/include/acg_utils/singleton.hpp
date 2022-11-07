@@ -1,5 +1,4 @@
 #pragma once
-#include "def.hpp"
 #include "log.hpp"
 
 namespace acg::utils {
@@ -22,12 +21,13 @@ public:
   static void Init(std::unique_ptr<T>&& uptr) {
     ACG_CHECK(!static_cast<bool>(data_), "Double Initialize Singleton Error");
     data_.swap(uptr);
+    uptr.reset(nullptr);
   }
 
   static void Release() {
     // If double release is ok
     if (static_cast<bool>(data_))
-      data_.reset();
+      data_.reset(nullptr);
   }
 
   T& GetRef() { return *data_.get(); }
@@ -40,5 +40,7 @@ public:
 };
 
 template <typename T> std::unique_ptr<T> Singleton<T>::data_{nullptr};
+
+
 
 }  // namespace acg::utils

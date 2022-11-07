@@ -6,9 +6,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <co/fastream.h>
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_vulkan.h>
+
 #include <spdlog/spdlog.h>
 
 #include <acg_utils/log.hpp>
@@ -387,7 +385,7 @@ std::unique_ptr<VkContext> VkContext::Builder::Build() const {
   inst->enable_validation_ = enable_validation;
   inst->swapchain_size_ = swapchain_size;
   inst->Init();
-  utils::Singleton<VkContext>::Init(inst);
+  utils::Singleton<VkContext>::Init(move(inst));
   return inst;
 }
 
@@ -425,9 +423,6 @@ vk::SurfaceFormatKHR VkContext::ChooseSwapSurfaceFormat(
     }
   }
 
-  // TODO: when recreating swapchain, this message will be printed repeatedly.
-  spdlog::info("Not using optimal format, use format: {}, color space: {}",
-               vk::to_string(formats.front().format), vk::to_string(formats.front().colorSpace));
   return formats.front();
 }
 
@@ -830,4 +825,5 @@ void VkContext::BufMem::Release() {
   }
 }
 
+VkContext &get_vk_context() { return acg::utils::Singleton<VkContext>().GetRef(); }
 }  // namespace acg::visualizer::details

@@ -4,15 +4,15 @@
  * @brief include basic definition for the framework.
  * @version 0.0.1
  * @date 2022-10-23
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 
 #pragma once
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
 namespace acg {
 
@@ -36,13 +36,11 @@ using F32 = float;
  */
 using F64 = double;
 
-
 /**
  * @brief Index & Size type for mesh, particle system, rendering(index buffer), etc.
  *
  */
 using Idx = uint32_t;
-
 
 constexpr char logo[]
     = "      ___           ___           ___     \n"
@@ -57,8 +55,8 @@ constexpr char logo[]
       "    \\:\\__\\        \\::/  /       \\::/  /   \n"
       "     \\/__/         \\/__/         \\/__/    \n";
 
+void init(int argc, char** argv);
 
+void cleanup();
 
-
-
-}
+}  // namespace acg

@@ -2,12 +2,11 @@
 
 #include "mesh_pipeline.hpp"
 #include "renderer.hpp"
-#include <spdlog/stopwatch.h>
 #include "ui_pipeline.hpp"
 
-namespace acg::visualizer::details {
+namespace acg::visualizer{
 
-class TheWorld {
+class WorldCtrlUiOnly {
   using KeyType = int;
 
   struct KeyboardCallback {
@@ -15,13 +14,13 @@ class TheWorld {
     std::function<bool()> callback;
   };
 
-private:
+protected:
   /**
    * @brief Run Physics Simulation
    *
    * @param dt world time change.
    */
-  virtual int RunPhysicsImpl(F32 dt) = 0;
+  virtual int RunPhysicsImpl(F64 dt);
 
   /**
    * @brief UI Interactor
@@ -48,7 +47,7 @@ private:
    * @brief This function render the scene use the mesh pipeline
    * 
    */
-  virtual void DrawScene();
+  virtual std::vector<vk::CommandBuffer> DrawScene();
 
   /**
    * @brief This function is called whever swapchain is recreated.
@@ -57,12 +56,13 @@ private:
   virtual void RecreateSwapchainCallback();
 
   virtual void CleanUpCallback();
+
   virtual void InitCallback();
 
 public:
-  TheWorld();
+  WorldCtrlUiOnly();
 
-  ~TheWorld();
+  ~WorldCtrlUiOnly();
 
   void Run();
 
@@ -75,8 +75,6 @@ protected:
    */
   void RecreateSwapchain();
 
-  void SetupCameraKeyboardCallback();
-
   void RunPhysics();
 
   void RunDraw();
@@ -85,24 +83,19 @@ protected:
 
   void ProcessInput();
 
+protected:
+  bool ui_only_mode_{true};
+
 private:
   void Init();
 
   void CleanUp();
 
-  Camera camera_;
-
   // Physical Time step in second.
   F64 time_step_{.01};
 
-  // NOTE: Ui Pipeline is the last pipeline.
   std::unique_ptr<details::UiPipeline> ui_ppl_{nullptr};
-
-  // TODO: Force use staging buffers.
-  details::VkContext::BufMem staging_index_buffer_;
-
-  details::VkContext::BufMem staging_vertice_buffer_;
-
+ 
   int frame_count_;
 
   // TODO: Support async physics run.
@@ -119,7 +112,7 @@ private:
   // Hooks for keyboard callback.
   std::map<KeyType, KeyboardCallback> keyboard_callbacks_;
 
-  spdlog::stopwatch single_frame_watch_;
+  F64 loop_time_{0};
 };
 
 }  // namespace acg::visualizer

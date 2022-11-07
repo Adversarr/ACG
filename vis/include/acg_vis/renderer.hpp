@@ -1,14 +1,15 @@
 #pragma once
 
-#include <acg_utils/def.hpp>
+#include <acg_utils/acg_utils.hpp>
 #include <memory>
 #include <optional>
+#include "init.hpp"
 
+#include "avk.hpp"
 #include "camera.hpp"
 #include "window.hpp"
-#include "avk.hpp"
 
-namespace acg::visualizer{
+namespace acg::visualizer {
 
 namespace details {
 
@@ -36,8 +37,7 @@ class VkContext {
 public:
   class BufMem {
   public:
-    BufMem(VkContext& renderer, vk::Buffer buffer, vk::DeviceMemory memory,
-      vk::DeviceSize size);
+    BufMem(VkContext& renderer, vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize size);
     BufMem(const BufMem&) = default;  // disable copy
     BufMem(BufMem&&) = default;       // enable  move
 
@@ -67,7 +67,6 @@ public:
     // NOTE: This function will also build the singleton for Renderer
     std::unique_ptr<VkContext> Build() const;
   };
-
 
   VkContext(VkContext&&) = delete;
 
@@ -244,8 +243,8 @@ public:
    * @return Renderer::BufMem
    */
   VkContext::BufMem CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
-                                vk::MemoryPropertyFlags properties);
-  
+                                 vk::MemoryPropertyFlags properties);
+
   void DestroyBufmem(BufMem& bufmem);
 
   /**
@@ -310,7 +309,6 @@ public:
   void RecreateSwapchain();
 
 private:
-
   /**
    * @brief DO NOT CALL This INITIALIZER DIRECTLY! Construct a new Renderer object
    *
@@ -385,7 +383,8 @@ private:
       VK_KHR_SWAPCHAIN_EXTENSION_NAME,
   };
 };
-inline VkContext &get_vk_context() { return acg::utils::Singleton<VkContext>{}.GetRef(); }
-}  // namespace acg::visualizer::details
+VkContext& get_vk_context();
+}  // namespace details
 
-}
+inline auto&& get_vk_context() { return details::get_vk_context(); }
+}  // namespace acg::visualizer

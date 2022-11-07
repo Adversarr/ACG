@@ -41,19 +41,21 @@ private:
 };
 
 class UiPipeline::Builder {
-  std::unique_ptr<UiPipeline> inst_;
+  bool is_ui_only_ = false; 
 
 public:
-  Builder(): inst_(new UiPipeline) {}
+  Builder() = default;
 
   inline Builder& SetIsUIOnly(bool is_ui_only) {
-    inst_->is_ui_only_ = is_ui_only;
+    is_ui_only_ = is_ui_only;
     return *this;
   }
 
-  inline std::unique_ptr<UiPipeline> Build() {
-    inst_->Init();
-    return std::move(inst_);
+  inline std::unique_ptr<UiPipeline> Build() const {
+    auto inst = std::unique_ptr<UiPipeline>(new UiPipeline);
+    inst->is_ui_only_ = is_ui_only_;
+    inst->Init();
+    return inst;
   }
 };
 
