@@ -5,7 +5,6 @@
 #include <vector>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
 #include <spdlog/spdlog.h>
 
 #include <acg_utils/log.hpp>
@@ -13,6 +12,7 @@
 #include <acg_vis/scene.hpp>
 #include <fstream>
 #include <vulkan/vulkan_handles.hpp>
+
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
     VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
@@ -547,9 +547,9 @@ void VkContext::CreateSyncObjects() {
   fence_info.flags = vk::FenceCreateFlagBits::eSignaled;
 
   for (size_t i = 0; i < swapchain_size_; ++i) {
-    semaphores_.push_back({.image_available = device_.createSemaphore(semaphore_info),
-                           .render_finished = device_.createSemaphore(semaphore_info),
-                           .in_flight_fence = device_.createFence(fence_info)});
+    semaphores_.emplace_back(RenderSyncObjects{device_.createSemaphore(semaphore_info),
+                             device_.createSemaphore(semaphore_info),
+                             device_.createFence(fence_info)});
   }
 }
 

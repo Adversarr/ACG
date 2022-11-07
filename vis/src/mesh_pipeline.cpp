@@ -4,7 +4,6 @@
 #include <spdlog/spdlog.h>
 
 #include "acg_utils/log.hpp"
-#include "glm/ext/matrix_transform.hpp"
 
 static std::vector<char> read_file(std::string path) {
   std::ifstream input_file{path, std::ios::ate | std::ios::binary};

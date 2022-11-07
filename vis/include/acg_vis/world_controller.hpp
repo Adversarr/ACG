@@ -2,6 +2,7 @@
 
 #include <acg_core/core.hpp>
 #include <map>
+#include <functional>
 
 #include "ui_pipeline.hpp"
 

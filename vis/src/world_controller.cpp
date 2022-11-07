@@ -42,7 +42,7 @@ void WorldCtrlUiOnly::Run() {
       auto ms_sleep
           = 1.0 / fps_limit_ - loop_time_;
       if (ms_sleep > 1) {
-        co::sleep(ms_sleep);
+        co::sleep(static_cast<uint32_t>(ms_sleep));
       }
     }
   }

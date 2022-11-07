@@ -21,8 +21,8 @@
 #endif
 
 namespace acg::utils::details {
-template <int valid, typename... T> void make_assert_details(bool value, std::string_view cond_text,
-                                                             std::string_view position, int line,
+template <int valid, typename... T> void make_assert_details(bool value, const char *cond_text,
+                                                             const char* position, int line,
                                                              const char* message, T&&... args) {
   if constexpr (valid) {
     if (!value) {
@@ -38,22 +38,25 @@ template <int valid, typename... T> void make_assert_details(bool value, std::st
 
 }  // namespace acg::utils::details
 
+
+#ifndef ACG_CHECK
+#define ACG_CHECK(condition, ...)\
+  do { \
+    bool retval = static_cast<bool>(condition); \
+    if (!retval) {\
+    auto msg = fmt::format(__VA_ARGS__);\
+    std::cerr << "Assertion(" << #condition << ") Failed: " << msg << std::endl;\
+    std::cerr << "Occurs at " << __FILE__ << ":" << __LINE__ << std::endl;\
+    std::cerr.flush();\
+  }} while (false)
+#endif
+
+
+
 #ifndef ACG_DEBUG_CHECK
 #  if ACG_IS_DEBUG
-#    define ACG_DEBUG_CHECK(condition, message, ...)                                          \
-      acg::utils::details::make_assert_details<is_debug_mode>(static_cast<bool>(condition),   \
-                                                              #condition, __FILE__, __LINE__, \
-                                                              message __VA_OPT__(, __VA_ARGS__))
+#    define ACG_DEBUG_CHECK(condition, ...) ACG_CHECK(condition, __VA_ARGS__)
 #  else
 #    define ACG_DEBUG_CHECK(condition, message, ...) (condition)
 #  endif
 #endif
-
-#ifndef ACG_CHECK
-#  define ACG_CHECK(condition, message, ...)                                              \
-    acg::utils::details::make_assert_details<1>(static_cast<bool>(condition), #condition, \
-                                                __FILE__, __LINE__,                       \
-                                                message __VA_OPT__(, __VA_ARGS__))
-#endif
-
-

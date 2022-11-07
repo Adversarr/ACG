@@ -23,16 +23,16 @@ inline constexpr BuildType get_build_type() {
   }
 }
 
-enum class PlatformType {
+enum class PlatformType: int {
   kApple, kWin, kLinux
 };
 
 inline constexpr PlatformType get_platform_type() {
 #ifdef __APPLE__
   return PlatformType::kApple;
-#elifdef _WIN32
+#elif defined (_WIN32) 
   return PlatformType::kWin;
-#elifdef __linux__
+#elif defiend(__linux__)
   return PlatformType::kLinux;
 #endif
 }
