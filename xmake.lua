@@ -20,3 +20,5 @@ includes(
   'core',
   'vis'
 )
+
+includes('examples')

@@ -24,9 +24,3 @@ target('shaders')
   add_packages('glslang')
 target_end()
 
-target('acg_visualizer_exec')
-  set_default(true)
-  add_files('standalone/*.cpp')
-  add_deps('acg_visualizer')
-target_end()
-
