@@ -2,7 +2,6 @@
 
 #include <Eigen/Eigen>
 #include "../math.hpp"
-#include <co/fastring.h>
 
 namespace acg::geometry {
 

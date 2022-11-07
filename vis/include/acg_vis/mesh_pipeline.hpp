@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./renderer.hpp"
+#include "camera.hpp"
 
 namespace acg::visualizer::details {
 

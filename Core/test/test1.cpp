@@ -9,7 +9,6 @@
 #include <co/fastream.h>
 #include <co/fastring.h>
 
-
 namespace test {
 
 DEF_test(test1) {
@@ -27,6 +26,11 @@ DEF_test(test1) {
   DEF_case(cofastream) {
     fastream fs;
     fs.append('\n');
+  }
+}
+
+DEF_test(coost) {
+  DEF_case(logger) {
   }
 }
 

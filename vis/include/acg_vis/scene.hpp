@@ -4,7 +4,6 @@
 #include <acg_core/geometry/mesh.hpp>
 #include <acg_core/geometry/particlesystem.hpp>
 #include "acg_core/math.hpp"
-#include "acg_vis/camera.hpp"
 
 
 // libs
@@ -13,9 +12,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 
-#include "avk.hpp"
+#include <vulkan/vulkan.hpp>
 #include "buffer_def.hpp"
-#include "point_light.hpp"
+
+
 namespace acg::visualizer::details {
 
 /**

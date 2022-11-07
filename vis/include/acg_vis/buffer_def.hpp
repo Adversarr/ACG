@@ -5,8 +5,8 @@
 #ifndef ACG_BUFFER_DEF_HPP
 #define ACG_BUFFER_DEF_HPP
 #include <glm/glm.hpp>
-#include "avk.hpp"
-
+#include <vector>
+#include <vulkan/vulkan.hpp>
 namespace acg::visualizer {
 
 /**

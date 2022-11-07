@@ -1,8 +1,8 @@
 #include <vector>
 
 #include "acg_vis/scene.hpp"
-#include "acg_vis/avk.hpp"
 #include "acg_vis/buffer_def.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace acg::visualizer{
 

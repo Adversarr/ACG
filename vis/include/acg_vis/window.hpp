@@ -5,21 +5,20 @@
 
 #include <string>
 #include <tuple>
-
-#include "avk.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace acg::visualizer::details {
 
 class Window {
 public:
-  static constexpr int DEFAULT_WIDTH = 800;
+  static constexpr int DEFAULT_WIDTH_ = 800;
 
-  static constexpr int DEFAULT_HEIGHT = 600;
+  static constexpr int DEFAULT_HEIGHT_ = 600;
 
   explicit Window(std::string_view title) noexcept;
 
-  Window(Window&& ) = delete;
-  Window(const Window& ) = delete;
+  Window(Window&&) = delete;
+  Window(const Window&) = delete;
 
   ~Window() noexcept;
 
@@ -46,9 +45,9 @@ private:
 
   std::string title_{"Vulkan Visualizer"};
 
-  int width_{DEFAULT_WIDTH};
+  int width_{DEFAULT_WIDTH_};
 
-  int height_{DEFAULT_HEIGHT};
+  int height_{DEFAULT_HEIGHT_};
 
   bool resized_{false};
 };
@@ -57,10 +56,12 @@ inline bool Window::IsResized() const noexcept { return resized_; }
 
 void Window::ResetResizeFlag() noexcept { resized_ = false; }
 
-inline std::pair<uint32_t, uint32_t> Window::GetWindowSize() const noexcept { return {width_, height_}; }
+inline std::pair<uint32_t, uint32_t> Window::GetWindowSize() const noexcept {
+  return {width_, height_};
+}
 
 inline GLFWwindow* Window::GetWindow() const noexcept { return window_; }
 
 inline bool Window::ShouldClose() const { return glfwWindowShouldClose(window_); }
 
-}  // namespace acg::visualizer
+}  // namespace acg::visualizer::details

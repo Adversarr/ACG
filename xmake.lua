@@ -16,7 +16,6 @@ add_moduledirs('xmake')
 
 
 includes(
-  '3rdparty',
   'core',
   'vis'
 )

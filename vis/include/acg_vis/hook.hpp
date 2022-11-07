@@ -1,4 +1,5 @@
 #pragma once
+
 namespace acg::visualizer{
 
 namespace details {

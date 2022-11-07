@@ -3,10 +3,8 @@
 #include <acg_utils/acg_utils.hpp>
 #include <memory>
 #include <optional>
-#include "init.hpp"
 
-#include "avk.hpp"
-#include "camera.hpp"
+#include <vulkan/vulkan.hpp>
 #include "window.hpp"
 
 namespace acg::visualizer {

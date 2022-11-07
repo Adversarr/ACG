@@ -1,8 +1,6 @@
-#include "acg_vis/init.hpp"
-
 #include <acg_core/init.hpp>
 #include <acg_utils/singleton.hpp>
-
+#include "acg_vis/hook.hpp"
 #include "acg_vis/renderer.hpp"
 
 namespace acg::visualizer::details {

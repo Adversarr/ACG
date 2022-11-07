@@ -5,7 +5,6 @@
 #include <vector>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <co/fastream.h>
 
 #include <spdlog/spdlog.h>
 

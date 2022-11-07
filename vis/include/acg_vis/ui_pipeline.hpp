@@ -4,7 +4,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
-#include "avk.hpp"
+#include <vulkan/vulkan.hpp>
 #include "renderer.hpp"
 
 namespace acg::visualizer::details {

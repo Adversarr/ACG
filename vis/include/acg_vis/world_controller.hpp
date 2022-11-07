@@ -1,10 +1,11 @@
 #pragma once
 
-#include "mesh_pipeline.hpp"
-#include "renderer.hpp"
+#include <acg_core/core.hpp>
+#include <map>
+
 #include "ui_pipeline.hpp"
 
-namespace acg::visualizer{
+namespace acg::visualizer {
 
 class WorldCtrlUiOnly {
   using KeyType = int;
@@ -33,25 +34,25 @@ protected:
 
   /**
    * @brief this function is called before world loop start.
-   * 
+   *
    */
   virtual void PreRun();
 
   /**
    * @brief this function is called, after world loop ends.
-   * 
+   *
    */
   virtual void PostRun();
 
   /**
    * @brief This function render the scene use the mesh pipeline
-   * 
+   *
    */
   virtual std::vector<vk::CommandBuffer> DrawScene();
 
   /**
    * @brief This function is called whever swapchain is recreated.
-   * 
+   *
    */
   virtual void RecreateSwapchainCallback();
 
@@ -71,7 +72,7 @@ public:
 protected:
   /**
    * @brief Recreate Swapchain.
-   * 
+   *
    */
   void RecreateSwapchain();
 
@@ -95,7 +96,7 @@ private:
   F64 time_step_{.01};
 
   std::unique_ptr<details::UiPipeline> ui_ppl_{nullptr};
- 
+
   int frame_count_;
 
   // TODO: Support async physics run.

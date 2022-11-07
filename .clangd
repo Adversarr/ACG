@@ -3,3 +3,12 @@ Index:
 
 Completion:
   AllScopes: No
+
+Diagnostics:
+  UnusedIncludes: Strict
+
+Hover:
+  ShowAKA: Yes
+
+InlayHints:
+  Enabled: Yes

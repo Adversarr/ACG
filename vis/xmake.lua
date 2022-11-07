@@ -1,11 +1,14 @@
 local spv_home = '$(buildir)/shader/outputs/'
 
 
+
 add_requires("glslang", {configs = {binaryonly = true}})
 add_requires('glm', {system=false})
 add_requires('glfw')
 add_requires('coost')
 add_requires('vulkansdk', {system=true})
+add_requires('imgui', {configs = {glfw_vulkan = true}})
+
 
 target('acg_visualizer')
   set_kind('static')
