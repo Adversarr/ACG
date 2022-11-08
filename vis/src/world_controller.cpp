@@ -1,4 +1,3 @@
-#pragma once
 #include "acg_vis/world_controller.hpp"
 
 #include <spdlog/spdlog.h>

@@ -406,9 +406,7 @@ vk::CommandBuffer &MeshPipeline::EndRender() {
 void MeshPipeline::SetUbo(const Camera *camera, bool all_update) {
   auto extent = renderer_.GetSwapchainExtent();
   if (camera != nullptr) {
-    ubo_.model = camera->GetModel();
-    ubo_.view = camera->GetView();
-    ubo_.projection = camera->GetProjection(extent.width, extent.height);
+    ubo_.mvp = camera->GetProjection(extent.width, extent.height) * camera->GetView() * camera->GetModel();
     ubo_.eye_position = to_glm(camera->GetCPosition());
   }
 

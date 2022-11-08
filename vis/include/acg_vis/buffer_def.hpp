@@ -29,9 +29,7 @@ struct Vertex {
  *
  */
 struct Ubo {
- alignas(16) glm::mat4 model;
- alignas(16) glm::mat4 view;
- alignas(16) glm::mat4 projection;
+ alignas(16) glm::mat4 mvp;
  alignas(16) glm::vec3 eye_position;
  alignas(16) glm::vec4 ambient_light_color{1.f, 1.f, 1.f, .01f};  // w is intensity
  alignas(16) glm::vec3 light_color{1.0, 1.0, 1.0};

@@ -1,9 +1,7 @@
 #version 450
 
 layout(binding = 0) uniform UniformBufferObject {
-  mat4 model;
-  mat4 view;
-  mat4 projection;
+  mat4 mvp;
   vec3 eye_position;
   vec4 ambient_light_color;  // w is intensity
   vec3 light_color;
@@ -17,7 +15,7 @@ layout(location = 2) in vec3 normal;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-  vec4 frag_position = ubo.projection * ubo.view * ubo.model * vec4(inPosition, 1.0);
+  vec4 frag_position = ubo.mvp * vec4(inPosition, 1.0);
   gl_Position = frag_position;
 
   if (length(normal) < 1e-3) {
