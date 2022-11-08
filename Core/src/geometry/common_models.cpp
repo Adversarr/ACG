@@ -1,6 +1,5 @@
 #include "acg_core/geometry/common_models.hpp"
-
-namespace acg::models {
+namespace acg::geometry {
 
 TriangleMesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks, Idx n_slices) {
   auto n_faces = 2 * n_slices * n_stacks;

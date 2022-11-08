@@ -553,7 +553,8 @@ void VkContext::CreateSyncObjects() {
   }
 }
 
-VkContext::BufMem VkContext::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
+std::unique_ptr<VkContext::BufMem>
+VkContext::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
                                           vk::MemoryPropertyFlags properties) {
   vk::BufferCreateInfo buffer_info;
   buffer_info.size = size;
@@ -566,7 +567,7 @@ VkContext::BufMem VkContext::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFl
 
   auto mem = device_.allocateMemory(alloc_info);
   device_.bindBufferMemory(buf, mem, 0);
-  return BufMem(*this, buf, mem, size);
+  return std::make_unique<BufMem>(buf, mem, size);
 }
 
 uint32_t VkContext::FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties) {
@@ -744,7 +745,7 @@ bool VkContext::HasStencilComponent(vk::Format format) {
   return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
 }
 
-void VkContext::CopyHostToBuffer(const void *mem_data, BufMem buffer_with_memory, size_t size) {
+void VkContext::CopyHostToBuffer(const void *mem_data, BufMem& buffer_with_memory, size_t size) {
   auto *data = device_.mapMemory(buffer_with_memory.GetMemory(), 0, size);
   memcpy(data, mem_data, size);
   device_.unmapMemory(buffer_with_memory.GetMemory());
@@ -804,22 +805,33 @@ std::vector<vk::ImageView> VkContext::GetSwapchainImageviews() const {
 }
 const std::unique_ptr<Window> &VkContext::GetWindow() const { return window_; }
 
-VkContext::BufMem::BufMem(VkContext &renderer, vk::Buffer buffer, vk::DeviceMemory memory,
+VkContext::BufMem::BufMem(vk::Buffer buffer, vk::DeviceMemory memory,
                           vk::DeviceSize size)
-    : buffer_(buffer), memory_(memory), size_(size), renderer_(renderer) {}
+    : buffer_(buffer), memory_(memory), size_(size) {}
 
 vk::Buffer VkContext::BufMem::GetBuffer() { return buffer_; }
 
 vk::DeviceMemory VkContext::BufMem::GetMemory() { return memory_; }
 
+VkContext::BufMem::BufMem(BufMem && m) {
+  buffer_ = m.buffer_; m.buffer_ = nullptr;
+  memory_ = m.memory_; m.memory_ = nullptr;
+  size_ = m.size_; m.size_ = 0;
+}
+
+
+VkContext::BufMem::~BufMem() {
+  Release();
+}
+
 void VkContext::BufMem::Release() {
   if (buffer_) {
-    renderer_.GetDevice().destroy(buffer_);
+    get_vk_context().GetDevice().destroy(buffer_);
     buffer_ = VK_NULL_HANDLE;
   }
 
   if (memory_) {
-    renderer_.GetDevice().free(memory_);
+    get_vk_context().GetDevice().free(memory_);
     memory_ = VK_NULL_HANDLE;
   }
 }

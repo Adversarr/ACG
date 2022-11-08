@@ -70,6 +70,7 @@ public:
 
   void RunAsync();
 
+  WorldCtrlUiOnly& Init();
 protected:
   /**
    * @brief Recreate Swapchain.
@@ -84,14 +85,12 @@ protected:
   vk::CommandBuffer DrawUI();
 
   void ProcessInput();
+private:
+
+  void CleanUp();
 
 protected:
   bool ui_only_mode_{true};
-
-private:
-  void Init();
-
-  void CleanUp();
 
   // Physical Time step in second.
   F64 time_step_{.01};

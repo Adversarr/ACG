@@ -15,7 +15,7 @@ void init() {
   sort();
   for (const auto& cb : global_hooks) {
     if (cb.on_init) {
-      if (cb.name) spdlog::info("Initialize hook: {}", cb.name);
+      if (cb.name) spdlog::info("Run initialize hook: {}", cb.name);
       cb.on_init.value()();
     }
   }
@@ -24,7 +24,7 @@ void init() {
 void cleanup() {
   for (const auto& cb : global_hooks) {
     if (cb.on_exit) {
-      if (cb.name) spdlog::info("Initialize hook: {}", cb.name);
+      if (cb.name) spdlog::info("Run cleanup hook: {}", cb.name);
       cb.on_exit.value()();
     }
   }

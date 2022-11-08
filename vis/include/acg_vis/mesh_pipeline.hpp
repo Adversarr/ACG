@@ -13,7 +13,7 @@ public:
 
   void RecreateSwapchain();
 
-  void SetCamera(const Camera& cam, bool all_update = false);
+  void SetCamera(const Camera* cam, bool all_update = false);
 
   /**
    * @brief Begin render pass, and return the command buffer in use.
@@ -81,7 +81,7 @@ private:
   vk::PipelineLayout pipeline_layout_;
   vk::Pipeline graphics_pipeline_;
 
-  std::vector<VkContext::BufMem> uniform_buffers_;  // Uniform Buffer Memories.
+  std::vector<std::unique_ptr<VkContext::BufMem>> uniform_buffers_;  // Uniform Buffer Memories.
   vk::DescriptorPool descriptor_pool_;
   vk::DescriptorSetLayout descriptor_set_layout_;
   std::vector<vk::DescriptorSet> descriptor_sets_;
@@ -89,6 +89,8 @@ private:
   VkContext& renderer_;
   vk::CommandPool command_pool_;
   std::vector<vk::CommandBuffer> command_buffers_;
+
+  Ubo ubo_;
 };
 
 class MeshPipeline::Builder {
@@ -116,9 +118,9 @@ public:
     return *this;
   }
 
-  inline std::unique_ptr<MeshPipeline> Build(VkContext& renderer) const {
+  inline std::unique_ptr<MeshPipeline> Build() const {
     auto retval = std::unique_ptr<MeshPipeline>(
-        new MeshPipeline(renderer, is_dst_present_, polygon_mode_, cull_mode_, front_face_));
+        new MeshPipeline(get_vk_context(), is_dst_present_, polygon_mode_, cull_mode_, front_face_));
     retval->Init();
     return retval;
   }

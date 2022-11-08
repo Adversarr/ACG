@@ -2,7 +2,6 @@
 
 #include <fmt/format.h>
 #include <iostream>
-#include "acg_utils.hpp"
 
 
 #ifndef ACG_IS_DEBUG
@@ -44,11 +43,12 @@ template <int valid, typename... T> void make_assert_details(bool value, const c
   do { \
     bool retval = static_cast<bool>(condition); \
     if (!retval) {\
-    auto msg = fmt::format(__VA_ARGS__);\
-    std::cerr << "Assertion(" << #condition << ") Failed: " << msg << std::endl;\
-    std::cerr << "Occurs at " << __FILE__ << ":" << __LINE__ << std::endl;\
-    std::cerr.flush();\
-  }} while (false)
+      auto msg = fmt::format(__VA_ARGS__);\
+      std::cerr << "Assertion(" << #condition << ") Failed: " << msg << std::endl;\
+      std::cerr << "Occurs at " << __FILE__ << ":" << __LINE__ << std::endl;\
+      std::cerr.flush();\
+    }\
+  } while (false)
 #endif
 
 

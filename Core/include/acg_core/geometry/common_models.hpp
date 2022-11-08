@@ -2,7 +2,7 @@
 #include "mesh.hpp"
 #include "../math.hpp"
 
-namespace acg::models {
+namespace acg::geometry {
 
 using geometry::TriangleMesh;
 

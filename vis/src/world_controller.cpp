@@ -137,20 +137,22 @@ void WorldCtrlUiOnly::RunUiImpl() {
   ImGui::End();
 }
 
-void WorldCtrlUiOnly::Init() {
+WorldCtrlUiOnly& WorldCtrlUiOnly::Init() {
   InitCallback();
   // Initialize the Ui Pipeline
   auto ptr = details::UiPipeline::Builder().SetIsUIOnly(ui_only_mode_).Build();
   ui_ppl_.swap(ptr);
+  return *this;
 }
 
 WorldCtrlUiOnly::WorldCtrlUiOnly() {
-  // RAII, init everything.
-  Init();
+  ACG_DEBUG_LOG("World Created.");
 }
 
 WorldCtrlUiOnly::~WorldCtrlUiOnly() { CleanUp(); }
 
-void WorldCtrlUiOnly::RunPhysics() {}
+void WorldCtrlUiOnly::RunPhysics() {
+  RunPhysicsImpl(time_step_);
+}
 
 }  // namespace acg::visualizer

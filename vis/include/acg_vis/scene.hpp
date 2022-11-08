@@ -16,27 +16,7 @@
 #include "buffer_def.hpp"
 
 
-namespace acg::visualizer::details {
-
-/**
- * @brief An valid mesh for rendering.
- * 
- */
-class VertIdxBuffer {
-public:
-  vk::DeviceSize GetRequiredVertexBufferSize() const;
-
-  vk::DeviceSize GetRequiredIndexBufferSize() const;
-
-  // TODO: Binding Function.
-  // TODO: VertIdxBuffer& AppendVertex();
-  // TODO: VertIdxBuffer& AppendIdx();
-
-private:
-  std::vector<Vertex> vertices;
-
-  std::vector<Idx> indices;
-};
+namespace acg::visualizer {
 
 class Scene {
   // todo: add marching cube support.
@@ -53,7 +33,7 @@ public:
    * @param mesh 
    * @param color
    */
-  void AddMesh(const geometry::TriangleMesh<F32>& mesh,
+  Scene& AddMesh(const geometry::TriangleMesh<F32>& mesh,
     Vec3f color);
 
   /**
@@ -62,14 +42,24 @@ public:
    * @param mesh 
    * @param color_per_vertex 
    */
-  void AddColoredMesh(const geometry::TriangleMesh<F32> & mesh, 
+  Scene& AddColoredMesh(const geometry::TriangleMesh<F32> & mesh, 
     Eigen::MatrixX3<F32> color_per_vertex);
 
-  // TODO: void AddParticleSystem(const )
   Scene& AddParticleSystem(const geometry::ParticleSystem<F32>& ps);
 
+  vk::DeviceSize GetRequiredVertexBufferSize() const;
+
+  vk::DeviceSize GetRequiredIndexBufferSize() const;
+
+  const std::vector<Vertex>& GetVertices() const;
+
+  const std::vector<Idx>& GetIndices() const;
+
+
 private:
-  VertIdxBuffer meshes_;
+  std::vector<Vertex> vertices_;
+
+  std::vector<Idx> indices_;
 };
 
 

@@ -1,3 +1,6 @@
 target('ui_only_world')
   add_files('ui_only_world/**.cpp')
   add_deps('acg_visualizer')
+target('nbody')
+  add_files('nbody/**.cpp')
+  add_deps('acg_visualizer', 'acg_core')

@@ -2,7 +2,7 @@ set_config('plat', os.host())
 
 set_project('ACG')
 
-set_languages('cxx20')
+set_languages('cxx17')
 
 set_warnings('all') -- -Wall
 

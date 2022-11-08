@@ -1,7 +1,8 @@
 #include "acg_vis/mesh_pipeline.hpp"
 
-#include <fstream>
 #include <spdlog/spdlog.h>
+
+#include <fstream>
 
 #include "acg_utils/log.hpp"
 
@@ -21,11 +22,9 @@ static std::vector<char> read_file(std::string path) {
 
 namespace acg::visualizer::details {
 
-MeshPipeline::MeshPipeline(VkContext &renderer, bool is_present,
-    vk::PolygonMode polygon,
-    vk::CullModeFlags cull,
-    vk::FrontFace front)
-    : is_dst_present_(is_present), 
+MeshPipeline::MeshPipeline(VkContext &renderer, bool is_present, vk::PolygonMode polygon,
+                           vk::CullModeFlags cull, vk::FrontFace front)
+    : is_dst_present_(is_present),
       polygon_mode_(polygon),
       cull_mode_(cull),
       front_face_(front),
@@ -276,7 +275,7 @@ void MeshPipeline::CreateUniformBuffers() {
         buffer_size, vk::BufferUsageFlagBits::eUniformBuffer,
         vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
-    uniform_buffers_.emplace_back(buffer);
+    uniform_buffers_.emplace_back(std::move(buffer));
   }
 }
 void MeshPipeline::CreateCommandBuffers() {
@@ -309,7 +308,7 @@ void MeshPipeline::CreateDescriptorSets() {
 
   for (size_t i = 0; i < renderer_.GetSwapchainSize(); ++i) {
     vk::DescriptorBufferInfo buffer_info;
-    buffer_info.setBuffer(uniform_buffers_[i].GetBuffer()).setOffset(0).setRange(sizeof(Ubo));
+    buffer_info.setBuffer(uniform_buffers_[i]->GetBuffer()).setOffset(0).setRange(sizeof(Ubo));
     vk::WriteDescriptorSet desc_write;
     desc_write.setDstSet(descriptor_sets_[i])
         .setDstBinding(0)
@@ -322,13 +321,13 @@ void MeshPipeline::CreateDescriptorSets() {
 }
 
 void MeshPipeline::Cleanup() {
-  if (! is_inited_) {
+  if (!is_inited_) {
     return;
   }
   CleanupSwapchain();
   auto device = renderer_.GetDevice();
   for (auto &buf : uniform_buffers_) {
-    buf.Release();
+    buf->Release();
   }
   uniform_buffers_.clear();
   device.destroy(pipeline_layout_);
@@ -376,9 +375,9 @@ vk::CommandBuffer &MeshPipeline::BeginRender() {
   render_pass_info.renderArea.extent = extent;
   render_pass_info.renderArea.offset.setX(0);
   render_pass_info.renderArea.offset.setY(0);
-  render_pass_info.setClearValues(clear_value); 
+  render_pass_info.setClearValues(clear_value);
   current_command_buffer.beginRenderPass(render_pass_info, vk::SubpassContents::eInline);
-  
+
   // Bind Pipeline
   current_command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphics_pipeline_);
   // Setup Viewport and scissor.
@@ -386,7 +385,7 @@ vk::CommandBuffer &MeshPipeline::BeginRender() {
   current_command_buffer.setViewport(0, viewport);
   vk::Rect2D scissor{{0, 0}, extent};
   current_command_buffer.setScissor(0, scissor);
-  
+
   // Bind UBO inline.
   current_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout_, 0,
                                             descriptor_sets_[renderer_.GetCurrentIndex()], {});
@@ -394,8 +393,7 @@ vk::CommandBuffer &MeshPipeline::BeginRender() {
   return current_command_buffer;
 }
 
-
-vk::CommandBuffer& MeshPipeline::EndRender() {
+vk::CommandBuffer &MeshPipeline::EndRender() {
   ACG_CHECK(is_render_pass_begin_, "Render pass has not begin.");
   auto &current_command_buffer = command_buffers_[renderer_.GetCurrentIndex()];
   current_command_buffer.endRenderPass();
@@ -404,28 +402,25 @@ vk::CommandBuffer& MeshPipeline::EndRender() {
   return current_command_buffer;
 }
 
-void MeshPipeline::SetCamera(const Camera &camera, bool all_update) {
+void MeshPipeline::SetCamera(const Camera *camera, bool all_update) {
   auto extent = renderer_.GetSwapchainExtent();
-  //TODO: Ubo should be updated explicitely,
-  Ubo ubo{};
-  ubo.model = camera.GetModel();
-  ubo.view = camera.GetView();
-  ubo.projection = camera.GetProjection(extent.width, extent.height);
-  ubo.eye_position = camera.GetPosition();
+  if (camera != nullptr) {
+    ubo_.model = camera->GetModel();
+    ubo_.view = camera->GetView();
+    ubo_.projection = camera->GetProjection(extent.width, extent.height);
+    ubo_.eye_position = camera->GetPosition();
+  }
+
+
   if (all_update) {
-    for (auto ub: uniform_buffers_) {
-      renderer_.CopyHostToBuffer(&ubo, ub, sizeof(ubo));
+    for (auto &ub : uniform_buffers_) {
+      renderer_.CopyHostToBuffer(&ubo_, *ub, sizeof(ubo_));
     }
   } else {
-    renderer_.CopyHostToBuffer(&ubo, uniform_buffers_[renderer_.GetCurrentIndex()], sizeof(ubo));
+    renderer_.CopyHostToBuffer(&ubo_, *uniform_buffers_[renderer_.GetCurrentIndex()], sizeof(Ubo));
   }
 }
 
-
-MeshPipeline::~MeshPipeline(){
-  Cleanup();
-}
-
-
+MeshPipeline::~MeshPipeline() { Cleanup(); }
 
 }  // namespace acg::visualizer::details

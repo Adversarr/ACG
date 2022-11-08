@@ -35,13 +35,15 @@ class VkContext {
 public:
   class BufMem {
   public:
-    BufMem(VkContext& renderer, vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize size);
-    BufMem(const BufMem&) = default;  // disable copy
-    BufMem(BufMem&&) = default;       // enable  move
+    BufMem(vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize size);
+    BufMem(const BufMem&) = delete;  // disable copy
+    BufMem(BufMem&&);       // enable  move
+    ~BufMem();
 
     vk::Buffer GetBuffer();
 
     vk::DeviceSize GetSize() const;
+
     vk::DeviceMemory GetMemory();
 
     void Release();
@@ -49,8 +51,7 @@ public:
   private:
     vk::Buffer buffer_{VK_NULL_HANDLE};
     vk::DeviceMemory memory_{VK_NULL_HANDLE};
-    vk::DeviceSize size_;
-    VkContext& renderer_;
+    vk::DeviceSize size_{0};
   };
 
   struct Builder {
@@ -240,7 +241,7 @@ public:
    * @param properties
    * @return Renderer::BufMem
    */
-  VkContext::BufMem CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
+  std::unique_ptr<VkContext::BufMem> CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
                                  vk::MemoryPropertyFlags properties);
 
   void DestroyBufmem(BufMem& bufmem);
@@ -252,7 +253,7 @@ public:
    * @param buffer_with_memory
    * @param size
    */
-  void CopyHostToBuffer(const void* mem_data, BufMem buffer_with_memory, size_t size);
+  void CopyHostToBuffer(const void* mem_data, BufMem& buffer_with_memory, size_t size);
 
   /**
    * @brief Try to begin draw.
