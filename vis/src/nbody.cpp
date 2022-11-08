@@ -58,8 +58,8 @@ void NBodySim::CleanUp() {
 void NBodySim::PreRun() {
   F64 r = 3;
   for (int i = 0; i < n_; ++i) {
-    Vec3f center{0, r * sin(2.0 * i / n_ * acg::constants::pi<F32>),
-                 r * cos(2.0 * i / n_ * acg::constants::pi<F32>)};
+    Vec3f center(0, r * sin(2.0 * i / n_ * acg::constants::pi<F32>),
+                 r * cos(2.0 * i / n_ * acg::constants::pi<F32>));
     Vec3f color = 0.5f * (Vec3f::Random() + Vec3f::Ones());
 
     particles_.push_back(P64(center.cast<F64>(), .2));

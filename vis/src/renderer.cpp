@@ -775,7 +775,7 @@ bool VkContext::EndDrawSubmitPresent(std::vector<vk::CommandBuffer> command_buff
       .setSwapchains(swapchain_)
       .setPImageIndices(&current_image_index_);
 
-  auto result = present_queue_.presentKHR(present_info);
+  auto result = present_queue_.presentKHR(&present_info);
   bool need_recreate_swapchain{false};
   if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR
       || window_->IsResized()) {
