@@ -1,11 +1,11 @@
 #include "acg_core/geometry/common_models.hpp"
 namespace acg::geometry {
 
-TriangleMesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks, Idx n_slices) {
+Mesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks, Idx n_slices) {
   auto n_faces = 2 * n_slices * n_stacks;
   auto n_vertices = 2 + n_slices * n_stacks;
-  TriangleMesh<F32>::VerticeListType vertices(3, n_vertices);
-  TriangleMesh<F32>::IndexListType indices(3, n_faces);
+  Mesh<F32>::StateType vertices(3, n_vertices);
+  Mesh<F32>::FaceListType indices(3, n_faces);
 
   // 1. fill the vertices
   // north pole
@@ -51,13 +51,13 @@ TriangleMesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks, Idx n_slices
       indices.col(face_idx++) = Vec3Idx{left_bottom, right_bottom, right_top};
     }
   }
-  return TriangleMesh<F32>{vertices, indices};
+  return Mesh<F32>{vertices, indices};
 }
 
 
-TriangleMesh<F32> sphere_20(Vec3f center, F32 radius) {
-  TriangleMesh<F32>:: VerticeListType vertices(3, 12);
-  TriangleMesh<F32>::IndexListType indices(3, 20);
+Mesh<F32> sphere_20(Vec3f center, F32 radius) {
+  Mesh<F32>:: StateType vertices(3, 12);
+  Mesh<F32>::FaceListType indices(3, 20);
   float t = 0.5 * (1 + sqrt(5.0));
   int i = 0;
   vertices.col(i++) = Vec3f(-1, t, 0);
@@ -72,7 +72,7 @@ TriangleMesh<F32> sphere_20(Vec3f center, F32 radius) {
   vertices.col(i++) = Vec3f(t, 0, 1);
   vertices.col(i++) = Vec3f(-t, 0, -1);
   vertices.col(i++) = Vec3f(-t, 0, 1);
-  vertices *= radius;
+  vertices *= radius / sqrt(1.0 + t * t);
   vertices.colwise() += center;
   int ni = 0;
   indices.col(ni++) = Vec3Idx(0, 11, 5);

@@ -1,7 +1,7 @@
 #pragma once
 #include "../core.hpp"
 #include <Eigen/Eigen>
-
+#include <type_traits>
 
 
 namespace acg::geometry {
@@ -11,24 +11,26 @@ namespace acg::geometry {
  *
  * @tparam T the float point number in use. default = float (32-bit)
  */
-template <typename T = F32> class TriangleMesh {
+template <typename T = F32> class Mesh {
 public:
   using VerticeType = Eigen::Vector3<T>;
-  using VerticeListType = Eigen::Matrix<T, 3, Eigen::Dynamic, Eigen::ColMajor>;
+
+  using StateType = Eigen::Matrix<T, 3, Eigen::Dynamic, Eigen::ColMajor>;
+
   using FaceIndexType = Eigen::Vector3<Idx>;
-  using IndexListType = Eigen::Matrix<
+
+  using FaceListType = Eigen::Matrix<
       /* ElemType */ Idx,
       /* #Rows */ 3,
       /* #Cols */ Eigen::Dynamic,
       /* Layout */ Eigen::ColMajor>;
-
   /**
    * @brief Construct a new Triangle Mesh object, the vertices and indices will be checked.
    *
    * @param vert
    * @param indi
    */
-  TriangleMesh(const VerticeListType& vert, const IndexListType& indi);
+  Mesh(const StateType& vert, const FaceListType& indi);
 
   /**
    * @brief Construct a triangle mesh object, with no vertices and indices initialized. Will return
@@ -36,13 +38,13 @@ public:
    *
    * @warning Double Check if you really need this constructor.
    */
-  TriangleMesh() = default;
+  Mesh() = default;
 
   /**
    * @brief Enable Copy Constructor
    * 
    */
-  TriangleMesh(const TriangleMesh&) = default;
+  Mesh(const Mesh&) = default;
 
   /**
    * @brief Get the #Vertices
@@ -58,9 +60,9 @@ public:
    */
   inline Idx GetNumEdges() const;
 
-  inline const VerticeListType& GetVertices() const;
+  inline const StateType& GetVertices() const;
 
-  inline const IndexListType& GetIndices() const;
+  inline const FaceListType& GetIndices() const;
 
 private:
   Idx num_vertices_{0};
@@ -68,28 +70,28 @@ private:
   Idx num_edges_{0};
 
   // Mesh should be column major, AoS layout.
-  VerticeListType vertices_;
+  StateType vertices_;
 
   // the same for indice.
-  IndexListType indices_;
+  FaceListType faces_;
 
 };
 
 template<typename T> 
-const typename TriangleMesh<T>::VerticeListType& TriangleMesh<T>::GetVertices() const {
+const typename Mesh<T>::StateType& Mesh<T>::GetVertices() const {
   return vertices_;
 }
 
 
 template<typename T> 
-const typename TriangleMesh<T>::IndexListType& TriangleMesh<T>::GetIndices() const {
-  return indices_;
+const typename Mesh<T>::FaceListType& Mesh<T>::GetIndices() const {
+  return faces_;
 }
 
 template<typename T>
-TriangleMesh<T>::TriangleMesh(const VerticeListType& vertices, const IndexListType& indices) :
+Mesh<T>::Mesh(const StateType& vertices, const FaceListType& indices) :
   vertices_(vertices),
-  indices_(indices) { }
+  faces_(indices) { }
 
 
 

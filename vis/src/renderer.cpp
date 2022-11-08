@@ -13,7 +13,6 @@
 #include <fstream>
 #include <vulkan/vulkan_handles.hpp>
 
-
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
     VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
     const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pMessenger) {
@@ -81,19 +80,20 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_message_callback(
           cstr_to_string(pCallbackData->pObjects[i].pObjectName));
     }
   }
+  auto s = fmt::to_string(buffer);
 
   switch (messageSeverity) {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-      spdlog::error("{}", buffer.data());
+      spdlog::error("{}", s);
       break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-      spdlog::warn("{}", buffer.data());
+      spdlog::warn("{}", s);
       break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-      spdlog::info("{}", buffer.data());
+      spdlog::info("{}", s);
       break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-      spdlog::debug("{}", buffer.data());
+      spdlog::debug("{}", s);
       break;
     default:
       // Not valid bit.
@@ -384,7 +384,7 @@ std::unique_ptr<VkContext> VkContext::Builder::Build() const {
   inst->enable_validation_ = enable_validation;
   inst->swapchain_size_ = swapchain_size;
   inst->Init();
-  utils::Singleton<VkContext>::Init(move(inst));
+  utils::Singleton<VkContext>::Init(std::move(inst));
   return inst;
 }
 
@@ -433,12 +433,20 @@ vk::PresentModeKHR VkContext::ChooseSwapPresentMode(const std::vector<vk::Presen
       break;
     }
 
-    if (mode == vk::PresentModeKHR::eImmediate) {
-      best = mode;
-    }
+    // NOTE: Immediate mode leads to visiable tearing
+    //
+    // if (mode == vk::PresentModeKHR::eImmediate) {
+    //   best = mode;
+    // }
   }
   if (best != vk::PresentModeKHR::eMailbox) {
-    spdlog::warn("Not using mailbox present mode, now: {}", vk::to_string(best));
+    fmt::memory_buffer buffer;
+    for (const auto &mode : modes) {
+      fmt::format_to(std::back_inserter(buffer), "{} ", vk::to_string(mode));
+    }
+
+    spdlog::warn("Not using mailbox present mode, now: {}, available: {}", vk::to_string(best), 
+                 fmt::to_string(buffer));
   } else {
     spdlog::info("Present Mode: {}", vk::to_string(best));
   }
@@ -548,14 +556,14 @@ void VkContext::CreateSyncObjects() {
 
   for (size_t i = 0; i < swapchain_size_; ++i) {
     semaphores_.emplace_back(RenderSyncObjects{device_.createSemaphore(semaphore_info),
-                             device_.createSemaphore(semaphore_info),
-                             device_.createFence(fence_info)});
+                                               device_.createSemaphore(semaphore_info),
+                                               device_.createFence(fence_info)});
   }
 }
 
-std::unique_ptr<VkContext::BufMem>
-VkContext::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
-                                          vk::MemoryPropertyFlags properties) {
+std::unique_ptr<VkContext::BufMem> VkContext::CreateBuffer(vk::DeviceSize size,
+                                                           vk::BufferUsageFlags usage,
+                                                           vk::MemoryPropertyFlags properties) {
   vk::BufferCreateInfo buffer_info;
   buffer_info.size = size;
   buffer_info.usage = usage;
@@ -745,7 +753,7 @@ bool VkContext::HasStencilComponent(vk::Format format) {
   return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
 }
 
-void VkContext::CopyHostToBuffer(const void *mem_data, BufMem& buffer_with_memory, size_t size) {
+void VkContext::CopyHostToBuffer(const void *mem_data, BufMem &buffer_with_memory, size_t size) {
   auto *data = device_.mapMemory(buffer_with_memory.GetMemory(), 0, size);
   memcpy(data, mem_data, size);
   device_.unmapMemory(buffer_with_memory.GetMemory());
@@ -805,24 +813,23 @@ std::vector<vk::ImageView> VkContext::GetSwapchainImageviews() const {
 }
 const std::unique_ptr<Window> &VkContext::GetWindow() const { return window_; }
 
-VkContext::BufMem::BufMem(vk::Buffer buffer, vk::DeviceMemory memory,
-                          vk::DeviceSize size)
+VkContext::BufMem::BufMem(vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize size)
     : buffer_(buffer), memory_(memory), size_(size) {}
 
 vk::Buffer VkContext::BufMem::GetBuffer() { return buffer_; }
 
 vk::DeviceMemory VkContext::BufMem::GetMemory() { return memory_; }
 
-VkContext::BufMem::BufMem(BufMem && m) {
-  buffer_ = m.buffer_; m.buffer_ = nullptr;
-  memory_ = m.memory_; m.memory_ = nullptr;
-  size_ = m.size_; m.size_ = 0;
+VkContext::BufMem::BufMem(BufMem &&m) {
+  buffer_ = m.buffer_;
+  m.buffer_ = nullptr;
+  memory_ = m.memory_;
+  m.memory_ = nullptr;
+  size_ = m.size_;
+  m.size_ = 0;
 }
 
-
-VkContext::BufMem::~BufMem() {
-  Release();
-}
+VkContext::BufMem::~BufMem() { Release(); }
 
 void VkContext::BufMem::Release() {
   if (buffer_) {

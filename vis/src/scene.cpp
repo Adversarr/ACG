@@ -1,9 +1,10 @@
 #include "acg_vis/scene.hpp"
-#include "acg_vis/convent.hpp"
+
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
 #include "acg_vis/buffer_def.hpp"
+#include "acg_vis/convent.hpp"
 
 namespace acg::visualizer {
 
@@ -49,23 +50,49 @@ const std::vector<Vertex>& Scene::GetVertices() const { return vertices_; }
 
 const std::vector<Idx>& Scene::GetIndices() const { return indices_; }
 
-Scene& Scene::AddMesh(const geometry::TriangleMesh<F32>& mesh, Vec3f color) {
+Scene& Scene::AddMesh(const geometry::Mesh<F32>& mesh, Vec3f color) {
   int beg = vertices_.size();
   vertices_.reserve(vertices_.size() + mesh.GetVertices().size());
-  for(Vec3f vert : mesh.GetVertices().colwise()) {
+  for (Vec3f vert : mesh.GetVertices().colwise()) {
     Vertex v;
     v.position = to_glm(vert);
     v.color = to_glm(color);
     v.normal = glm::vec3(0);
     vertices_.push_back(v);
   }
-  for (const auto& i: mesh.GetIndices().colwise()) {
+  for (const auto& i : mesh.GetIndices().colwise()) {
     indices_.push_back(i.x() + beg);
     indices_.push_back(i.y() + beg);
     indices_.push_back(i.z() + beg);
   }
 
   return *this;
+}
+
+Scene& Scene::AddMesh(const geometry::Mesh<F32>& mesh,
+                      const geometry::Mesh<F32>::StateType& normal, Vec3f color) {
+  int beg = vertices_.size();
+  vertices_.reserve(vertices_.size() + mesh.GetVertices().size());
+  int i = 0;
+  for (Vec3f vert : mesh.GetVertices().colwise()) {
+    Vertex v;
+    v.position = to_glm(vert);
+    v.color = to_glm(color);
+    v.normal = to_glm(Vec3f(normal.col(i)));
+    vertices_.push_back(v);
+    i++;
+  }
+  for (const auto& i : mesh.GetIndices().colwise()) {
+    indices_.push_back(i.x() + beg);
+    indices_.push_back(i.y() + beg);
+    indices_.push_back(i.z() + beg);
+  }
+  return *this;
+}
+
+void Scene::Reset() {
+  vertices_.clear();
+  indices_.clear();
 }
 
 }  // namespace acg::visualizer

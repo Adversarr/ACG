@@ -31,4 +31,5 @@ inline Vec4f to_eigen(glm::vec4 v) {
   return {v.x, v.y, v.z, v.w};
 }
 
+
 }

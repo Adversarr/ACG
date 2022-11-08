@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include "acg_utils/log.hpp"
+#include "acg_vis/convent.hpp"
 
 static std::vector<char> read_file(std::string path) {
   std::ifstream input_file{path, std::ios::ate | std::ios::binary};
@@ -402,13 +403,13 @@ vk::CommandBuffer &MeshPipeline::EndRender() {
   return current_command_buffer;
 }
 
-void MeshPipeline::SetCamera(const Camera *camera, bool all_update) {
+void MeshPipeline::SetUbo(const Camera *camera, bool all_update) {
   auto extent = renderer_.GetSwapchainExtent();
   if (camera != nullptr) {
     ubo_.model = camera->GetModel();
     ubo_.view = camera->GetView();
     ubo_.projection = camera->GetProjection(extent.width, extent.height);
-    ubo_.eye_position = camera->GetPosition();
+    ubo_.eye_position = to_glm(camera->GetCPosition());
   }
 
 

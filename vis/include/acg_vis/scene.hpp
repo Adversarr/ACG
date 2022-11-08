@@ -33,16 +33,19 @@ public:
    * @param mesh 
    * @param color
    */
-  Scene& AddMesh(const geometry::TriangleMesh<F32>& mesh,
+  Scene& AddMesh(const geometry::Mesh<F32>& mesh,
     Vec3f color);
 
+  Scene& AddMesh(const geometry::Mesh<F32>& mesh,
+                 const geometry::Mesh<F32>::StateType& normal,
+                 Vec3f color);
   /**
    * @brief add a given triangle mesh to the scene, with given color map.
    * 
    * @param mesh 
    * @param color_per_vertex 
    */
-  Scene& AddColoredMesh(const geometry::TriangleMesh<F32> & mesh, 
+  Scene& AddColoredMesh(const geometry::Mesh<F32> & mesh, 
     Eigen::MatrixX3<F32> color_per_vertex);
 
   Scene& AddParticleSystem(const geometry::ParticleSystem<F32>& ps);
@@ -60,6 +63,7 @@ private:
   std::vector<Vertex> vertices_;
 
   std::vector<Idx> indices_;
+
 };
 
 

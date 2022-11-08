@@ -79,7 +79,7 @@ protected:
   void RecreateSwapchain();
 
   void RunPhysics();
-
+  
   void RunDraw();
 
   vk::CommandBuffer DrawUI();
@@ -90,7 +90,11 @@ private:
   void CleanUp();
 
 protected:
+  // Ui Pipeline is the only pipeline.
   bool ui_only_mode_{true};
+
+  // FPS Limitation, 0 indicates no limit.
+  uint32_t fps_limit_{30};
 
   // Physical Time step in second.
   F64 time_step_{.01};
@@ -101,8 +105,6 @@ protected:
 
   // TODO: Support async physics run.
   bool is_async_{false};
-
-  uint32_t fps_limit_{60};
 
   // Indicate the world is still running.
   bool is_running_{false};

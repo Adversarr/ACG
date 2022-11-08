@@ -1,9 +1,10 @@
 #pragma once
-#include "scene.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
+
+#include <acg_core/math.hpp>
 
 namespace acg::visualizer {
 
@@ -12,37 +13,43 @@ public:
   explicit Camera() = default;
 
   glm::mat4 GetView() const;
-  glm::mat4 GetProjection(float width, float height, bool inverted_y_axis=true) const;
+
+  // Get the projection matrix, you should set inverted_y_axis to true, if you are using vulkan
+  // backend.
+  glm::mat4 GetProjection(float width, float height, bool inverted_y_axis = true) const;
+
   glm::mat4 GetModel() const;
-  glm::vec3 GetPosition() const;
 
-  glm::vec3 GetFront() const;
-  // TODO: add camera movement handles.
-  void Move(glm::vec3 direction, F32 dt);
-  
+  Vec3f &GetPosition();
 
-  void SetPosition(glm::vec3 position);
-  
-  /**
-   * @brief Set the front direction for the camera
-  */
-  void SetFrontDirection(glm::vec3 front);
+  const Vec3f &GetCPosition() const;
+
+  const Vec3f &GetCFront() const;
+
+  Vec3f &GetFront();
+
+  void Move(glm::vec3 direction, F64 dt);
+
+  // Set the position of the camera. Returns true, if readlly changed.
+  bool SetPosition(glm::vec3 position);
+
+  // Set the front direction of the camera. Returns true, if really changed.
+  bool SetFront(glm::vec3 front);
 
 private:
   // Extra Rotation/transform applied to each model.
-  glm::vec3 model_rotate_axis_{0.0f, 0.0f, 1.0f};
-  float model_rotate_angle_{0.0f};
-  
-  glm::vec3 position_{3.0f, 0.0f, 1.0f};
-  
-  glm::vec3 front_{-3.0f, 0.0f, -1.0f};
+  Vec3f model_rotate_axis_{0.0f, 0.0f, 1.0f};
 
-  // Up is always the positive direction of z-axis
-  glm::vec3 up_{0.0f, 0.0f, 1.0f};
+  float model_rotate_angle_{0.0f};
+
+  Vec3f position_{3.0f, 0.0f, 1.0f};
+
+  Vec3f front_{-3.0f, 0.0f, -1.0f};
+
+  Vec3f up_{0.0f, 0.0f, 1.0f};
+
   float fov_{45.0};
   float near_{0.1f};
-  float far_{10.0f};
-
-  glm::vec3 velocity_;
+  float far_{100.0f};
 };
-}
+}  // namespace acg::visualizer
