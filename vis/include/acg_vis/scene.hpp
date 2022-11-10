@@ -48,7 +48,8 @@ public:
   Scene& AddColoredMesh(const geometry::Mesh<F32> & mesh, 
     Eigen::MatrixX3<F32> color_per_vertex);
 
-  Scene& AddParticleSystem(const geometry::ParticleSystem<F32>& ps);
+  Scene& AddParticle(Vec3f center, F32 radius, Vec3f color);
+
 
   vk::DeviceSize GetRequiredVertexBufferSize() const;
 

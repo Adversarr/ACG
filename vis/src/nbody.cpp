@@ -62,7 +62,7 @@ void NBodySim::PreRun() {
                  r * cos(2.0 * i / n_ * acg::constants::pi<F32>));
     Vec3f color = 0.5f * (Vec3f::Random() + Vec3f::Ones());
 
-    particles_.push_back(P64(center.cast<F64>(), .2));
+    particles_.push_back(P64(center.cast<F64>(), .4));
     color_.push_back(color);
   }
 
@@ -81,7 +81,14 @@ void NBodySim::PreRun() {
   indice_buffer_ = get_vk_context().CreateBuffer(
       scene_.GetRequiredIndexBufferSize(), vk::BufferUsageFlagBits::eIndexBuffer,
       vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
-  mesh_ppl_->SetUbo(&camera_, true);
+
+  camera_.SetPosition({-10, 0, 0});
+  camera_.SetFront({1, 0, 0});
+  light_.light_position_ = Vec3f(3, 0, 0);
+  light_.ambient_light_color_ = Vec3f(1, 1, 1);
+  light_.ambient_light_density_ = 0.5;
+  light_.light_color_ = Vec3f(0.7, .7, .7);
+  mesh_ppl_->SetUbo(&camera_, &light_, true);
 }
 
 void NBodySim::RecreateSwapchainCallback() {
@@ -91,7 +98,7 @@ void NBodySim::RecreateSwapchainCallback() {
 
 std::vector<vk::CommandBuffer> NBodySim::DrawScene() {
   if (update_camera_) {
-    mesh_ppl_->SetUbo(&camera_, true);
+    mesh_ppl_->SetUbo(&camera_, &light_, true);
     update_camera_ = false;
   }
   const auto& vertices = scene_.GetVertices();
@@ -129,9 +136,7 @@ void NBodySim::RunUiImpl() {
 void NBodySim::RegenerateScene() {
   scene_.Reset();
   for (Idx i = 0; i < n_; ++i) {
-    scene_.AddMesh(
-        geometry::sphere_20(particles_[i].GetCenter().cast<F32>(), particles_[i].GetRadius()),
-        color_[i]);
+    scene_.AddParticle(particles_[i].GetCenter().cast<F32>(), particles_[i].GetRadius(), color_[i]);
   }
 }
 

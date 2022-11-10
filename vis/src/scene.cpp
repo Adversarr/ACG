@@ -3,6 +3,7 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
+#include "acg_core/geometry/common_models.hpp"
 #include "acg_vis/buffer_def.hpp"
 #include "acg_vis/convent.hpp"
 
@@ -69,8 +70,8 @@ Scene& Scene::AddMesh(const geometry::Mesh<F32>& mesh, Vec3f color) {
   return *this;
 }
 
-Scene& Scene::AddMesh(const geometry::Mesh<F32>& mesh,
-                      const geometry::Mesh<F32>::StateType& normal, Vec3f color) {
+Scene& Scene::AddMesh(const geometry::Mesh<F32>& mesh, const geometry::Mesh<F32>::StateType& normal,
+                      Vec3f color) {
   int beg = vertices_.size();
   vertices_.reserve(vertices_.size() + mesh.GetVertices().size());
   int i = 0;
@@ -93,6 +94,28 @@ Scene& Scene::AddMesh(const geometry::Mesh<F32>& mesh,
 void Scene::Reset() {
   vertices_.clear();
   indices_.clear();
+}
+
+Scene& Scene::AddParticle(Vec3f center, F32 radius, Vec3f color) {
+  int beg = vertices_.size();
+  auto mesh = geometry::sphere_uv(Vec3f::Zero(), radius, 10, 20);
+  vertices_.reserve(vertices_.size() + mesh.GetVertices().size());
+  int i = 0;
+  for (Vec3f normal: mesh.GetVertices().colwise()) {
+    Vec3f pos = normal + center;
+    Vertex v;
+    v.position = to_glm(pos);
+    v.color = to_glm(color);
+    v.normal = to_glm(Vec3f(normal));
+    vertices_.push_back(v);
+    i++;
+  }
+  for (const auto& i : mesh.GetIndices().colwise()) {
+    indices_.push_back(i.x() + beg);
+    indices_.push_back(i.y() + beg);
+    indices_.push_back(i.z() + beg);
+  }
+  return *this;
 }
 
 }  // namespace acg::visualizer

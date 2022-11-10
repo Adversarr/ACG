@@ -35,7 +35,7 @@ Vec3f& Camera::GetPosition() { return position_; }
 Vec3f& Camera::GetFront() { return front_; }
 
 bool Camera::SetPosition(glm::vec3 position) {
-  bool changed = to_eigen(position) == position_;
+  bool changed = to_eigen(position) != position_;
   if (changed) {
     position_ = to_eigen(position);
   }
@@ -43,7 +43,7 @@ bool Camera::SetPosition(glm::vec3 position) {
 }
 
 bool Camera::SetFront(glm::vec3 front) {
-  bool changed = to_eigen(front) == front_;
+  bool changed = to_eigen(front) != front_;
   if (changed) {
     front_ = to_eigen(front);
   }
