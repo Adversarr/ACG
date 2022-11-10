@@ -103,8 +103,9 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_message_callback(
   return false;
 }
 
-namespace acg::visualizer::details {
-using details::VkContext;
+namespace acg::visualizer {
+
+namespace details {
 
 const std::vector<const char *> validation_layers = {"VK_LAYER_KHRONOS_validation"};
 
@@ -445,7 +446,7 @@ vk::PresentModeKHR VkContext::ChooseSwapPresentMode(const std::vector<vk::Presen
       fmt::format_to(std::back_inserter(buffer), "{} ", vk::to_string(mode));
     }
 
-    spdlog::warn("Not using mailbox present mode, now: {}, available: {}", vk::to_string(best), 
+    spdlog::warn("Not using mailbox present mode, now: {}, available: {}", vk::to_string(best),
                  fmt::to_string(buffer));
   } else {
     spdlog::info("Present Mode: {}", vk::to_string(best));
@@ -843,5 +844,6 @@ void VkContext::BufMem::Release() {
   }
 }
 
+} 
 VkContext &get_vk_context() { return acg::utils::Singleton<VkContext>().GetRef(); }
-}  // namespace acg::visualizer::details
+}  // namespace acg::visualizer

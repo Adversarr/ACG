@@ -1,10 +1,9 @@
-#include "acg_vis/nbody.hpp"
+#include "nbody.hpp"
 
 #include <acg_core/geometry/common_models.hpp>
 #include <acg_core/math.hpp>
 #include <acg_utils/log.hpp>
 #include <cmath>
-namespace acg::visualizer::details {
 
 NBodySim::NBodySim(int n) : n_(n) {}
 
@@ -48,7 +47,7 @@ void NBodySim::InitCallback() {
 
 void NBodySim::CleanUpCallback() {
   ACG_DEBUG_LOG("Mesh ppl Cleanup");
-  get_vk_context().GetDevice().waitIdle();
+  acg::visualizer::get_vk_context().GetDevice().waitIdle();
   vertex_buffer_->Release();
   indice_buffer_->Release();
   mesh_ppl_.reset(nullptr);
@@ -76,10 +75,10 @@ void NBodySim::PreRun() {
   RegenerateScene();
   spdlog::info("buffersize = {} + {}", scene_.GetRequiredVertexBufferSize(),
                scene_.GetRequiredIndexBufferSize());
-  vertex_buffer_ = get_vk_context().CreateBuffer(
+  vertex_buffer_ = acg::visualizer::get_vk_context().CreateBuffer(
       scene_.GetRequiredVertexBufferSize(), vk::BufferUsageFlagBits::eVertexBuffer,
       vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
-  indice_buffer_ = get_vk_context().CreateBuffer(
+  indice_buffer_ = acg::visualizer::get_vk_context().CreateBuffer(
       scene_.GetRequiredIndexBufferSize(), vk::BufferUsageFlagBits::eIndexBuffer,
       vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
 
@@ -103,11 +102,11 @@ std::vector<vk::CommandBuffer> NBodySim::DrawScene() {
     update_camera_ = false;
   }
   auto [vertices, indices] = scene_.Build();
-  get_vk_context().GetDevice().waitIdle();
-  get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
-                                    vertices.size() * sizeof(Vertex));
-  get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
-                                    indices.size() * sizeof(indices.front()));
+  acg::visualizer::get_vk_context().GetDevice().waitIdle();
+  acg::visualizer::get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
+                                                     vertices.size() * sizeof(Vertex));
+  acg::visualizer::get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
+                                                     indices.size() * sizeof(indices.front()));
 
   auto cb = mesh_ppl_->BeginRender();
   cb.bindVertexBuffers(0, vertex_buffer_->GetBuffer(), static_cast<vk::DeviceSize>(0));
@@ -138,5 +137,3 @@ void NBodySim::RegenerateScene() {
     scene_.AddParticle(particles_[i].Cast<F32>(), color_[i]);
   }
 }
-
-}  // namespace acg::visualizer::details

@@ -2,12 +2,14 @@
 
 #include <acg_core/geometry/particle.hpp>
 
-#include "mesh_pipeline.hpp"
-#include "point_light.hpp"
-#include "scene.hpp"
-#include "world_controller.hpp"
+#include <acg_vis/mesh_pipeline.hpp>
+#include <acg_vis/point_light.hpp>
+#include <acg_vis/scene.hpp>
+#include <acg_vis/world_controller.hpp>
+using namespace acg;
+using namespace acg::visualizer;
+using namespace acg::visualizer::details;
 
-namespace acg::visualizer::details {
 class NBodySim : public WorldCtrlUiOnly {
 public:
   using P64 = acg::geometry::Particle<F64>;
@@ -53,8 +55,4 @@ private:
   std::unique_ptr<VkContext::BufMem> indice_buffer_;
 };
 
-}  // namespace acg::visualizer::details
 
-namespace acg::visualizer {
-using MeshWorldCtrl = details::NBodySim;
-}

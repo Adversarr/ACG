@@ -383,8 +383,7 @@ private:
       VK_KHR_SWAPCHAIN_EXTENSION_NAME,
   };
 };
-VkContext& get_vk_context();
 }  // namespace details
-
-inline auto&& get_vk_context() { return details::get_vk_context(); }
+using VkContext = details::VkContext;
+VkContext& get_vk_context();
 }  // namespace acg::visualizer
