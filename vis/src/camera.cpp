@@ -12,7 +12,9 @@
 
 namespace acg::visualizer {
 glm::mat4 Camera::GetView() const {
-  return glm::lookAt(to_glm(position_), to_glm(Vec3f(position_ + front_)), to_glm(up_));
+  return glm::lookAt(to_glm(position_), 
+                     to_glm(Vec3f(position_ + front_)), 
+                     to_glm(up_));
 }
 
 glm::mat4 Camera::GetProjection(float width, float height, bool inverted_y_axis) const {

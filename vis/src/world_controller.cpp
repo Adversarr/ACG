@@ -1,17 +1,15 @@
 #include "acg_vis/world_controller.hpp"
 
-#include <spdlog/spdlog.h>
-#include <chrono>
-#include <vector>
-
 #include <co/co.h>
 #include <co/time.h>
+#include <spdlog/spdlog.h>
+
+#include <chrono>
+#include <vector>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include <acg_utils/singleton.hpp>
-
-
 
 namespace acg::visualizer {
 
@@ -38,8 +36,7 @@ void WorldCtrlUiOnly::Run() {
     if (fps_limit_ > 0) {
       using namespace std::chrono;
       loop_time_ = (now::us() - start) / 1000.0;
-      auto ms_sleep
-          = 1000.0 / fps_limit_ - loop_time_;
+      auto ms_sleep = 1000.0 / fps_limit_ - loop_time_;
       if (ms_sleep > 1) {
         co::sleep(static_cast<uint32_t>(ms_sleep));
       }
@@ -99,7 +96,6 @@ void WorldCtrlUiOnly::CleanUp() {
   ui_ppl_.reset();
   // NOTE: because vk context is not created by the world, these resources
   // are not required to release
-  CleanUpCallback();
 }
 
 void WorldCtrlUiOnly::PreRun() {
@@ -122,36 +118,23 @@ void WorldCtrlUiOnly::RecreateSwapchainCallback() {
 void WorldCtrlUiOnly::CleanUpCallback() {
   // DO NOTHING
 }
-
-void WorldCtrlUiOnly::InitCallback() {
-  // DO NOTHING
-}
-
 int WorldCtrlUiOnly::RunPhysicsImpl(F64 /*dt*/) { return 0; }
 
-void WorldCtrlUiOnly::RunUiImpl() { 
-  ImGui::ShowUserGuide(); 
+void WorldCtrlUiOnly::RunUiImpl() {
+  ImGui::ShowUserGuide();
   ImGui::Begin("Stats");
   ImGui::Text("Loop Time = %.3lf(us)", loop_time_ * 1000.0);
   ImGui::End();
 }
 
-WorldCtrlUiOnly& WorldCtrlUiOnly::Init() {
-  InitCallback();
-  // Initialize the Ui Pipeline
+WorldCtrlUiOnly::WorldCtrlUiOnly() {
   auto ptr = details::UiPipeline::Builder().SetIsUIOnly(ui_only_mode_).Build();
   ui_ppl_.swap(ptr);
-  return *this;
-}
-
-WorldCtrlUiOnly::WorldCtrlUiOnly() {
   ACG_DEBUG_LOG("World Created.");
 }
 
 WorldCtrlUiOnly::~WorldCtrlUiOnly() { CleanUp(); }
 
-void WorldCtrlUiOnly::RunPhysics() {
-  RunPhysicsImpl(time_step_);
-}
+void WorldCtrlUiOnly::RunPhysics() { RunPhysicsImpl(time_step_); }
 
 }  // namespace acg::visualizer

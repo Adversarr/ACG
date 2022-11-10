@@ -18,8 +18,6 @@ public:
 protected:
   int RunPhysicsImpl(F64 dt) final;
 
-  void InitCallback() final;
-
   void CleanUp();
 
   void RecreateSwapchainCallback() final;
@@ -40,6 +38,8 @@ private:
   Scene scene_;
   Camera camera_;
   bool update_camera_{false};
+
+  Light light_;
 
   std::vector<P64> particles_;
   Eigen::VectorXd  mass_;

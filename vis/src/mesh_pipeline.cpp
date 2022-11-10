@@ -403,13 +403,23 @@ vk::CommandBuffer &MeshPipeline::EndRender() {
   return current_command_buffer;
 }
 
-void MeshPipeline::SetUbo(const Camera *camera, bool all_update) {
+void MeshPipeline::SetUbo(const Camera *camera, const Light *light, bool all_update) {
   auto extent = renderer_.GetSwapchainExtent();
   if (camera != nullptr) {
-    ubo_.mvp = camera->GetProjection(extent.width, extent.height) * camera->GetView() * camera->GetModel();
+    ubo_.mvp = camera->GetProjection(extent.width, extent.height) * camera->GetView()
+               * camera->GetModel();
     ubo_.eye_position = to_glm(camera->GetCPosition());
   }
 
+  if (light != nullptr) {
+    ubo_.ambient_light_color
+        = glm::vec4(to_glm(light->ambient_light_color_), light->ambient_light_density_);
+    ubo_.light_color = to_glm(light->light_color_);
+    ubo_.light_position = to_glm(light->light_position_);
+    ubo_.options[0] = 1;
+  } else {
+    ubo_.options[0] = 0;
+  }
 
   if (all_update) {
     for (auto &ub : uniform_buffers_) {

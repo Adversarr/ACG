@@ -3,6 +3,7 @@
 #include "./renderer.hpp"
 #include "buffer_def.hpp"
 #include "camera.hpp"
+#include "point_light.hpp"
 
 namespace acg::visualizer::details {
 
@@ -14,7 +15,7 @@ public:
 
   void RecreateSwapchain();
 
-  void SetUbo(const Camera* cam, bool all_update = false);
+  void SetUbo(const Camera* cam, const Light* light, bool all_update = false);
 
   /**
    * @brief Begin render pass, and return the command buffer in use.

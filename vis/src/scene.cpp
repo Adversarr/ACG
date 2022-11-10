@@ -1,5 +1,6 @@
 #include "acg_vis/scene.hpp"
 
+#include <acg_core/geometry/common_models.hpp>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
@@ -21,78 +22,107 @@ std::vector<vk::VertexInputAttributeDescription> Vertex::GetAttributeDescription
   desc1.binding = 0;
   desc1.location = 0;
   desc1.format = vk::Format::eR32G32B32Sfloat;
-  desc1.offset = offsetof(Vertex, position);
+  desc1.offset = offsetof(Vertex, position_);
 
   vk::VertexInputAttributeDescription desc2;
   desc2.binding = 0;
   desc2.location = 1;
   desc2.format = vk::Format::eR32G32B32Sfloat;
-  desc2.offset = offsetof(Vertex, color);
+  desc2.offset = offsetof(Vertex, color_);
 
   vk::VertexInputAttributeDescription desc3;
   desc3.binding = 0;
   desc3.location = 2;
   desc3.format = vk::Format::eR32G32B32Sfloat;
-  desc3.offset = offsetof(Vertex, normal);
+  desc3.offset = offsetof(Vertex, normal_);
 
   return {desc1, desc2, desc3};
 }
 
 vk::DeviceSize Scene::GetRequiredVertexBufferSize() const {
-  return vertices_.size() * sizeof(vertices_.front());
+  vk::DeviceSize size = 0;
+  for (const auto& m : meshes_) {
+    auto n_vert = m.GetVertices().cols();
+    size += n_vert;
+  }
+  // INFO: 12 is hard coded because we use sphere_20 for particle rendering.
+  size += particles_.size() * 12;
+  return size * sizeof(Vertex);
 }
 
 vk::DeviceSize Scene::GetRequiredIndexBufferSize() const {
-  return indices_.size() * sizeof(indices_.front());
-}
-
-const std::vector<Vertex>& Scene::GetVertices() const { return vertices_; }
-
-const std::vector<Idx>& Scene::GetIndices() const { return indices_; }
-
-Scene& Scene::AddMesh(const geometry::Mesh<F32>& mesh, Vec3f color) {
-  int beg = vertices_.size();
-  vertices_.reserve(vertices_.size() + mesh.GetVertices().size());
-  for (Vec3f vert : mesh.GetVertices().colwise()) {
-    Vertex v;
-    v.position = to_glm(vert);
-    v.color = to_glm(color);
-    v.normal = glm::vec3(0);
-    vertices_.push_back(v);
+  vk::DeviceSize size = 0;
+  for (const auto& m : meshes_) {
+    size += m.GetFaces().cols();
   }
-  for (const auto& i : mesh.GetIndices().colwise()) {
-    indices_.push_back(i.x() + beg);
-    indices_.push_back(i.y() + beg);
-    indices_.push_back(i.z() + beg);
-  }
-
-  return *this;
-}
-
-Scene& Scene::AddMesh(const geometry::Mesh<F32>& mesh,
-                      const geometry::Mesh<F32>::StateType& normal, Vec3f color) {
-  int beg = vertices_.size();
-  vertices_.reserve(vertices_.size() + mesh.GetVertices().size());
-  int i = 0;
-  for (Vec3f vert : mesh.GetVertices().colwise()) {
-    Vertex v;
-    v.position = to_glm(vert);
-    v.color = to_glm(color);
-    v.normal = to_glm(Vec3f(normal.col(i)));
-    vertices_.push_back(v);
-    i++;
-  }
-  for (const auto& i : mesh.GetIndices().colwise()) {
-    indices_.push_back(i.x() + beg);
-    indices_.push_back(i.y() + beg);
-    indices_.push_back(i.z() + beg);
-  }
-  return *this;
+  // INFO: 20 is hard coded because we use sphere_20 for particle rendering.
+  size += particles_.size() * 20;
+  return size * 3 * sizeof(details::IndexType);
 }
 
 void Scene::Reset() {
-  vertices_.clear();
-  indices_.clear();
+  meshes_.clear();
+  normals_.clear();
+  mesh_colors_.clear();
+  particles_.clear();
+  particles_colors_.clear();
+}
+
+std::pair<std::vector<Vertex>, std::vector<Idx>> Scene::Build() const {
+  std::vector<Vertex> vertices;
+  std::vector<Idx> indices;
+  for (size_t i = 0; i < meshes_.size(); ++i) {
+    const auto& m = meshes_[i];
+    const auto& c = mesh_colors_[i];
+    const auto& n = normals_[i];
+    Idx n_v = m.GetVertices().cols();
+    Idx i_offset = vertices.size();
+    for (Idx j = 0; j < n_v; ++j) {
+      Vec3f position = m.GetVertices().col(j);
+      Vec3f color = (c.cols() == 1) ? c : c.col(j);
+      Vec3f normal = Vec3f::Zero();
+      if (n.has_value()) {
+        normal = n.value().col(j);
+      }
+      vertices.emplace_back(Vertex(to_glm(position), to_glm(color), to_glm(normal)));
+    }
+
+    for (auto idx : m.GetFaces().colwise()) {
+      indices.push_back(idx.x() + i_offset);
+      indices.push_back(idx.y() + i_offset);
+      indices.push_back(idx.z() + i_offset);
+    }
+  }
+
+  for (size_t i = 0; i < particles_.size(); ++i) {
+    auto m = geometry::sphere_20(Vec3f::Zero(), particles_[i].GetRadius());
+    for (Vec3f position: m.GetVertices().colwise()) {
+      vertices.emplace_back(
+          Vertex(to_glm(Vec3f(position + particles_[i].GetCenter())), to_glm(particles_colors_[i]), to_glm(position)));
+    }
+    Idx i_offset = vertices.size();
+    for (auto idx : m.GetFaces().colwise()) {
+      indices.push_back(idx.x() + i_offset);
+      indices.push_back(idx.y() + i_offset);
+      indices.push_back(idx.z() + i_offset);
+    }
+  }
+
+  return {vertices, indices};
+}
+
+Scene& Scene::AddParticle(const geometry::Particle<F32>& particle, const Vec3f& color) {
+  particles_.push_back(particle);
+  particles_colors_.push_back(color);
+  return *this;
+}
+
+Scene& Scene::AddMesh(geometry::Mesh<F32> mesh, std::optional<AttrVec<F32, 3>> opt_normals,
+                      AttrVec<F32, 3> colors) {
+  meshes_.emplace_back(std::move(mesh));
+  normals_.emplace_back(std::move(opt_normals));
+  mesh_colors_.emplace_back(std::move(colors));
+  return *this;
 }
 
 }  // namespace acg::visualizer

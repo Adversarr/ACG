@@ -371,6 +371,7 @@ private:
   vk::Extent2D swapchain_extent_;
   std::vector<vk::Image> swapchain_images_;
   std::vector<vk::ImageView> swapchain_image_views_;
+  // TODO: Depth images should be placed here. see Piccolo.
   // Render Loop
   std::vector<RenderSyncObjects> semaphores_;
   size_t current_frame_{0};

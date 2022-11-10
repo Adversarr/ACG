@@ -59,8 +59,6 @@ protected:
 
   virtual void CleanUpCallback();
 
-  virtual void InitCallback();
-
 public:
   WorldCtrlUiOnly();
 
@@ -70,7 +68,6 @@ public:
 
   void RunAsync();
 
-  WorldCtrlUiOnly& Init();
 protected:
   /**
    * @brief Recreate Swapchain.

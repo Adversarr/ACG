@@ -6,12 +6,19 @@
 #include <cmath>
 namespace acg::visualizer::details {
 
-NBodySim::NBodySim(int n) : n_(n) {}
+NBodySim::NBodySim(int n) : n_(n) {
+  mesh_ppl_ = MeshPipeline::Builder()
+                  .SetCullMode(vk::CullModeFlagBits::eNone)
+                  .SetPolygonMode(vk::PolygonMode::eFill)
+                  .SetIsDstPresent(false)
+                  .Build();
+  ACG_DEBUG_LOG("Mesh pipeline!");
+  ui_only_mode_ = false;
+}
 
 NBodySim::~NBodySim() { CleanUp(); }
 
 int NBodySim::RunPhysicsImpl(F64 dt) {
-  // TODO: N-body simulation
   ACG_DEBUG_LOG("Run Simulation For dt={}", dt);
   acceleration_.setZero();
   for (int i = 0; i < n_; ++i) {
@@ -37,16 +44,6 @@ int NBodySim::RunPhysicsImpl(F64 dt) {
   return 0;
 }
 
-void NBodySim::InitCallback() {
-  mesh_ppl_ = MeshPipeline::Builder()
-                  .SetCullMode(vk::CullModeFlagBits::eNone)
-                  .SetPolygonMode(vk::PolygonMode::eFill)
-                  .SetIsDstPresent(false)
-                  .Build();
-  ACG_DEBUG_LOG("Mesh pipeline!");
-  ui_only_mode_ = false;
-}
-
 void NBodySim::CleanUp() {
   ACG_DEBUG_LOG("Mesh ppl Cleanup");
   get_vk_context().GetDevice().waitIdle();
@@ -69,19 +66,21 @@ void NBodySim::PreRun() {
   velocity_.resize(3, n_);
   acceleration_.resize(3, n_);
   velocity_.setRandom();
-  velocity_*= 2;
+  velocity_ *= 2;
   acceleration_.setZero();
   mass_.resize(n_);
   mass_.setOnes();
 
   RegenerateScene();
+  spdlog::info("buffersize = {} + {}", scene_.GetRequiredVertexBufferSize(),
+               scene_.GetRequiredIndexBufferSize());
   vertex_buffer_ = get_vk_context().CreateBuffer(
       scene_.GetRequiredVertexBufferSize(), vk::BufferUsageFlagBits::eVertexBuffer,
       vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
   indice_buffer_ = get_vk_context().CreateBuffer(
       scene_.GetRequiredIndexBufferSize(), vk::BufferUsageFlagBits::eIndexBuffer,
       vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
-  mesh_ppl_->SetUbo(&camera_, true);
+  mesh_ppl_->SetUbo(&camera_, nullptr, true);
 }
 
 void NBodySim::RecreateSwapchainCallback() {
@@ -91,12 +90,10 @@ void NBodySim::RecreateSwapchainCallback() {
 
 std::vector<vk::CommandBuffer> NBodySim::DrawScene() {
   if (update_camera_) {
-    mesh_ppl_->SetUbo(&camera_, true);
+    mesh_ppl_->SetUbo(&camera_, nullptr, true);
     update_camera_ = false;
   }
-  const auto& vertices = scene_.GetVertices();
-  const auto& indices = scene_.GetIndices();
-  get_vk_context().GetDevice().waitIdle();
+  auto [vertices, indices] = scene_.Build();
   get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
                                     scene_.GetRequiredVertexBufferSize());
   get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
@@ -121,7 +118,6 @@ void NBodySim::RunUiImpl() {
     if (ImGui::Button("Update Camera!", button_size)) {
       update_camera_ = true;
     }
-    // Setup Camera:
   }
   ImGui::End();
 }
@@ -129,9 +125,7 @@ void NBodySim::RunUiImpl() {
 void NBodySim::RegenerateScene() {
   scene_.Reset();
   for (Idx i = 0; i < n_; ++i) {
-    scene_.AddMesh(
-        geometry::sphere_20(particles_[i].GetCenter().cast<F32>(), particles_[i].GetRadius()),
-        color_[i]);
+    scene_.AddParticle(particles_[i].Cast<F32>(), color_[i]);
   }
 }
 

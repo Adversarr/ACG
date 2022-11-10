@@ -38,6 +38,11 @@ public:
     radius_ = value;
     return *this;
   }
+
+  template<typename T2>
+  inline Particle<T2> Cast() const {
+    return Particle<T2>(center_.template cast<T2>(), static_cast<T2>(radius_));
+  }
 };
 
 

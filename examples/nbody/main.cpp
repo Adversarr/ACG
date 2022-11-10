@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
   spdlog::set_level(spdlog::level::debug);
   acg::init(argc, argv);
 
-  acg::visualizer::MeshWorldCtrl(15).Init().Run();
+  acg::visualizer::MeshWorldCtrl(5).Run();
   acg::cleanup();
   return 0;
 }

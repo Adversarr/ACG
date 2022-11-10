@@ -1,8 +1,9 @@
 #pragma once
-#include "../core.hpp"
 #include <Eigen/Eigen>
 #include <type_traits>
 
+#include "../core.hpp"
+#include "../math.hpp"
 
 namespace acg::geometry {
 
@@ -13,17 +14,13 @@ namespace acg::geometry {
  */
 template <typename T = F32> class Mesh {
 public:
-  using VerticeType = Eigen::Vector3<T>;
+  using VerticeType = Vec3<T>;
 
-  using StateType = Eigen::Matrix<T, 3, Eigen::Dynamic, Eigen::ColMajor>;
+  using StateType = AttrVec<T, 3>;
 
-  using FaceIndexType = Eigen::Vector3<Idx>;
+  using FaceType = Vec3<Idx>;
 
-  using FaceListType = Eigen::Matrix<
-      /* ElemType */ Idx,
-      /* #Rows */ 3,
-      /* #Cols */ Eigen::Dynamic,
-      /* Layout */ Eigen::ColMajor>;
+  using FaceListType = AttrVec<Idx, 3>;
   /**
    * @brief Construct a new Triangle Mesh object, the vertices and indices will be checked.
    *
@@ -42,57 +39,47 @@ public:
 
   /**
    * @brief Enable Copy Constructor
-   * 
+   *
    */
   Mesh(const Mesh&) = default;
+
+  inline const StateType& GetVertices() const;
+
+  inline const FaceListType& GetFaces() const;
+
+  template<typename T2>
+  inline Mesh<T2> Cast() const;
 
   /**
    * @brief Get the #Vertices
    *
    * @return int
    */
-  inline Idx GetNumVertices() const;
-
-  /**
-   * @brief Get the #Edges
-   *
-   * @return int
-   */
-  inline Idx GetNumEdges() const;
-
-  inline const StateType& GetVertices() const;
-
-  inline const FaceListType& GetIndices() const;
+  inline Idx GetNumVertices() const {return GetVertices().cols();}
 
 private:
-  Idx num_vertices_{0};
-
-  Idx num_edges_{0};
-
   // Mesh should be column major, AoS layout.
   StateType vertices_;
 
   // the same for indice.
   FaceListType faces_;
-
 };
 
-template<typename T> 
-const typename Mesh<T>::StateType& Mesh<T>::GetVertices() const {
+template <typename T> const typename Mesh<T>::StateType& Mesh<T>::GetVertices() const {
   return vertices_;
 }
 
-
-template<typename T> 
-const typename Mesh<T>::FaceListType& Mesh<T>::GetIndices() const {
+template <typename T> const typename Mesh<T>::FaceListType& Mesh<T>::GetFaces() const {
   return faces_;
 }
 
+template <typename T> Mesh<T>::Mesh(const StateType& vertices, const FaceListType& indices)
+    : vertices_(vertices), faces_(indices) {}
+
+
 template<typename T>
-Mesh<T>::Mesh(const StateType& vertices, const FaceListType& indices) :
-  vertices_(vertices),
-  faces_(indices) { }
-
-
-
+template<typename T2>
+Mesh<T2> Mesh<T>::Cast() const{
+  return {vertices_.template cast<T2>(), faces_};
+}
 }  // namespace acg::geometry

@@ -1,19 +1,16 @@
 #pragma once
 
-#include "core.hpp"
 #include <Eigen/Core>
+
+#include "core.hpp"
 
 namespace acg {
 
+template <typename T> using Vec2 = Eigen::Vector2<T>;
 
-template<typename T>
-using Vec2 = Eigen::Vector2<T>;
+template <typename T> using Vec3 = Eigen::Vector3<T>;
 
-template<typename T>
-using Vec3 = Eigen::Vector3<T>;
-
-template<typename T>
-using Vec4 = Eigen::Vector4<T>;
+template <typename T> using Vec4 = Eigen::Vector4<T>;
 
 using Vec4f = Eigen::Vector4<F32>;
 
@@ -31,12 +28,13 @@ using Vec2Idx = Eigen::Vector2<Idx>;
 using Vec3Idx = Eigen::Vector3<Idx>;
 using Vec4Idx = Eigen::Vector4<Idx>;
 
+template <typename T, int n_attrib> using AttrVec
+    = Eigen::Matrix<T, n_attrib, Eigen::Dynamic, Eigen::AutoAlign | Eigen::ColMajor>;
+
 namespace constants {
 
-template<typename F>
-constexpr F pi = 3.14159292035;
+template <typename F> constexpr F pi = 3.14159292035;
 
 }
 
-
-}
+}  // namespace acg
