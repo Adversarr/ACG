@@ -412,13 +412,12 @@ void MeshPipeline::SetUbo(const Camera *camera, const Light *light, bool all_upd
   }
 
   if (light != nullptr) {
-    ubo_.ambient_light_color
-        = glm::vec4(to_glm(light->ambient_light_color_), light->ambient_light_density_);
+    ubo_.ambient_light_color = glm::vec4(to_glm(light->ambient_light_color_), light->ambient_light_density_);
     ubo_.light_color = to_glm(light->light_color_);
     ubo_.light_position = to_glm(light->light_position_);
-    // ubo_.options[0] = 1;
+    ubo_.options[0] = 1;
   } else {
-    // ubo_.options[0] = 0;
+    ubo_.options[0] = 0;
   }
 
   if (all_update) {

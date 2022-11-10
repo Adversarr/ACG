@@ -2,10 +2,10 @@
 // Created by jerryyang on 2022/10/25.
 //
 #pragma once
+#include <glm/glm.hpp>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
-#include "aglm.hpp"
 namespace acg::visualizer {
 
 namespace details {
@@ -40,13 +40,10 @@ struct Vertex {
 struct Ubo {
   alignas(16) glm::mat4 mvp;
   alignas(16) glm::vec3 eye_position;
-  // option:
-  // 1. enable lighting
-  // 2, 3, 4. for future use.
-  // alignas(16) int options[4];
   alignas(16) glm::vec4 ambient_light_color{1.f, 1.f, 1.f, .01f};  // w is intensity
   alignas(16) glm::vec3 light_color{1.0, 1.0, 1.0};
   alignas(16) glm::vec3 light_position{2.0, 0.0, 1.0};
+  alignas(16) int options[4] = {0, 0, 0, 0};
 };
 
 }  // namespace acg::visualizer

@@ -59,7 +59,7 @@ void NBodySim::PreRun() {
                  r * cos(2.0 * i / n_ * acg::constants::pi<F32>));
     Vec3f color = 0.5f * (Vec3f::Random() + Vec3f::Ones());
 
-    particles_.push_back(P64(center.cast<F64>(), .2));
+    particles_.push_back(P64(center.cast<F64>(), .4));
     color_.push_back(color);
   }
 
@@ -80,6 +80,13 @@ void NBodySim::PreRun() {
   indice_buffer_ = get_vk_context().CreateBuffer(
       scene_.GetRequiredIndexBufferSize(), vk::BufferUsageFlagBits::eIndexBuffer,
       vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
+
+  camera_.SetPosition({-10, 0, 0});
+  camera_.SetFront({1, 0, 0});
+  light_.light_position_ = Vec3f(3, 0, 0);
+  light_.ambient_light_color_ = Vec3f(1, 1, 1);
+  light_.ambient_light_density_ = 0.5;
+  light_.light_color_ = Vec3f(0.7, .7, .7);
   mesh_ppl_->SetUbo(&camera_, nullptr, true);
 }
 
@@ -90,7 +97,7 @@ void NBodySim::RecreateSwapchainCallback() {
 
 std::vector<vk::CommandBuffer> NBodySim::DrawScene() {
   if (update_camera_) {
-    mesh_ppl_->SetUbo(&camera_, nullptr, true);
+    mesh_ppl_->SetUbo(&camera_, &light_, true);
     update_camera_ = false;
   }
   auto [vertices, indices] = scene_.Build();

@@ -4,9 +4,9 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
+#include "acg_core/geometry/common_models.hpp"
 #include "acg_vis/buffer_def.hpp"
 #include "acg_vis/convent.hpp"
-#include "spdlog/spdlog.h"
 
 namespace acg::visualizer {
 
@@ -125,5 +125,6 @@ Scene& Scene::AddMesh(geometry::Mesh<F32> mesh, std::optional<AttrVec<F32, 3>> o
   mesh_colors_.emplace_back(std::move(colors));
   return *this;
 }
+
 
 }  // namespace acg::visualizer
