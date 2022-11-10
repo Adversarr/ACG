@@ -57,7 +57,7 @@ void WorldCtrlUiOnly::ProcessInput() {
     // only process key press here.
     if (glfwGetKey(window_ptr, k) == GLFW_PRESS) {
       ACG_DEBUG_LOG("Key {} is pressed.", k);
-      ACG_CHECK(v.callback(), "Callback failed.");
+      ACG_CHECK(v(), "Callback failed.");
     }
   }
 }

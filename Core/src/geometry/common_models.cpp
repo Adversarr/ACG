@@ -54,46 +54,20 @@ Mesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks, Idx n_slices) {
   return Mesh<F32>{vertices, indices};
 }
 
-
 Mesh<F32> sphere_20(Vec3f center, F32 radius) {
-  Mesh<F32>:: StateType vertices(3, 12);
+  Mesh<F32>::StateType vertices(3, 12);
   Mesh<F32>::FaceListType indices(3, 20);
   float t = 0.5 * (1 + sqrt(5.0));
-  int i = 0;
-  vertices.col(i++) = Vec3f(-1, t, 0);
-  vertices.col(i++) = Vec3f(1, t, 0);
-  vertices.col(i++) = Vec3f(-1, -t, 0);
-  vertices.col(i++) = Vec3f(1, -t, 0);
-  vertices.col(i++) = Vec3f(0, -1, t);
-  vertices.col(i++) = Vec3f(0, 1, t);
-  vertices.col(i++) = Vec3f(0, -1, -t);
-  vertices.col(i++) = Vec3f(0, 1, -t);
-  vertices.col(i++) = Vec3f(t, 0, -1);
-  vertices.col(i++) = Vec3f(t, 0, 1);
-  vertices.col(i++) = Vec3f(-t, 0, -1);
-  vertices.col(i++) = Vec3f(-t, 0, 1);
-  vertices *= radius / sqrt(1.0 + t * t);
-  vertices.colwise() += center;
-  int ni = 0;
-  indices.col(ni++) = Vec3Idx(0, 11, 5);
-  indices.col(ni++) = Vec3Idx(0, 5, 1);
-  indices.col(ni++) = Vec3Idx(0, 1, 7);
-  indices.col(ni++) = Vec3Idx(0, 7, 10);
-  indices.col(ni++) = Vec3Idx(1, 5, 9);
-  indices.col(ni++) = Vec3Idx(5, 11, 4);
-  indices.col(ni++) = Vec3Idx(11, 10, 2);
-  indices.col(ni++) = Vec3Idx(10, 7, 6);
-  indices.col(ni++) = Vec3Idx(7, 1, 8);
-  indices.col(ni++) = Vec3Idx(3, 9, 4);
-  indices.col(ni++) = Vec3Idx(3, 4, 2);
-  indices.col(ni++) = Vec3Idx(3, 2, 6);
-  indices.col(ni++) = Vec3Idx(3, 6, 8);
-  indices.col(ni++) = Vec3Idx(3, 8, 9);
-  indices.col(ni++) = Vec3Idx(4, 9, 5);
-  indices.col(ni++) = Vec3Idx(2, 4, 11);
-  indices.col(ni++) = Vec3Idx(0, 1, 7);
-  indices.col(ni++) = Vec3Idx(8, 6, 7);
-  indices.col(ni++) = Vec3Idx(9, 8, 1);
+  F32 x = .525731112119133606;
+  F32 z = .850650808352039932;
+  vertices = Eigen::Matrix<F32, -1, 3>{{-x, 0.0, z}, {x, 0.0, z},  {-x, 0.0, -z}, {x, 0.0, -z},
+                             {0.0, z, x},  {0.0, z, -x}, {0.0, -z, x},  {0.0, -z, -x},
+                             {z, x, 0.0},  {-z, x, 0.0}, {z, -x, 0.0},  {-z, -x, 0.0}}.transpose();
+  vertices = vertices * radius;
+  indices = Eigen::Matrix<Idx, -1, 3>{{1, 4, 0},  {4, 9, 0},  {4, 5, 9},  {8, 5, 4},  {1, 8, 4},
+                            {1, 10, 8}, {10, 3, 8}, {8, 3, 5},  {3, 2, 5},  {3, 7, 2},
+                            {3, 10, 7}, {10, 6, 7}, {6, 11, 7}, {6, 0, 11}, {6, 1, 0},
+                            {10, 1, 6}, {11, 0, 9}, {2, 11, 9}, {5, 2, 9},  {11, 2, 7}}.transpose();
   return {vertices, indices};
 }
-}
+}  // namespace acg::geometry

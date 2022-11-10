@@ -27,8 +27,9 @@ public:
   const Vec3f &GetCFront() const;
 
   Vec3f &GetFront();
+  Vec3f &GetUp();
 
-  void Move(glm::vec3 direction, F64 dt);
+  void Move(Vec3f direction, F64 dt);
 
   // Set the position of the camera. Returns true, if readlly changed.
   bool SetPosition(glm::vec3 position);
