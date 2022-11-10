@@ -13,7 +13,7 @@
 
 namespace acg::visualizer {
 
-void WorldCtrlUiOnly::Run() {
+WorldCtrlUiOnly& WorldCtrlUiOnly::Run() {
   PreRun();
   is_running_ = true;
   while (is_running_) {
@@ -43,6 +43,7 @@ void WorldCtrlUiOnly::Run() {
     }
   }
   PostRun();
+  return *this;
 }
 
 void WorldCtrlUiOnly::ProcessInput() {
@@ -96,6 +97,7 @@ void WorldCtrlUiOnly::CleanUp() {
   ui_ppl_.reset();
   // NOTE: because vk context is not created by the world, these resources
   // are not required to release
+  CleanUpCallback();
 }
 
 void WorldCtrlUiOnly::PreRun() {
@@ -118,6 +120,11 @@ void WorldCtrlUiOnly::RecreateSwapchainCallback() {
 void WorldCtrlUiOnly::CleanUpCallback() {
   // DO NOTHING
 }
+
+void WorldCtrlUiOnly::InitCallback() {
+  // DO NOTHING
+}
+
 int WorldCtrlUiOnly::RunPhysicsImpl(F64 /*dt*/) { return 0; }
 
 void WorldCtrlUiOnly::RunUiImpl() {
@@ -127,14 +134,17 @@ void WorldCtrlUiOnly::RunUiImpl() {
   ImGui::End();
 }
 
-WorldCtrlUiOnly::WorldCtrlUiOnly() {
-  auto ptr = details::UiPipeline::Builder().SetIsUIOnly(ui_only_mode_).Build();
-  ui_ppl_.swap(ptr);
-  ACG_DEBUG_LOG("World Created.");
-}
+WorldCtrlUiOnly::WorldCtrlUiOnly() { ACG_DEBUG_LOG("World Created."); }
 
-WorldCtrlUiOnly::~WorldCtrlUiOnly() { CleanUp(); }
+WorldCtrlUiOnly::~WorldCtrlUiOnly() { ACG_DEBUG_LOG("World Destroyed."); }
 
 void WorldCtrlUiOnly::RunPhysics() { RunPhysicsImpl(time_step_); }
+
+WorldCtrlUiOnly& WorldCtrlUiOnly::Init() {
+  InitCallback();
+  auto ptr = details::UiPipeline::Builder().SetIsUIOnly(ui_only_mode_).Build();
+  ui_ppl_.swap(ptr);
+  return *this;
+}
 
 }  // namespace acg::visualizer

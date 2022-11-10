@@ -58,16 +58,22 @@ protected:
   virtual void RecreateSwapchainCallback();
 
   virtual void CleanUpCallback();
+  
+  virtual void InitCallback();
 
 public:
   WorldCtrlUiOnly();
 
   ~WorldCtrlUiOnly();
 
-  void Run();
+  WorldCtrlUiOnly& Run();
 
-  void RunAsync();
+  WorldCtrlUiOnly& Init();
 
+  void CleanUp();
+
+  // WARN: Not implemented.
+  WorldCtrlUiOnly& RunAsync();
 protected:
   /**
    * @brief Recreate Swapchain.
@@ -82,9 +88,7 @@ protected:
   vk::CommandBuffer DrawUI();
 
   void ProcessInput();
-private:
 
-  void CleanUp();
 
 protected:
   // Ui Pipeline is the only pipeline.

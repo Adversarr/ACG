@@ -6,15 +6,7 @@
 #include <cmath>
 namespace acg::visualizer::details {
 
-NBodySim::NBodySim(int n) : n_(n) {
-  mesh_ppl_ = MeshPipeline::Builder()
-                  .SetCullMode(vk::CullModeFlagBits::eNone)
-                  .SetPolygonMode(vk::PolygonMode::eFill)
-                  .SetIsDstPresent(false)
-                  .Build();
-  ACG_DEBUG_LOG("Mesh pipeline!");
-  ui_only_mode_ = false;
-}
+NBodySim::NBodySim(int n) : n_(n) {}
 
 NBodySim::~NBodySim() { CleanUp(); }
 
@@ -44,7 +36,17 @@ int NBodySim::RunPhysicsImpl(F64 dt) {
   return 0;
 }
 
-void NBodySim::CleanUp() {
+void NBodySim::InitCallback() {
+  mesh_ppl_ = MeshPipeline::Builder()
+                  .SetCullMode(vk::CullModeFlagBits::eNone)
+                  .SetPolygonMode(vk::PolygonMode::eFill)
+                  .SetIsDstPresent(false)
+                  .Build();
+  ACG_DEBUG_LOG("Mesh pipeline!");
+  ui_only_mode_ = false;
+}
+
+void NBodySim::CleanUpCallback() {
   ACG_DEBUG_LOG("Mesh ppl Cleanup");
   get_vk_context().GetDevice().waitIdle();
   vertex_buffer_->Release();
@@ -55,7 +57,7 @@ void NBodySim::CleanUp() {
 void NBodySim::PreRun() {
   F64 r = 3;
   for (int i = 0; i < n_; ++i) {
-    Vec3f center(0, r * sin(2.0 * i / n_ * acg::constants::pi<F32>),
+    Vec3f center((rand() % 1000) / 1000.0, r * sin(2.0 * i / n_ * acg::constants::pi<F32>),
                  r * cos(2.0 * i / n_ * acg::constants::pi<F32>));
     Vec3f color = 0.5f * (Vec3f::Random() + Vec3f::Ones());
 
@@ -87,7 +89,7 @@ void NBodySim::PreRun() {
   light_.ambient_light_color_ = Vec3f(1, 1, 1);
   light_.ambient_light_density_ = 0.5;
   light_.light_color_ = Vec3f(0.7, .7, .7);
-  mesh_ppl_->SetUbo(&camera_, nullptr, true);
+  mesh_ppl_->SetUbo(&camera_, &light_, true);
 }
 
 void NBodySim::RecreateSwapchainCallback() {

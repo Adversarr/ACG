@@ -37,5 +37,4 @@ void main() {
   vec3 specular = ubo.light_color * spec;
   vec3 result = (ambient + diffuse + specular) * inColor;
   fragColor = vec4(result, 1.0);
-  // fragColor = ubo.ambient_light_color;
 }

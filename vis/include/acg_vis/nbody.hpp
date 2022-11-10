@@ -16,11 +16,14 @@ public:
   ~NBodySim();
 
 protected:
+
   int RunPhysicsImpl(F64 dt) final;
 
-  void CleanUp();
+  void CleanUpCallback() final;
 
   void RecreateSwapchainCallback() final;
+  
+  void InitCallback() final;
 
   void RunUiImpl() final;
 
