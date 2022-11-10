@@ -5,11 +5,10 @@
 
 int main(int argc, char** argv) {
   acg::visualizer::VkContextHooker::Hook();
-
   spdlog::set_level(spdlog::level::debug);
   acg::init(argc, argv);
 
-  acg::visualizer::MeshWorldCtrl(5).Run();
+  acg::visualizer::MeshWorldCtrl(10).Run();
   acg::cleanup();
   return 0;
 }

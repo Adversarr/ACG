@@ -6,6 +6,7 @@
 
 #include "acg_vis/buffer_def.hpp"
 #include "acg_vis/convent.hpp"
+#include "spdlog/spdlog.h"
 
 namespace acg::visualizer {
 
@@ -96,11 +97,11 @@ std::pair<std::vector<Vertex>, std::vector<Idx>> Scene::Build() const {
 
   for (size_t i = 0; i < particles_.size(); ++i) {
     auto m = geometry::sphere_20(Vec3f::Zero(), particles_[i].GetRadius());
-    for (Vec3f position: m.GetVertices().colwise()) {
-      vertices.emplace_back(
-          Vertex(to_glm(Vec3f(position + particles_[i].GetCenter())), to_glm(particles_colors_[i]), to_glm(position)));
-    }
     Idx i_offset = vertices.size();
+    for (Vec3f position : m.GetVertices().colwise()) {
+      vertices.emplace_back(Vertex(to_glm(Vec3f(position + particles_[i].GetCenter())),
+                                   to_glm(particles_colors_[i]), to_glm(position)));
+    }
     for (auto idx : m.GetFaces().colwise()) {
       indices.push_back(idx.x() + i_offset);
       indices.push_back(idx.y() + i_offset);
@@ -108,7 +109,7 @@ std::pair<std::vector<Vertex>, std::vector<Idx>> Scene::Build() const {
     }
   }
 
-  return {vertices, indices};
+  return {std::move(vertices), std::move(indices)};
 }
 
 Scene& Scene::AddParticle(const geometry::Particle<F32>& particle, const Vec3f& color) {

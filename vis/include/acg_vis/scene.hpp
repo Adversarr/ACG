@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "acg_core/math.hpp"
-#include "point_light.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS

@@ -94,10 +94,11 @@ std::vector<vk::CommandBuffer> NBodySim::DrawScene() {
     update_camera_ = false;
   }
   auto [vertices, indices] = scene_.Build();
+  get_vk_context().GetDevice().waitIdle();
   get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
-                                    scene_.GetRequiredVertexBufferSize());
+                                    vertices.size() * sizeof(Vertex));
   get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
-                                    scene_.GetRequiredIndexBufferSize());
+                                    indices.size() * sizeof(indices.front()));
 
   auto cb = mesh_ppl_->BeginRender();
   cb.bindVertexBuffers(0, vertex_buffer_->GetBuffer(), static_cast<vk::DeviceSize>(0));
