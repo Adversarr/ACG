@@ -6,11 +6,11 @@
 #include <acg_vis/point_light.hpp>
 #include <acg_vis/scene.hpp>
 #include <acg_vis/world_controller.hpp>
+#include <acg_vis/mp_scene.hpp>
 using namespace acg;
 using namespace acg::visualizer;
-using namespace acg::visualizer::details;
 
-class NBodySim : public WorldCtrlUiOnly {
+class NBodySim : public MPWorldCtrl {
 public:
   using P64 = acg::geometry::Particle<F64>;
   explicit NBodySim(int n);
@@ -21,29 +21,14 @@ protected:
 
   int RunPhysicsImpl(F64 dt) final;
 
-  void CleanUpCallback() final;
-
-  void RecreateSwapchainCallback() final;
-  
-  void InitCallback() final;
-
   void RunUiImpl() final;
 
   void PreRun() final;
 
-  std::vector<vk::CommandBuffer> DrawScene() final;
-
 private:
   void RegenerateScene();
 
-  std::unique_ptr<MeshPipeline> mesh_ppl_;
-
   Idx n_;
-
-  Scene scene_;
-  Camera camera_;
-  Light light_;
-  bool update_camera_{false};
 
   std::vector<P64> particles_;
   Eigen::VectorXd mass_;
@@ -51,8 +36,6 @@ private:
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> velocity_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> acceleration_;
 
-  std::unique_ptr<VkContext::BufMem> vertex_buffer_;
-  std::unique_ptr<VkContext::BufMem> indice_buffer_;
 };
 
 

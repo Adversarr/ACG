@@ -30,7 +30,8 @@ DEF_test(test1) {
 }
 
 DEF_test(coost) {
-  DEF_case(logger) {
+  DEF_case(align) {
+    std::cout << god::align_up(10000, 1024) << std::endl;
   }
 }
 

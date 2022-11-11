@@ -755,7 +755,7 @@ bool VkContext::HasStencilComponent(vk::Format format) {
 }
 
 void VkContext::CopyHostToBuffer(const void *mem_data, BufMem &buffer_with_memory, size_t size) {
-  auto *data = device_.mapMemory(buffer_with_memory.GetMemory(), 0, size);
+  auto *data = device_.mapMemory(buffer_with_memory.GetMemory(), 0, buffer_with_memory.GetSize());
   memcpy(data, mem_data, size);
   device_.unmapMemory(buffer_with_memory.GetMemory());
 }
@@ -831,6 +831,7 @@ VkContext::BufMem::BufMem(BufMem &&m) {
 }
 
 VkContext::BufMem::~BufMem() { Release(); }
+vk::DeviceSize VkContext::BufMem::GetSize() const { return size_; }
 
 void VkContext::BufMem::Release() {
   if (buffer_) {
