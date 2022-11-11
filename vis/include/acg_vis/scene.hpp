@@ -3,6 +3,7 @@
 #include <acg_core/geometry/mesh.hpp>
 #include <acg_core/geometry/particlesystem.hpp>
 #include <memory>
+#include <optional>
 
 #include "acg_core/math.hpp"
 

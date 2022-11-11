@@ -1,10 +1,10 @@
 #include "ff.hpp"
-#define GLFW_INCLUDE_VULKAN
 #include <acg_core/geometry/common_models.hpp>
 #include <acg_core/math.hpp>
 #include <acg_utils/log.hpp>
 #include <cmath>
 
+#define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 
 FreeFall::FreeFall(int n) : n_(n) {}

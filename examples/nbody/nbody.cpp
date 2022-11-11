@@ -1,10 +1,11 @@
 #include "nbody.hpp"
 
+#include <co/random.h>
+
 #include <acg_core/geometry/common_models.hpp>
 #include <acg_core/math.hpp>
 #include <acg_utils/log.hpp>
 #include <cmath>
-
 NBodySim::NBodySim(int n) : n_(n) {}
 
 NBodySim::~NBodySim() { CleanUp(); }
@@ -35,28 +36,11 @@ int NBodySim::RunPhysicsImpl(F64 dt) {
   return 0;
 }
 
-void NBodySim::InitCallback() {
-  mesh_ppl_ = MeshPipeline::Builder()
-                  .SetCullMode(vk::CullModeFlagBits::eNone)
-                  .SetPolygonMode(vk::PolygonMode::eFill)
-                  .SetIsDstPresent(false)
-                  .Build();
-  ACG_DEBUG_LOG("Mesh pipeline!");
-  ui_only_mode_ = false;
-}
-
-void NBodySim::CleanUpCallback() {
-  ACG_DEBUG_LOG("Mesh ppl Cleanup");
-  acg::visualizer::get_vk_context().GetDevice().waitIdle();
-  vertex_buffer_->Release();
-  indice_buffer_->Release();
-  mesh_ppl_.reset(nullptr);
-}
-
 void NBodySim::PreRun() {
   F64 r = 3;
   for (int i = 0; i < n_; ++i) {
-    Vec3f center((rand() % 1000) / 1000.0, r * sin(2.0 * i / n_ * acg::constants::pi<F32>),
+    Random rand(clock());
+    Vec3f center((rand.next() % 1000) / 1000.0, r * sin(2.0 * i / n_ * acg::constants::pi<F32>),
                  r * cos(2.0 * i / n_ * acg::constants::pi<F32>));
     Vec3f color = 0.5f * (Vec3f::Random() + Vec3f::Ones());
 
@@ -73,14 +57,7 @@ void NBodySim::PreRun() {
   mass_.setOnes();
 
   RegenerateScene();
-  spdlog::info("buffersize = {} + {}", scene_.GetRequiredVertexBufferSize(),
-               scene_.GetRequiredIndexBufferSize());
-  vertex_buffer_ = acg::visualizer::get_vk_context().CreateBuffer(
-      scene_.GetRequiredVertexBufferSize(), vk::BufferUsageFlagBits::eVertexBuffer,
-      vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
-  indice_buffer_ = acg::visualizer::get_vk_context().CreateBuffer(
-      scene_.GetRequiredIndexBufferSize(), vk::BufferUsageFlagBits::eIndexBuffer,
-      vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
+  RefitBuffers();
 
   camera_.SetPosition({-10, 0, 0});
   camera_.SetFront({1, 0, 0});
@@ -89,30 +66,6 @@ void NBodySim::PreRun() {
   light_.ambient_light_density_ = 0.5;
   light_.light_color_ = Vec3f(0.7, .7, .7);
   mesh_ppl_->SetUbo(&camera_, &light_, true);
-}
-
-void NBodySim::RecreateSwapchainCallback() {
-  mesh_ppl_->RecreateSwapchain();
-  update_camera_ = true;
-}
-
-std::vector<vk::CommandBuffer> NBodySim::DrawScene() {
-  if (update_camera_) {
-    mesh_ppl_->SetUbo(&camera_, &light_, true);
-    update_camera_ = false;
-  }
-  auto [vertices, indices] = scene_.Build();
-  acg::visualizer::get_vk_context().GetDevice().waitIdle();
-  acg::visualizer::get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
-                                                     vertices.size() * sizeof(Vertex));
-  acg::visualizer::get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
-                                                     indices.size() * sizeof(indices.front()));
-
-  auto cb = mesh_ppl_->BeginRender();
-  cb.bindVertexBuffers(0, vertex_buffer_->GetBuffer(), static_cast<vk::DeviceSize>(0));
-  cb.bindIndexBuffer(indice_buffer_->GetBuffer(), 0, vk::IndexType::eUint32);
-  cb.drawIndexed(indices.size(), 1, 0, 0, 0);
-  return {mesh_ppl_->EndRender()};
 }
 
 void NBodySim::RunUiImpl() {

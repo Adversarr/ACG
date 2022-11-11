@@ -1,16 +1,17 @@
 ## Render Loop Graph
 
-### Synced Rendering
+Following mermaid flowchart illustrates.
 
 ```mermaid
 flowchart
-  Init-->*InitCallback-->*PreRun-->Run-->PostRun(*PostRun)-->Cleanup-->*CleanupCallback
-  ProcessIO-- Not Running --> PostRun
+  *InitCallback-->Init-->*PreRun
+  *PostRun-->Cleanup-->*CleanupCallback
+  ProcessIO-- Not Running --> *PostRun
   subgraph WorldLoop
-    Run--->ProcessIO(ProcessInput)
+    *PreRun-->ProcessIO(ProcessInput)
     ProcessIO -- Still Running --> RunDraw
-    RunDraw-- Physics Running --> *RunPhysics --> Run
-    RunDraw-- Physics Not Running --> Run
+    RunDraw-- Physics Running --> *RunPhysics --> ProcessIO
+    RunDraw-- Physics Not Running --> ProcessIO
     subgraph RunDraw
     	BeginDraw -- ok --> DrawActual
     	BeginDraw -- not ok --> RecreateSwapchain -->End
@@ -27,3 +28,4 @@ flowchart
     end
   end
 ```
+
