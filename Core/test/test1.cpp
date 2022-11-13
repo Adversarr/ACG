@@ -22,6 +22,10 @@ DEF_test(test1) {
     std::cout << particlesystem.to_string();
     
   }
+  DEF_case(TypeTranspose) {
+    using namespace acg;
+    EXPECT((std::is_same_v<TransposeType<AttrVec<acg::F32, 3>>, AttrVecTrans<acg::F32, 3>>));
+  }
 
   DEF_case(cofastream) {
     fastream fs;

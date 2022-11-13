@@ -22,11 +22,12 @@ public:
 
   Vec3f &GetPosition();
 
-  const Vec3f &GetCPosition() const;
+  const Vec3f &GetPosition() const;
 
-  const Vec3f &GetCFront() const;
+  const Vec3f &GetFront() const;
 
   Vec3f &GetFront();
+
   Vec3f &GetUp();
 
   void Move(Vec3f direction, F64 dt);

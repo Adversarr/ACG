@@ -25,6 +25,7 @@ protected:
 
   void PreRun() final;
 
+
 private:
   void RegenerateScene();
 
@@ -36,6 +37,7 @@ private:
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> velocity_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> acceleration_;
 
+  AttrVec<Idx, 2> edges_;
 };
 
 

@@ -34,6 +34,13 @@ using Vec4Idx = Eigen::Vector4<Idx>;
 template <typename T, int n_attrib> using AttrVec
     = Eigen::Matrix<T, n_attrib, Eigen::Dynamic, Eigen::AutoAlign | Eigen::ColMajor>;
 
+template <typename T, int n_attrib> using AttrVecTrans
+    = Eigen::Matrix<T, Eigen::Dynamic, n_attrib, Eigen::AutoAlign | Eigen::ColMajor>;
+
+// WARN: this type will not transpose the option.
+template <typename T> using TransposeType
+    = Eigen::Matrix<typename T::Scalar, T::ColsAtCompileTime, T::RowsAtCompileTime, T::Options>;
+
 namespace constants {
 
 template <typename F> constexpr F pi = 3.14159292035;

@@ -40,7 +40,13 @@ using F64 = double;
  * @brief Index & Size type for mesh, particle system, rendering(index buffer), etc.
  *
  */
-using Idx = uint32_t;
+using Idx = int32_t;
+
+using UIdx = uint32_t;
+
+using LIdx = int64_t;
+
+using ULIdx = uint64_t;
 
 constexpr char logo[]
     = "      ___           ___           ___     \n"

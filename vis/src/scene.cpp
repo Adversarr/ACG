@@ -88,7 +88,7 @@ std::pair<std::vector<Vertex>, std::vector<Idx>> Scene::Build() const {
       vertices.emplace_back(Vertex(to_glm(position), to_glm(color), to_glm(normal)));
     }
 
-    for (auto idx : m.GetFaces().colwise()) {
+    for (const auto& idx : m.GetFaces().colwise()) {
       indices.push_back(idx.x() + i_offset);
       indices.push_back(idx.y() + i_offset);
       indices.push_back(idx.z() + i_offset);
@@ -102,7 +102,7 @@ std::pair<std::vector<Vertex>, std::vector<Idx>> Scene::Build() const {
       vertices.emplace_back(Vertex(to_glm(Vec3f(position + particles_[i].GetCenter())),
                                    to_glm(particles_colors_[i]), to_glm(position)));
     }
-    for (auto idx : m.GetFaces().colwise()) {
+    for (const auto &idx : m.GetFaces().colwise()) {
       indices.push_back(idx.x() + i_offset);
       indices.push_back(idx.y() + i_offset);
       indices.push_back(idx.z() + i_offset);

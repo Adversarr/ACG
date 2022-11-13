@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 #include <iostream>
 
 
@@ -10,8 +11,8 @@
 
 #ifndef NDEBUG
   // TODO: Replace debug.
-#include <spdlog/spdlog.h>
 #  define ACG_DEBUG_LOG(...) spdlog::debug(__VA_ARGS__)
+#include "tracef.hpp"
 #  define LOG_FUNCTION_CALL_DEBUG \
     acg::utils::details::FunctionDeferredLogger ___(__PRETTY_FUNCTION__, __FILE__, __LINE__)
 #else
@@ -20,6 +21,9 @@
 #endif
 
 namespace acg::utils::details {
+/**
+* Warning: Deprecated.
+*/
 template <int valid, typename... T> void make_assert_details(bool value, const char *cond_text,
                                                              const char* position, int line,
                                                              const char* message, T&&... args) {
