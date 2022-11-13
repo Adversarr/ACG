@@ -1,3 +1,6 @@
+/***
+* @author Jerry Yang
+*/
 #pragma once
 
 #include <Eigen/Core>

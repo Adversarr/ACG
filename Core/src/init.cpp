@@ -2,8 +2,8 @@
 
 #include <spdlog/spdlog.h>
 
-#include "acg_utils/log.hpp"
 #include "co/flag.h"
+#include <spdlog/spdlog.h>
 
 namespace acg::details {
 
@@ -11,6 +11,10 @@ std::vector<InitHook> global_hooks;
 
 void add_hook(const InitHook& hook) { global_hooks.push_back(hook); }
 
+static void sort() {
+  std::sort(global_hooks.begin(), global_hooks.end(),
+            [](const InitHook& l, const InitHook& r) { return l.priority > r.priority; });
+}
 void init() {
   sort();
   for (const auto& cb : global_hooks) {
@@ -30,19 +34,19 @@ void cleanup() {
   }
 }
 
-void sort() {
-  std::sort(global_hooks.begin(), global_hooks.end(),
-            [](const InitHook& l, const InitHook& r) { return l.priority > r.priority; });
-}
 
 }  // namespace acg::details
 
 namespace acg {
+
 void init(int argc, char** argv) { 
   details::init(); 
   flag::init(argc, argv);
 
 }
 
+/**
+  * @param
+  */
 void cleanup() { details::cleanup(); }
 }  // namespace acg

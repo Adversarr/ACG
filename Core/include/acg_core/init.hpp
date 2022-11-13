@@ -5,22 +5,23 @@
 
 namespace acg::details {
 
-
-
 struct InitHook {
   std::optional<std::function<void()>> on_init;
   std::optional<std::function<void()>> on_exit;
   int priority;
-  const char* name=nullptr;
+  const char* name = nullptr;
 };
 
 void add_hook(const InitHook& hook);
 
+/**
+ * @brief Init all the hooks.
+ */
 void init();
 
-void sort();
-
+/**
+ * @brief Cleanup all the hooks.
+ */
 void cleanup();
 
-
-}
+}  // namespace acg::details
