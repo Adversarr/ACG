@@ -16,6 +16,7 @@ target('acg_visualizer')
   add_files('src/**.cpp')
   add_packages('vulkansdk', 'glm', 'glfw', 'imgui', {public=true})
   add_deps('acg_core')
+  -- set_pcxxheader("include/acg_vis/avk.hpp")
 
   on_load(function(target) 
     import('core.project.config')

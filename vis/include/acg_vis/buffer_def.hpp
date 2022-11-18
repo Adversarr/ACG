@@ -4,7 +4,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <vector>
-#include <vulkan/vulkan.hpp>
+#include "avk.hpp"
 
 namespace acg::visualizer {
 

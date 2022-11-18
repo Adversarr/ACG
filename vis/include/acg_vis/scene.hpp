@@ -12,8 +12,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
-#include <vulkan/vulkan.hpp>
-
+#include "acg_vis/avk.hpp"
 #include "buffer_def.hpp"
 
 namespace acg::visualizer {
@@ -27,8 +26,29 @@ public:
 
   void Reset();
 
+  /**
+  * @brief Add a particle to the scene.
+  *
+  * @param particle: contains the position and radius
+  * @param color: the particle's color, in RGB (r, g, b \in [0, 1])
+  */
   Scene& AddParticle(const geometry::Particle<F32>& particle, const Vec3f& color);
 
+  /**
+  * @brief Add a triangle mesh to the scene.
+  *
+  * @param mesh: triangle mesh
+  * @param opt_normals: simply use std::nullopt here. i.e. AddMesh(mesh, std::nullopt, colors);
+  * @param colors: color for each vertex (3xn) or the whole mesh (3x1)
+  *
+  * @example AddMesh(mesh, std::nullopt, Vec3f(0.4, 0.5, 0.6));
+  * @example 
+  *     AttrVec<F32, 3> v = AttrVecTrans<F32, 3>{{0, 0, 1}, {0, 0, 0}, {0, 1, 0}}.transpose();
+  *     AttrVec<Idx, 3> f = AttrVecTrans<Idx, 3>{{0, 1, 2}}.transpose();
+  *     AttrVec<F32, 3> c = AttrVecTrans<F32, 3>{{7, .7, .7}}.transpose();
+  *     geometry::Mesh<F32> mesh(v, f);
+  *     scene_.AddMesh(mesh, AttrVecTrans<F32, 3>{{1, 0, 0}, {1, 0, 0}, {1, 0, 0}}.transpose(), Vec3f(.5, .6, .7));
+  */
   Scene& AddMesh(geometry::Mesh<F32> mesh, std::optional<AttrVec<F32, 3>> opt_normals,
                  AttrVec<F32, 3> colors);
 

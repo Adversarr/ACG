@@ -2,8 +2,7 @@
 
 #include <acg_core/geometry/common_models.hpp>
 #include <vector>
-#include <vulkan/vulkan.hpp>
-
+#include "acg_vis/avk.hpp"
 #include "acg_core/geometry/common_models.hpp"
 #include "acg_vis/buffer_def.hpp"
 #include "acg_vis/convent.hpp"

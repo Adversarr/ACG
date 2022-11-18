@@ -38,33 +38,50 @@ int NBodySim::RunPhysicsImpl(F64 dt) {
 
 void NBodySim::PreRun() {
   F64 r = 3;
+  // Initialzie the particles.
   for (int i = 0; i < n_; ++i) {
-    Random rand(clock());
+    Random rand(clock());  // Random number generator.
+
+    // Center for Particle[i]
     Vec3f center((rand.next() % 1000) / 1000.0, r * sin(2.0 * i / n_ * acg::constants::pi<F32>),
                  r * cos(2.0 * i / n_ * acg::constants::pi<F32>));
+    // NOTE: acg::constants::pi<F32> will returns 3.1415.... in float.
+    //       therefore acg::constants::pi<F64> will returns 3.1415.... in double
+    //  See: Variable Template (since C++ 14) / 变量模版
+
+    // Color for Particle[i]
     Vec3f color = 0.5f * (Vec3f::Random() + Vec3f::Ones());
 
+    // NOTE: particles_ is vector<Particle<F64>>, vector is a standard "container" in c++ stl. (列表类型)
     particles_.push_back(P64(center.cast<F64>(), .4));
     color_.push_back(color);
   }
 
+  // Initialize velocity, each column (R^3) represents one particle's velocity
   velocity_.resize(3, n_);
-  acceleration_.resize(3, n_);
   velocity_.setRandom();
   velocity_ *= 2;
+  // Initialize accelerations.
+  acceleration_.resize(3, n_);
   acceleration_.setZero();
+  // Initialize particles' mass
   mass_.resize(n_);
   mass_.setOnes();
 
+  // Generate the scene for rendering
   RegenerateScene();
+  // Refit the Buffers according to the scene
   RefitBuffers();
 
+  // Setup Camera
   camera_.SetPosition({-10, 0, 0});
   camera_.SetFront({1, 0, 0});
+  // Setup Light
   light_.light_position_ = Vec3f(3, 0, 0);
   light_.ambient_light_color_ = Vec3f(1, 1, 1);
   light_.ambient_light_density_ = 0.5;
   light_.light_color_ = Vec3f(0.7, .7, .7);
+  // Push camera and light data to the renderer(Mesh Pipeline)
   mesh_ppl_->SetUbo(&camera_, &light_, true);
 }
 
@@ -85,15 +102,11 @@ void NBodySim::RunUiImpl() {
 }
 
 void NBodySim::RegenerateScene() {
+  // Clear previous scene
   scene_.Reset();
+  // push the particles to the scene
   for (Idx i = 0; i < n_; ++i) {
     scene_.AddParticle(particles_[i].Cast<F32>(), color_[i]);
   }
-
-  AttrVec<F32, 3> v = AttrVecTrans<F32, 3>{{0, 0, 1}, {0, 0, 0}, {0, 1, 0}}.transpose();
-  AttrVec<Idx, 3> f = AttrVecTrans<Idx, 3>{{0, 1, 2}}.transpose();
-  AttrVec<F32, 3> c = AttrVecTrans<F32, 3>{{7, .7, .7}}.transpose();
-  geometry::Mesh<F32> mesh(v, f);
-  scene_.AddMesh(mesh, AttrVecTrans<F32, 3>{{1, 0, 0}, {1, 0, 0}, {1, 0, 0}}.transpose(), c);
 
 }
