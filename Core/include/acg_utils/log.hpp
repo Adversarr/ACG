@@ -1,9 +1,7 @@
 #pragma once
 
-#ifndef DONT_INCLUDE_EXTERNAL
-#  include <fmt/format.h>
-#  include <spdlog/spdlog.h>
-#endif
+#include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 #ifndef ACG_IS_DEBUG
 #  define ACG_IS_DEBUG (1 - ACG_IS_RELEASE)
