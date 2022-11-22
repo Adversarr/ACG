@@ -17,3 +17,7 @@ target('test_eigen_mp')
   add_deps('acg_core')
   add_packages("openmp")
  
+target('mass-spring')
+  add_files('mass_spring/**.cpp')
+  add_deps('acg_visualizer', 'acg_core')
+target_end()

@@ -51,6 +51,12 @@ template <typename... T> struct List {
   using back = typename Back<T...>::type;
 };
 
+template <typename T> struct IsList {
+  static constexpr bool value = false;
+};
+template <typename... T> struct IsList<List<T...>> {
+  static constexpr bool value = true;
+};
 // Car: [h, t...] => h
 //      [h] => h
 //      [] => Empty

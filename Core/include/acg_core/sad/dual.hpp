@@ -1,4 +1,5 @@
 #pragma once
+// NOLINTBEGIN(readability-identifier-naming)
 
 #include "acg_core/math.hpp"
 #include "acg_utils/god/algorithms.hpp"
@@ -6,11 +7,6 @@
 namespace acg::sad {
 namespace details {
 using namespace acg::utils::god;
-// Dual
-template <typename V, typename Dr> struct Dual {
-  using Grad = Dr;
-  using Val = V;
-};
 
 // Expr
 template <typename T, typename... E> struct Expr {
@@ -18,14 +14,13 @@ template <typename T, typename... E> struct Expr {
   using InputNodes = Unique_t<Reduce_t<Concat, List<List<>, typename E::InputNodes...>>>;
   using type = T;
   using SubNodes = Unique_t<Reduce_t<Concat, List<List<E...>, typename E::SubNodes...>>>;
-  static constexpr size_t dim = acg::TensorTrait<T>::dim;  // NOLINT
-  static constexpr bool is_constant = false;               // NOLINT
-  static constexpr bool is_input = false;                  // NOLINT
+  static constexpr bool is_constant = false;
+  static constexpr bool is_input = false;
 };
 
 // Helper classes
 template <typename L, typename R> struct IsSubNode {
-  static constexpr bool value = Has_v<L, typename R::SubNodes>;  // NOLINT
+  static constexpr bool value = Has_v<L, typename R::SubNodes>;
 };
 
 template <typename L> struct GetSubNodes {
@@ -37,59 +32,104 @@ template <typename T> struct GetInnerType {
 };
 
 template <typename T> struct Input : public Expr<T> {
-  inline void operator()(T&) {}
+  static constexpr bool is_input = true;
 };
 
 template <typename T> struct Constant : public Expr<T> {
-  static constexpr bool is_constant = true;  // NOLINT
+  static constexpr bool is_constant = true;
 };
 
 template <typename T> struct Ones : Constant<T> {
-  void operator()(T& t) { t.setOnes(); }
+  inline decltype(auto) operator()() const noexcept { return T::Ones(); }
 };
 
 template <> struct Ones<float> : Constant<float> {
-  void operator()(float& t) { t = 1; }
+  inline float operator()() const noexcept { return static_cast<float>(1); }
 };
 template <> struct Ones<double> : Constant<double> {
-  void operator()(double& t) { t = 1; }
+  inline double operator()() const noexcept { return static_cast<double>(1); }
 };
 
+template <typename X> using OnesLike = Ones<typename X::type>;
+
 template <typename T> struct Zeros : Constant<T> {
-  void operator()(T& t) { t.setZeros(); }
+  inline decltype(auto) operator()() const noexcept { return T::Zero(); }
 };
 
 template <> struct Zeros<float> : Constant<float> {
-  void operator()(float& t) { t = 0; }
+  inline decltype(auto) operator()() const noexcept { return static_cast<float>(0); }
 };
 template <> struct Zeros<double> : Constant<double> {
-  void operator()(double& t) { t = 0; }
+  inline decltype(auto) operator()() const noexcept { return static_cast<double>(0); }
 };
+template <typename X> struct ZerosLike : public Zeros<typename X::type> {};
+
+template <typename T, int... dmd> struct Dirac;
+
+template <typename T> struct Dirac<T> : public Ones<T> {};
+
+template <typename T, int r, int c> struct Dirac<T, r, c> : public Constant<T> {
+  inline decltype(auto) operator()() const noexcept {
+    constexpr int64_t rows = T::RowsAtCompileTime;
+    constexpr int64_t cols = T::ColsAtCompileTime;
+    return Eigen::Vector<typename T::Scalar, rows * cols>::Unit(rows * cols, c * rows + r)
+        .reshaped(rows, cols);
+  }
+};
+
 // Add Operation, L::type should equals to R::type
 template <typename L, typename R> struct Add : public Expr<typename L::type, L, R> {
   static_assert(std::is_same_v<typename L::type, typename R::type>,
                 "Add between two different type is not permitted.");
   using T = typename L::type;
-  void operator()(T& t, const T& l, const T& r) { t = l + r; }
-  template <typename X, typename DG> using DualGrad_t = DG;
+  template <typename Li, typename Ri>
+  inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
+    return l + r;
+  }
+  template <typename X, typename DG> using Grad_t = DG;
 };
-template <typename L, typename R> struct DualAdd
-    : public Dual<Add<typename L::Val, typename R::Val>, Add<typename L::Grad, typename R::Grad>> {
+
+template <typename X> struct Neg : public Expr<typename X::type, X> {
+  using T = typename X::type;
+  template <typename XI> inline decltype(auto) operator()(XI&& in_x) const noexcept {
+    return -in_x;
+  }
+
+  template <typename, typename G> using Grad_t = Neg<G>;
 };
+// template <typename L, typename R> struct DualAdd
+//     : public Dual<Add<typename L::Val, typename R::Val>, Add<typename L::Grad, typename R::Grad>>
+//     {
+// };
 
 // Multiplication.
 template <typename L, typename R, class = void> struct Mul;
+template <typename L, typename R> struct OpMul {
+  using type = decltype(std::declval<typename L::type>() * std::declval<typename R::type>());
+};
+template <typename L, typename R> struct OpAdd {
+  using type = decltype(std::declval<typename L::type>() + std::declval<typename R::type>());
+};
+template <typename L, typename R> struct OpSub {
+  using type = decltype(std::declval<typename L::type>() - std::declval<typename R::type>());
+};
 // Scalar * Scalar
 template <typename L, typename R>
 struct Mul<L, R,
            std::enable_if_t<!std::is_same_v<L, R> && TensorTrait<typename L::type>::is_scalar
                             && TensorTrait<typename R::type>::is_scalar>>
     : public Expr<typename L::type, L, R> {
+  // TODO: Replace all the T.
+  // using T = typename OpMul<L, R>::type;
   using T = typename L::type;
-  inline void operator()(T& t, T l, T r) { t = l * r; }
-  template <typename X, typename DG> using DualGrad_t
-      = std::conditional_t<std::is_same_v<X, R>, Dual<Mul<L, R>, Mul<L, typename DG::Grad>>,
-                           Dual<Mul<L, R>, Mul<typename DG::Grad, R>>>;
+
+  template <typename Li, typename Ri>
+  inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
+    return l * r;
+  }
+
+  template <typename X, typename G> using Grad_t
+      = std::conditional_t<std::is_same_v<X, R>, Mul<L, G>, Mul<G, R>>;
 };
 
 template <typename L> struct Mul<
@@ -98,9 +138,8 @@ template <typename L> struct Mul<
                      && TensorTrait<typename L::type>::is_scalar>>
     : public Expr<typename L::type, L> {
   using T = typename L::type;
-  inline void operator()(T& t, const T& l) { t = l * l; }
-  template <typename X, typename DG> using DualGrad_t
-      = Dual<Mul<L, L>, Add<Mul<L, typename DG::Grad>, Mul<L, typename DG::Grad>>>;
+  template <typename Li> inline decltype(auto) operator()(Li&& l) const noexcept { return l * l; }
+  template <typename X, typename G> using Grad_t = Add<Mul<L, G>, Mul<G, L>>;
 };
 
 // Scalar * Matrix
@@ -110,21 +149,26 @@ struct Mul<L, R,
                             && !(TensorTrait<typename R::type>::is_scalar)>>
     : public Expr<typename R::type, L, R> {
   using T = typename R::type;
-  inline void operator()(T& t, const typename L::type& l, const typename R::type& r) { t = l * r; }
-  template <typename X, typename DG> using DualGrad_t
-      = std::conditional_t<std::is_same_v<X, R>, Dual<Mul<L, R>, Mul<L, typename DG::Grad>>,
-                           Dual<Mul<L, R>, Mul<typename DG::Grad, R>>>;
+  template <typename Li, typename Ri>
+  inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
+    return l * r;
+  }
+  template <typename X, typename G> using Grad_t
+      = std::conditional_t<std::is_same_v<X, R>, Mul<L, G>, Mul<G, R>>;
 };
+
 template <typename L, typename R>
 struct Mul<L, R,
            std::enable_if_t<!TensorTrait<typename L::type>::is_scalar
                             && TensorTrait<typename R::type>::is_scalar>>
     : public Expr<typename L::type, L, R> {
   using T = typename L::type;
-  inline void operator()(T& t, const typename L::type& l, const typename R::type& r) { t = l * r; }
-  template <typename X, typename DG> using DualGrad_t
-      = std::conditional_t<std::is_same_v<X, R>, Dual<Mul<L, R>, Mul<L, typename DG::Grad>>,
-                           Dual<Mul<L, R>, Mul<typename DG::Grad, R>>>;
+  template <typename Li, typename Ri>
+  inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
+    return l * r;
+  }
+  template <typename X, typename G> using Grad_t
+      = std::conditional_t<std::is_same_v<X, R>, Mul<L, G>, Mul<G, R>>;
 };
 // Mat * Mat
 template <typename L, typename R>
@@ -139,10 +183,12 @@ struct Mul<L, R,
                 "L.col != R.rows");
   using T = Eigen::Matrix<typename TensorTrait<typename L::type>::Scalar,
                           TensorTrait<typename L::type>::rows, TensorTrait<typename R::type>::cols>;
-  inline void operator()(T& t, const typename L::type& l, const typename R::type& r) { t = l * r; }
-  template <typename X, typename DG> using DualGrad_t
-      = std::conditional_t<std::is_same_v<X, R>, Dual<Mul<L, R>, Mul<L, typename DG::Grad>>,
-                           Dual<Mul<L, R>, Mul<typename DG::Grad, R>>>;
+  template <typename Li, typename Ri>
+  inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
+    return l * r;
+  }
+  template <typename X, typename G> using Grad_t
+      = std::conditional_t<std::is_same_v<X, R>, Mul<L, G>, Mul<G, R>>;
 };
 
 template <typename L> struct Mul<
@@ -151,9 +197,11 @@ template <typename L> struct Mul<
                      && !TensorTrait<typename L::type>::is_scalar>>
     : public Expr<typename L::type, L> {
   using T = typename L::type;
-  inline void operator()(T& t, const T& l) { t = l * l; }
-  template <typename X, typename DG> using DualGrad_t
-      = Dual<Mul<L, L>, Add<Mul<L, typename DG::Grad>, Mul<typename DG::Grad, L>>>;
+  template <typename Li, typename Ri>
+  inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
+    return l * r;
+  }
+  template <typename X, typename G> using Grad_t = Add<Mul<L, G>, Mul<G, L>>;
 };
 
 // Substraction, L::type should equals to R::type
@@ -161,14 +209,20 @@ template <typename L, typename R> struct Sub : public Expr<typename L::type, L, 
   static_assert(std::is_same_v<typename L::type, typename R::type>,
                 "Substract between two different type is not permitted.");
   using T = typename L::type;
-  void operator()(T& t, const T& l, const T& r) { t = l - r; }
-  template <typename X, typename DG> using DualGrad_t = DG;
+  template <typename Li, typename Ri>
+  inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
+    return l - r;
+  }
+  template <typename X, typename G> using Grad_t
+      = std::conditional_t<std::is_same_v<L, X>, G, Neg<G>>;
 };
 
 template <typename L> struct Sub<L, L> : public Expr<typename L::type, L> {
   using T = typename L::type;
-  void operator()(T& t, const T& /*l*/) { Zeros<T>{}(t); }
-  template <typename X, typename DG> using DualGrad_t = Dual<Zeros<T>, Zeros<T>>;
+  template <typename Li> inline decltype(auto) operator()(Li&&) const noexcept {
+    return Zeros<T>{}();
+  }
+  template <typename X, typename G> using Grad_t = ZerosLike<G>;
 };
 
 // Simplification Rules
@@ -219,32 +273,28 @@ template <typename T> struct Simplify<Sub<Zeros<T>, Zeros<T>>> {
   using type = Zeros<T>;
 };
 // Dual Chain.
-template <typename F, typename I, typename X, typename D> struct DualChain;
+template <typename F, typename I, typename X, typename D> struct Chain;
 // Dual Diff.
 template <typename Y, typename X, typename D> struct DirectionalDiff {
-  using type = typename DualChain<Y, typename Y::InputExpr, X, D>::type;
+  using type = typename Chain<Y, typename Y::InputExpr, X, D>::type;
 };
-template <typename F, typename X, typename D> struct DualChain<F, List<>, X, D> {
-  using type = Dual<F, Zeros<typename F::type>>;
+template <typename F, typename X, typename D> struct Chain<F, List<>, X, D> {
+  using type = Zeros<typename F::type>;
 };
-template <typename F, typename I, typename X, typename D> struct DualChain<F, List<I>, X, D> {
+template <typename F, typename I, typename X, typename D> struct Chain<F, List<I>, X, D> {
   using dual_ix = typename DirectionalDiff<I, X, D>::type;
-  using type = typename F::template DualGrad_t<I, dual_ix>;
+  using type = typename F::template Grad_t<I, dual_ix>;
 };
 template <typename F, typename X, typename D, typename IH, typename... IT>
-struct DualChain<F, List<IH, IT...>, X, D> {
+struct Chain<F, List<IH, IT...>, X, D> {
   using dual_hx = typename DirectionalDiff<IH, X, D>::type;
-  using dual_fhx = typename F::template DualGrad_t<IH, dual_hx>;
-  using type = DualAdd<dual_fhx, typename DualChain<F, List<IT...>, X, D>::type>;
+  using dual_fhx = typename F::template Grad_t<IH, dual_hx>;
+  using type = Add<dual_fhx, typename Chain<F, List<IT...>, X, D>::type>;
 };
 
 template <typename X, typename D> struct DirectionalDiff<X, X, D> {
-  using type = Dual<X, D>;
+  using type = D;
 };
-
-template <typename F, typename X> using Diff =
-    typename DirectionalDiff<F, X, Ones<typename X::type>>::type;
-template <typename E> using Simpliest_t = typename FixedPoint<Simplify, E>::type;
 
 // Context
 template <typename... E> struct Context {
@@ -253,8 +303,8 @@ template <typename... E> struct Context {
   using inputs = Unique_t<Reduce_t<Concat, List<List<>, typename E::InputNodes...>>>;
   using data_type = TopoSort_t<IsSubNode, Unique_t<Concat_t<inputs, Concat_t<internals, outputs>>>>;
   using data_actual_type = Map_t<GetInnerType, data_type>;
-  template <typename T> static constexpr size_t index                    // NOLINT
-      = Find<typename FixedPoint<Simplify, T>::type, data_type>::value;  // NOLINT
+  template <typename T> static constexpr size_t index
+      = Find<typename FixedPoint<Simplify, T>::type, data_type>::value;
 
   using data_container = typename data_actual_type::template cast<std::tuple>;
   template <typename T> using param_type = std::tuple_element_t<index<T>, data_container>;
@@ -272,38 +322,59 @@ template <typename... E> struct Context {
 template <typename T> struct Runner {
   template <typename Exp, typename IL> struct Task;
   template <typename Exp, typename... I> struct Task<Exp, List<I...>> {
-    void operator()(typename T::data_container& data) {
-      Exp{}(std::get<T::template index<Exp>>(data), std::get<T::template index<I>>(data)...);
+    inline void operator()(typename T::data_container& data) const noexcept {
+      if constexpr (!Exp::is_input)
+        std::get<T::template index<Exp>>(data) = Exp{}(std::get<T::template index<I>>(data)...);
     }
   };
   template <typename Ts> struct RunnerImpl;
   template <typename... Ts> struct RunnerImpl<List<Ts...>> {
-    void operator()(typename T::data_container& data) {
+    inline void operator()(typename T::data_container& data) const noexcept {
       (Task<Ts, typename Ts::InputExpr>{}(data), ...);
     }
   };
   explicit Runner() = default;
-  void operator()(T& context) { RunnerImpl<typename T::data_type>{}(context.data); }
+  inline void operator()(T& context) const noexcept {
+    RunnerImpl<typename T::data_type>{}(context.data);
+  }
 };
+
+template <typename F, typename X, typename D> using DirectionalDiff_t =
+    typename DirectionalDiff<F, X, D>::type;
+
+template <typename E> using Simpliest_t = typename FixedPoint<Simplify, E>::type;
+
 }  // namespace details
 
 template <typename T> using Input = details::Input<T>;
 template <typename E> using Simplify =
     typename acg::utils::god::FixedPoint<details::Simplify, E>::type;
 template <typename E> using Simpliest_t = typename Simplify<E>::type;
+
+template <typename T> using Ones = details::Ones<T>;
+template <typename E> using OnesLike = details::OnesLike<E>;
+
+// NOLINTBEGIN(bugprone-macro-parentheses)
 #define Variable(type, name) \
-  struct name : public acg::sad::Input<type> {}
-#define Constant_value(type, name, value)            \
-  struct name : public acg::sad::Constant<type> {    \
-    inline void operator()(type& v) { v = (value); } \
-  }  // NOLINT
-#define Constant_expr(type, name, expr)           \
-  struct name : public acg::sad::Constant<type> { \
-    inline void operator()(type& v) { expr; }     \
+  struct name : public acg::sad::details::Input<type> {}
+#define Constant_value(type, name, value)                                                  \
+  struct name : public acg::sad::details::Constant<type> {                                 \
+    inline decltype(auto) operator()() const noexcept { return static_cast<type>(value); } \
   }
+#define Constant_expr(type, name, expr)                    \
+  struct name : public acg::sad::details::Constant<type> { \
+    inline decltype(auto) operator()() const noexcept {    \
+      type v;                                              \
+      expr;                                                \
+      return v;                                            \
+    }                                                      \
+  }
+// NOLINTEND(bugprone-macro-parentheses)
+
 template <typename L, typename R> using Add = details::Add<L, R>;
 template <typename L, typename R> using Sub = details::Sub<L, R>;
 template <typename L, typename R> using Mul = details::Mul<L, R>;
-template <typename T> inline void run(T& t) { details::Runner<T>()(t); }  // NOLINT
+template <typename T> inline void run(T& t) { details::Runner<T>()(t); }
 
 }  // namespace acg::sad
+// NOLINTEND(readability-identifier-naming)

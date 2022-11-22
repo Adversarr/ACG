@@ -54,6 +54,8 @@ public:
 
   Mesh(Mesh&&) = default;
 
+  Mesh& operator=(const Mesh& ) = default;
+
   inline const StateType& GetVertices() const;
 
   inline const FaceListType& GetFaces() const;

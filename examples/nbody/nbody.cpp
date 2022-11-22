@@ -8,7 +8,6 @@
 #include <cmath>
 NBodySim::NBodySim(int n) : n_(n) {}
 
-NBodySim::~NBodySim() { CleanUp(); }
 
 int NBodySim::RunPhysicsImpl(F64 dt) {
   ACG_DEBUG_LOG("Run Simulation For dt={}", dt);

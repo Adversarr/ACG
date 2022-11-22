@@ -56,7 +56,7 @@ public:
 
   vk::DeviceSize GetRequiredIndexBufferSize() const;
 
-  std::pair<std::vector<Vertex>, std::vector<Idx>> Build() const;
+  std::pair<std::vector<Vertex>, std::vector<IndexType>> Build() const;
 
 private:
   std::vector<geometry::Mesh<F32>> meshes_;

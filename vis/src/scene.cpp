@@ -68,9 +68,9 @@ void Scene::Reset() {
   particles_colors_.clear();
 }
 
-std::pair<std::vector<Vertex>, std::vector<Idx>> Scene::Build() const {
+std::pair<std::vector<Vertex>, std::vector<IndexType>> Scene::Build() const {
   std::vector<Vertex> vertices;
-  std::vector<Idx> indices;
+  std::vector<IndexType> indices;
   for (size_t i = 0; i < meshes_.size(); ++i) {
     const auto& m = meshes_[i];
     const auto& c = mesh_colors_[i];
