@@ -25,8 +25,13 @@ See `examples/nbody`.
 
 ### Core
 
+- [ ] SAD: Static Auto Diff
 - [ ] Half Edge data structure for high performance neighbour query.
 - [ ] Physics engine
 - [ ] Spatial Data structure
 - [ ] Math libraries
 
+
+### LICENSE
+
+license: MIT
