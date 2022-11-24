@@ -273,11 +273,24 @@ template <typename T, typename S> struct Simplify<Add<T, Zeros<S>>> {
 template <typename T, typename S> struct Simplify<Add<Zeros<S>, T>> {
   using type = typename Simplify<T>::type;
 };
+template <typename T, typename S> struct Simplify<Add<Zeros<S>, Zeros<T>>> {
+  using type = Zeros<S>;
+};
 // Substraction: A - 0 = A
 template <typename L, typename T> struct Simplify<Sub<L, Zeros<T>>> {
   using type = typename Simplify<L>::type;
 };
+template <typename L, typename T> struct Simplify<Sub<Zeros<T>, L>> {
+  using type = typename Simplify<Neg<L>>::type;
+};
 template <typename T> struct Simplify<Sub<Zeros<T>, Zeros<T>>> {
+  using type = Zeros<T>;
+};
+// Neg:
+template <typename T> struct Simplify<Neg<Neg<T>>> {
+  using type = typename Simplify<T>::type;
+};
+template <typename T> struct Simplify<Neg<Zeros<T>>> {
   using type = Zeros<T>;
 };
 // Dual Chain.

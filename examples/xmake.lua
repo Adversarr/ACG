@@ -22,10 +22,9 @@ target('mass-spring')
   add_deps('acg_visualizer', 'acg_core')
 target_end()
 
-
-add_requires('benchmark')
+add_requires('benchmark', 'autodiff')
 target('sad_bench')
-  add_files('sad_bench/**.cpp')
+  add_files('sad_bench/*.cpp')
   add_deps('acg_core')
-  add_packages('benchmark')
+  add_packages('benchmark', 'autodiff')
 target_end()

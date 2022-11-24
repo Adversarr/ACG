@@ -4,7 +4,6 @@
 namespace acg::sad {
 namespace details {
 
-
 // Transpose
 template <typename X> struct Transpose : public Expr<typename X::transpose, X> {
   template <typename O, typename XIn, typename YIn>
@@ -20,26 +19,38 @@ template <typename X, typename Y> struct Dot
   static_assert(TensorTrait<typename X::type>::is_vector
                     && TensorTrait<typename Y::type>::is_vector,
                 "only vector can dot.");
-  template <typename XIn, typename YIn>
-   decltype(auto) operator()(XIn&& in_x, YIn&& in_y) {
+  template <typename XIn, typename YIn> decltype(auto) operator()(XIn&& in_x, YIn&& in_y) {
     return std::forward<XIn>(in_x).dot(std::forward<YIn>(in_y));
   }
 
   template <typename XIn, typename G> using Grad_t
-      = std::conditional<std::is_same_v<XIn, X>, Dot<G, Y>, Dot<X, G>>;
+      = std::conditional_t<std::is_same_v<XIn, X>, Dot<G, Y>, Dot<X, G>>;
 };
 
 // For X X, compute X^T X:
 template <typename X> struct Dot<X, X>
     : public Expr<typename TensorTrait<typename X::type>::Scalar, X> {
   static_assert(TensorTrait<typename X::type>::is_vector, "only vector can dot.");
-  template <typename XIn>
-  decltype(auto) operator()(XIn&& in_x) {
+  template <typename XIn> decltype(auto) operator()(XIn&& in_x) {
     return std::forward<XIn>(in_x).dot(std::forward<XIn>(in_x));
   }
 
   template <typename XIn, typename G> using Grad_t = Add<Dot<X, G>, Dot<X, G>>;
 };
+
+template <typename X, typename Y> struct Simplify<Dot<X, Y>> {
+  using type = Dot<typename Simplify<X>::type, typename Simplify<Y>::type>;
+};
+template <typename X, typename Z> struct Simplify<Dot<X, Zeros<Z>>> {
+  using type = Zeros<typename TensorTrait<Z>::Scalar>;
+};
+template <typename X, typename Z> struct Simplify<Dot<Zeros<Z>, X>> {
+  using type = Zeros<typename TensorTrait<Z>::Scalar>;
+};
+template <typename X, typename Z> struct Simplify<Dot<Zeros<Z>, Zeros<X>>> {
+  using type = Zeros<typename TensorTrait<Z>::Scalar>;
+};
+
 }  // namespace details
 
 template <typename X, typename Y> using Dot = details::Dot<X, Y>;

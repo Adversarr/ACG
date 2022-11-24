@@ -71,12 +71,11 @@ template <typename... E> struct LazyContext<List<E...>> {
   using lazy_layers = Reverse_t<Cdr_t<TopoFlatten_t<IsSubNode, exprs>>>;
   using non_lazy_exprs = typename Filter<NotLazy, exprs>::type;
   static_assert(std::is_same_v<non_lazy_exprs, Car_t<layers>>, "eval layers[0] != non lazy");
-  using lazy_exprs = typename Filter<NotLazy, exprs>::contract;
-  using data_actual_type = Map_t<GetInnerType, non_lazy_exprs>;
-  using data_container = typename data_actual_type::template cast<std::tuple>;
+  using non_lazy_data_actual_type = Map_t<GetInnerType, non_lazy_exprs>;
+  using data_container = typename non_lazy_data_actual_type::template cast<std::tuple>;
   using lazy_container_dict = Reverse_t<typename DetermineLazyDataType<Reverse_t<exprs>>::type>;
 
-  template <typename T> static constexpr size_t index = Find<T, non_lazy_exprs>::value;
+  template <typename T> static constexpr size_t index = Find<Simpliest_t<T>, non_lazy_exprs>::value;
   template <typename T> using param_type = std::tuple_element_t<index<T>, data_container>;
   data_container data;
 
@@ -107,7 +106,7 @@ template <typename C, typename LayersToCompute> struct LazyResultImpl {
   using data_container = typename layer_output_inner_type::template cast<std::tuple>;
   using deeper_layer_result = LazyResultImpl<C, layer_last>;
   template <typename T> static constexpr size_t index
-      = Find<typename FixedPoint<Simplify, T>::type, layer_output>::value;
+      = Find<Simpliest_t<T>, layer_output>::value;
   deeper_layer_result deeper_result_;
   data_container data_;
 
