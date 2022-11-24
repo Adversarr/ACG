@@ -21,8 +21,8 @@ template <typename X, typename Y> struct Dot
                     && TensorTrait<typename Y::type>::is_vector,
                 "only vector can dot.");
   template <typename XIn, typename YIn>
-  decltype(auto) operator()(XIn&& in_x, YIn&& in_y) {
-    return in_x.dot(in_y);
+   decltype(auto) operator()(XIn&& in_x, YIn&& in_y) {
+    return std::forward<XIn>(in_x).dot(std::forward<YIn>(in_y));
   }
 
   template <typename XIn, typename G> using Grad_t
@@ -35,7 +35,7 @@ template <typename X> struct Dot<X, X>
   static_assert(TensorTrait<typename X::type>::is_vector, "only vector can dot.");
   template <typename XIn>
   decltype(auto) operator()(XIn&& in_x) {
-    return in_x.dot(in_x);
+    return std::forward<XIn>(in_x).dot(std::forward<XIn>(in_x));
   }
 
   template <typename XIn, typename G> using Grad_t = Add<Dot<X, G>, Dot<X, G>>;

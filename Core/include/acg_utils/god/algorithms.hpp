@@ -22,6 +22,7 @@ template <template <typename> typename B, typename L> struct Filter;
 // Filter B [] => []
 template <template <typename> typename B> struct Filter<B, List<>> {
   using type = List<>;
+  using contract = List<>;
 };
 
 template <template <typename> typename B, typename LTh, typename... LTt>
@@ -30,6 +31,9 @@ struct Filter<B, List<LTh, LTt...>> {
       typename std::conditional<B<LTh>::value,
                                 typename Filter<B, List<LTt...>>::type::template prepend<LTh>,
                                 typename Filter<B, List<LTt...>>::type>::type;
+  using contract =
+      typename std::conditional_t<B<LTh>::value, typename Filter<B, List<LTt...>>::type,
+                                  typename Filter<B, List<LTt...>>::type::template prepend<LTh>>;
 };
 
 // Reduce
@@ -176,8 +180,8 @@ template <template <typename, typename> typename P, typename T> struct Cmp {
 template <template <typename, typename> typename P, typename L> struct Is {};
 template <template <typename, typename> typename P, typename... L> struct Is<P, List<L...>> {
   template <typename T> struct Least {
-    // Returns T is the least in L, 
-    //    i.e. T <= Li forall Li in L, 
+    // Returns T is the least in L,
+    //    i.e. T <= Li forall Li in L,
     //    i.e. not exists (T > Li for any Li in L)
     static constexpr bool value = All<Cmp<P, T>::template NoMoreThan, List<L...>>::value;
   };
@@ -203,15 +207,31 @@ struct TopologySort<P, List<T...>> {
   using type = typename Concat<least, typename TopologySort<P, last>::type>::type;
 };
 
-// Cross
-template <typename L, typename R> struct Cross;
-template <typename ...T> struct Cross<List<>, List<T...>> {
+template <template <typename, typename> typename P, typename L> struct TopoFlatten;
+
+template <template <typename, typename> typename P> struct TopoFlatten<P, List<>> {
   using type = List<>;
 };
-template <typename L, typename ...T> struct Cross<List<L>, List<T...>> {
+template <template <typename, typename> typename P, typename T> struct TopoFlatten<P, List<T>> {
+  using type = List<List<T>>;
+};
+template <template <typename, typename> typename P, typename... T>
+struct TopoFlatten<P, List<T...>> {
+  using least = typename Filter<Is<P, List<T...>>::template Least, List<T...>>::type;
+  using last = typename Filter<Is<P, least>::template NotContains, List<T...>>::type;
+  using last_topo_flat = typename TopoFlatten<P, last>::type;
+  using type = typename last_topo_flat::template prepend<least>;
+};
+
+// Cross
+template <typename L, typename R> struct Cross;
+template <typename... T> struct Cross<List<>, List<T...>> {
+  using type = List<>;
+};
+template <typename L, typename... T> struct Cross<List<L>, List<T...>> {
   using type = List<Pair<L, T>...>;
 };
-template <typename H, typename ...L, typename ...T> struct Cross<List<H, L...>, List<T...>> {
+template <typename H, typename... L, typename... T> struct Cross<List<H, L...>, List<T...>> {
   using type = Concat_t<List<Pair<H, T>...>, typename Cross<List<L...>, List<T...>>::type>;
 };
 
@@ -233,6 +253,10 @@ template <template <typename, typename> typename P, typename T> using TopoSort
     = details::TopologySort<P, T>;
 template <template <typename, typename> typename P, typename T> using TopoSort_t =
     typename TopoSort<P, T>::type;
+template <template <typename, typename> typename P, typename T> using TopoFlatten
+    = details::TopoFlatten<P, T>;
+template <template <typename, typename> typename P, typename T> using TopoFlatten_t =
+    typename TopoFlatten<P, T>::type;
 template <template <typename, typename> typename F, typename T> using Reduce
     = details::Reduce<F, T>;
 template <template <typename, typename> typename F, typename T> using Reduce_t =

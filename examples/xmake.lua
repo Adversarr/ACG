@@ -21,3 +21,11 @@ target('mass-spring')
   add_files('mass_spring/**.cpp')
   add_deps('acg_visualizer', 'acg_core')
 target_end()
+
+
+add_requires('benchmark')
+target('sad_bench')
+  add_files('sad_bench/**.cpp')
+  add_deps('acg_core')
+  add_packages('benchmark')
+target_end()
