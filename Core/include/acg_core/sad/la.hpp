@@ -38,19 +38,6 @@ template <typename X> struct Dot<X, X>
   template <typename XIn, typename G> using Grad_t = Add<Dot<X, G>, Dot<X, G>>;
 };
 
-template <typename X, typename Y> struct Simplify<Dot<X, Y>> {
-  using type = Dot<typename Simplify<X>::type, typename Simplify<Y>::type>;
-};
-template <typename X, typename Z> struct Simplify<Dot<X, Zeros<Z>>> {
-  using type = Zeros<typename TensorTrait<Z>::Scalar>;
-};
-template <typename X, typename Z> struct Simplify<Dot<Zeros<Z>, X>> {
-  using type = Zeros<typename TensorTrait<Z>::Scalar>;
-};
-template <typename X, typename Z> struct Simplify<Dot<Zeros<Z>, Zeros<X>>> {
-  using type = Zeros<typename TensorTrait<Z>::Scalar>;
-};
-
 }  // namespace details
 
 template <typename X, typename Y> using Dot = details::Dot<X, Y>;

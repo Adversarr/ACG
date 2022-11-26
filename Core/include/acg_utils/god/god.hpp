@@ -126,17 +126,19 @@ template <typename... LT, typename... RT> struct Concat<List<LT...>, List<RT...>
 };
 
 template <typename L, typename R> using ConcatType = typename Concat<L, R>::type;
-template <typename T, typename L> struct IsElem;
-template <typename T> struct IsElem<T, List<>> {
+template <typename T, typename L, template <typename, typename> typename Eq = std::is_same>
+struct IsElem;
+template <typename T, template <typename, typename> typename Eq>
+struct IsElem<T, List<>, Eq> {
   static constexpr bool value = false;  // NOLINT
 };
-template <typename T, typename H, typename... LT> struct IsElem<T, List<H, LT...>> {
+template <typename T, template <typename, typename> typename Eq, typename H, typename... LT> struct IsElem<T, List<H, LT...>, Eq> {
   static constexpr bool value  // NOLINT
-      = std::is_same_v<H, T> ? true : IsElem<T, List<LT...>>::value;
+      = Eq<H, T>::value ? true : IsElem<T, List<LT...>, Eq>::value;
 };
 
-template <typename T, typename H> struct IsElem<T, List<H>> {
-  static constexpr bool value = std::is_same_v<H, T>;  // NOLINT
+template <typename T, typename H, template <typename, typename> typename Eq> struct IsElem<T, List<H>, Eq> {
+  static constexpr bool value = Eq<H, T>::value;  // NOLINT
 };
 
 template <typename K, typename V> struct Pair {

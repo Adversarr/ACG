@@ -81,16 +81,27 @@ template <template <typename> typename P, typename H, typename... T> struct Any<
 };
 
 // Find
-template <typename T, typename L> struct Find {};
 
-template <typename T> struct Find<T, List<>> {};
+template <typename T, typename L, template <typename, typename> typename Eq = std::is_same>
+struct FindImpl {};
+constexpr size_t not_found_flag = std::numeric_limits<size_t>::max();
 
-template <typename T, typename... L> struct Find<T, List<T, L...>> {
-  static constexpr size_t value = 0;  // NOLINT
+template <typename T, template <typename, typename> typename Eq> struct FindImpl<T, List<>, Eq> {
+  static constexpr size_t value = not_found_flag;
 };
 
-template <typename T, typename H, typename... L> struct Find<T, List<H, L...>> {
-  static constexpr size_t value = Find<T, List<L...>>::value + 1;  // NOLINT
+template <typename T, typename H, template <typename, typename> typename Eq, typename... L>
+struct FindImpl<T, List<H, L...>, Eq> {
+  static constexpr size_t old_value = FindImpl<T, List<L...>, Eq>::value;
+  static constexpr size_t value
+      = Eq<T, H>::value ? 0
+                        : (old_value == not_found_flag ? not_found_flag : old_value + 1);  // NOLINT
+};
+
+template <typename T, typename L, template <typename, typename> typename Eq = std::is_same>
+struct Find {
+  static constexpr size_t value = FindImpl<T, L, Eq>::value;
+  static_assert(value != not_found_flag, "T cannot be found in L");
 };
 
 template <int n, typename T> struct Partition {};
@@ -145,13 +156,15 @@ template <template <typename, typename> typename P, typename... T> struct MergeS
                               typename MergeSort<P, typename _p::right>::type>::type;
 };
 
-template <typename T> struct Unique;
-template <> struct Unique<List<>> {
+template <typename T, template <typename, typename> typename Eq> struct Unique;
+template <template <typename, typename> typename Eq> struct Unique<List<>, Eq> {
   using type = List<>;
 };
-template <typename H, typename... T> struct Unique<List<H, T...>> {
-  using last = typename Unique<List<T...>>::type;
-  using type = std::conditional_t<IsElem<H, last>::value, last, typename last::template append<H>>;
+template <typename H, template <typename, typename> typename Eq, typename... T>
+struct Unique<List<H, T...>, Eq> {
+  using last = typename Unique<List<T...>, Eq>::type;
+  using type
+      = std::conditional_t<IsElem<H, last, Eq>::value, last, typename last::template append<H>>;
 };
 
 template <typename T> struct Box {
@@ -273,12 +286,16 @@ struct FixedPoint<G, T, std::enable_if_t<!std::is_same_v<typename G<T>::type, T>
   using type = typename FixedPoint<G, typename G<T>::type>::type;
 };
 
-template <typename T> using Unique = details::Unique<T>;
+template <typename T, template <typename, typename> typename Eq = std::is_same> using Unique
+    = details::Unique<T, Eq>;
 
-template <typename T> using Unique_t = typename details::Unique<T>::type;
+template <typename T, template <typename, typename> typename Eq = std::is_same> using Unique_t =
+    typename details::Unique<T, Eq>::type;
 
-template <typename T, typename L> using Find = details::Find<T, L>;
-template <typename T, typename L> constexpr size_t Find_v = Find<T, L>::value;
+template <typename T, typename L, template <typename, typename> typename Eq = std::is_same>
+using Find = details::Find<T, L, Eq>;
+template <typename T, typename L, template <typename, typename> typename Eq = std::is_same>
+constexpr size_t Find_v = Find<T, L, Eq>::value;
 
 template <typename L, typename R> using Cross = details::Cross<L, R>;
 template <typename L, typename R> using Cross_t = typename details::Cross<L, R>::type;

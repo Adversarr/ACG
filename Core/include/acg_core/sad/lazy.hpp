@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "dual.hpp"
+#include "runner.hpp"
 // NOLINTBEGIN(readability-identifier-naming)
 
 namespace acg::sad {
@@ -70,12 +71,14 @@ template <typename... E> struct LazyContext<List<E...>> {
   using layers = TopoFlatten_t<IsSubNode, exprs>;
   using lazy_layers = Reverse_t<Cdr_t<TopoFlatten_t<IsSubNode, exprs>>>;
   using non_lazy_exprs = typename Filter<NotLazy, exprs>::type;
+
   static_assert(std::is_same_v<non_lazy_exprs, Car_t<layers>>, "eval layers[0] != non lazy");
   using non_lazy_data_actual_type = Map_t<GetInnerType, non_lazy_exprs>;
   using data_container = typename non_lazy_data_actual_type::template cast<std::tuple>;
   using lazy_container_dict = Reverse_t<typename DetermineLazyDataType<Reverse_t<exprs>>::type>;
 
-  template <typename T> static constexpr size_t index = Find<Simpliest_t<T>, non_lazy_exprs>::value;
+  template <typename T> static constexpr size_t index
+      = Find<Simpliest_t<T>, non_lazy_exprs, ExprHasSameValue>::value;
   template <typename T> using param_type = std::tuple_element_t<index<T>, data_container>;
   data_container data;
 
@@ -99,7 +102,6 @@ template <typename C, typename... Rest, typename... E>
 struct LazyResultImpl2<C, List<List<E...>, Rest...>> : private LazyResultImpl2<C, List<Rest...>> {
   using layer_output = List<E...>;
   using layer_last = List<Rest...>;
-  // using layer_output_inner_type = Map_t<GetInnerType, layer_output>;
   using lazy_container_dict = typename C::lazy_container_dict;
   template <typename T> struct map_to_lazy {
     using type = GetKeyValue_t<T, lazy_container_dict>;
@@ -107,7 +109,10 @@ struct LazyResultImpl2<C, List<List<E...>, Rest...>> : private LazyResultImpl2<C
   using layer_output_inner_type = Map_t<map_to_lazy, layer_output>;
   using data_container = typename layer_output_inner_type::template cast<std::tuple>;
   using base_type = LazyResultImpl2<C, layer_last>;
-  template <typename T> static constexpr size_t index = Find<Simpliest_t<T>, layer_output>::value;
+
+  template <typename T> static constexpr size_t index
+      = Find<Simpliest_t<T>, layer_output, ExprHasSameValue>::value;
+
   data_container data_;
 
   template <typename Exp, typename L> struct Task;
@@ -127,8 +132,7 @@ struct LazyResultImpl2<C, List<List<E...>, Rest...>> : private LazyResultImpl2<C
   }
   forceinline explicit LazyResultImpl2(C& context)
       : base_type(context),
-        data_(Task<E, typename E::InputExpr>{}(
-            static_cast<base_type&>(*this))...) {}
+        data_(Task<E, typename E::InputExpr>{}(static_cast<base_type&>(*this))...) {}
 };
 
 template <typename C> struct LazyResultImpl2<C, List<>> {
@@ -137,65 +141,18 @@ template <typename C> struct LazyResultImpl2<C, List<>> {
   explicit LazyResultImpl2(C& context) : context_(context) {}
 };
 
-template <typename C, typename LayersToCompute> struct LazyResultImpl {
-  using layer_output = Car_t<LayersToCompute>;
-  using layer_last = Cdr_t<LayersToCompute>;
-  // using layer_output_inner_type = Map_t<GetInnerType, layer_output>;
-  using lazy_container_dict = typename C::lazy_container_dict;
-  template <typename T> struct map_to_lazy {
-    using type = GetKeyValue_t<T, lazy_container_dict>;
-  };
-  using layer_output_inner_type = Map_t<map_to_lazy, layer_output>;
-  using data_container = typename layer_output_inner_type::template cast<std::tuple>;
-  using deeper_layer_result = LazyResultImpl<C, layer_last>;
-  template <typename T> static constexpr size_t index = Find<Simpliest_t<T>, layer_output>::value;
-  deeper_layer_result deeper_result_;
-  data_container data_;
-
-  template <typename E, typename L> struct Task;
-  template <typename E, typename... I> struct Task<E, List<I...>> {
-    forceinline decltype(auto) operator()(deeper_layer_result& impl) {
-      return E{}(impl.template Get<I>()...);
-    }
-  };
-
-  template <typename L> struct Init;
-  template <typename... E> struct Init<List<E...>> {
-    forceinline decltype(auto) operator()(deeper_layer_result& impl) {
-      return std::make_tuple(Task<E, typename E::InputExpr>()(impl)...);
-    }
-  };
-
-  template <typename T> forceinline decltype(auto) GetThisLayer() {
-    return std::get<index<T>>(data_);
-  }
-
-  template <typename T, std::enable_if_t<Has_v<Simpliest_t<T>, layer_output>, int> = 0>
-  forceinline decltype(auto) Get() {
-    return GetThisLayer<T>();
-  }
-  template <typename T, std::enable_if_t<!Has_v<Simpliest_t<T>, layer_output>, int> = 0>
-  forceinline decltype(auto) Get() {
-    return deeper_result_.template Get<T>();
-  }
-  forceinline explicit LazyResultImpl(C& context)
-      : deeper_result_(context), data_(Init<layer_output>{}(deeper_result_)) {}
-};
-
-template <typename C> struct LazyResultImpl<C, List<>> {
-  C& context_;
-  template <typename T> forceinline decltype(auto) Get() { return context_.template Get<T>(); }
-  explicit LazyResultImpl(C& context) : context_(context) {}
-};
-
 }  // namespace details
 
 template <typename L> using LazyContext = details::LazyContext<L>;
 
 template <typename C> struct LazyResult
-    : public details::LazyResultImpl2<C, typename C::lazy_layers> {
-  inline explicit LazyResult(C& c) : details::LazyResultImpl2<C, 
-      typename C::lazy_layers>(c) {}
+    : private details::LazyResultImpl2<C, typename C::lazy_layers> {
+  using impl_type = details::LazyResultImpl2<C, typename C::lazy_layers>;
+  inline explicit LazyResult(C& c) : impl_type(c) {}
+
+  template <typename T> inline decltype(auto) Get() {
+    return static_cast<impl_type&>(*this).template Get<T>();
+  }
 };
 }  // namespace acg::sad
 // NOLINTEND(readability-identifier-naming)

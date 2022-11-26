@@ -39,8 +39,10 @@ template <typename T> struct GetInnerType {
   using type = typename T::type;
 };
 
-template <typename T> struct Input : public Expr<T> {
+template <typename T> using GetInnerType_t = typename T::type;
+template <typename T, typename Derived> struct Input : public Expr<T> {
   static constexpr bool is_input = true;
+  using InputNodes = List<Derived>;
 };
 
 template <typename T> struct Constant : public Expr<T> {
@@ -92,7 +94,7 @@ template <typename L, typename R> struct Add : public Expr<typename L::type, L, 
   using T = typename L::type;
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
-    return l + r;
+    return std::forward<Li>(l) + std::forward<Ri>(r);
   }
   template <typename X, typename DG> using Grad_t = DG;
 };
@@ -100,27 +102,14 @@ template <typename L, typename R> struct Add : public Expr<typename L::type, L, 
 template <typename X> struct Neg : public Expr<typename X::type, X> {
   using T = typename X::type;
   template <typename XI> inline decltype(auto) operator()(XI&& in_x) const noexcept {
-    return -in_x;
+    return -std::forward<XI>(in_x);
   }
 
   template <typename, typename G> using Grad_t = Neg<G>;
 };
-// template <typename L, typename R> struct DualAdd
-//     : public Dual<Add<typename L::Val, typename R::Val>, Add<typename L::Grad, typename R::Grad>>
-//     {
-// };
 
 // Multiplication.
 template <typename L, typename R, class = void> struct Mul;
-template <typename L, typename R> struct OpMul {
-  using type = decltype(std::declval<typename L::type>() * std::declval<typename R::type>());
-};
-template <typename L, typename R> struct OpAdd {
-  using type = decltype(std::declval<typename L::type>() + std::declval<typename R::type>());
-};
-template <typename L, typename R> struct OpSub {
-  using type = decltype(std::declval<typename L::type>() - std::declval<typename R::type>());
-};
 // Scalar * Scalar
 template <typename L, typename R>
 struct Mul<L, R,
@@ -219,7 +208,7 @@ template <typename L, typename R> struct Sub : public Expr<typename L::type, L, 
   using T = typename L::type;
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
-    return l - r;
+    return std::forward<Li>(l) - std::forward<Ri>(r);
   }
   template <typename X, typename G> using Grad_t
       = std::conditional_t<std::is_same_v<L, X>, G, Neg<G>>;
@@ -233,158 +222,23 @@ template <typename L> struct Sub<L, L> : public Expr<typename L::type, L> {
   template <typename X, typename G> using Grad_t = ZerosLike<G>;
 };
 
-// Simplification Rules
-template <typename T> struct Simplify {
-  using type = T;  // Fallback.
-};
-// For mult: Zeros * anything is Zero
-template <typename T, typename S> struct Simplify<Mul<T, S>> {
-  using type = Mul<typename Simplify<T>::type, typename Simplify<S>::type>;
-};
-
-template <typename S> struct Simplify<Mul<Zeros<S>, Ones<S>>> {
-  using type = Zeros<S>;
-};
-template <typename S> struct Simplify<Mul<Ones<S>, Zeros<S>>> {
-  using type = Zeros<S>;
-};
-template <typename S> struct Simplify<Mul<Zeros<S>, Zeros<S>>> {
-  using type = Zeros<S>;
-};
-
-template <typename T, typename S> struct Simplify<Mul<T, Zeros<S>>> {
-  using type = Zeros<typename Mul<T, Zeros<S>>::type>;
-};
-template <typename T, typename S> struct Simplify<Mul<Zeros<S>, T>> {
-  using type = Zeros<typename Mul<Zeros<S>, T>::type>;
-};
-
-// Add: Zero + Anything = Anything
-template <typename S> struct Simplify<Add<Zeros<S>, Zeros<S>>> {
-  using type = Zeros<S>;
-};
-
-template <typename T, typename S> struct Simplify<Add<T, S>> {
-  using type = Add<typename Simplify<T>::type, typename Simplify<S>::type>;
-};
-template <typename T, typename S> struct Simplify<Add<T, Zeros<S>>> {
-  using type = typename Simplify<T>::type;
-};
-template <typename T, typename S> struct Simplify<Add<Zeros<S>, T>> {
-  using type = typename Simplify<T>::type;
-};
-template <typename T, typename S> struct Simplify<Add<Zeros<S>, Zeros<T>>> {
-  using type = Zeros<S>;
-};
-// Substraction: A - 0 = A
-template <typename L, typename T> struct Simplify<Sub<L, Zeros<T>>> {
-  using type = typename Simplify<L>::type;
-};
-template <typename L, typename T> struct Simplify<Sub<Zeros<T>, L>> {
-  using type = typename Simplify<Neg<L>>::type;
-};
-template <typename T> struct Simplify<Sub<Zeros<T>, Zeros<T>>> {
-  using type = Zeros<T>;
-};
-// Neg:
-template <typename T> struct Simplify<Neg<Neg<T>>> {
-  using type = typename Simplify<T>::type;
-};
-template <typename T> struct Simplify<Neg<Zeros<T>>> {
-  using type = Zeros<T>;
-};
-// Dual Chain.
-template <typename F, typename I, typename X, typename D> struct Chain;
-// Dual Diff.
-template <typename Y, typename X, typename D> struct DirectionalDiff {
-  using type = typename Chain<Y, typename Y::InputExpr, X, D>::type;
-};
-template <typename F, typename X, typename D> struct Chain<F, List<>, X, D> {
-  using type = Zeros<typename F::type>;
-};
-template <typename F, typename I, typename X, typename D> struct Chain<F, List<I>, X, D> {
-  using dual_ix = typename DirectionalDiff<I, X, D>::type;
-  using type = typename F::template Grad_t<I, dual_ix>;
-};
-template <typename F, typename X, typename D, typename IH, typename... IT>
-struct Chain<F, List<IH, IT...>, X, D> {
-  using dual_hx = typename DirectionalDiff<IH, X, D>::type;
-  using dual_fhx = typename F::template Grad_t<IH, dual_hx>;
-  using type = Add<dual_fhx, typename Chain<F, List<IT...>, X, D>::type>;
-};
-
-template <typename X, typename D> struct DirectionalDiff<X, X, D> {
-  using type = D;
-};
-
-// Context
-template <typename L> struct Context {};
-template <typename... E> struct Context<List<E...>> {
-  using outputs = Unique_t<List<typename FixedPoint<Simplify, E>::type...>>;
-  using internals = Unique_t<Reduce_t<Concat, Map_t<GetSubNodes, outputs>>>;
-  using inputs = Unique_t<Reduce_t<Concat, List<List<>, typename E::InputNodes...>>>;
-  using data_type = TopoSort_t<IsSubNode, Unique_t<Concat_t<inputs, Concat_t<internals, outputs>>>>;
-  using data_actual_type = Map_t<GetInnerType, data_type>;
-  template <typename T> static constexpr size_t index
-      = Find<typename FixedPoint<Simplify, T>::type, data_type>::value;
-
-  using data_container = typename data_actual_type::template cast<std::tuple>;
-  template <typename T> using param_type = std::tuple_element_t<index<T>, data_container>;
-  data_container data;
-
-  template <typename T> void Set(const param_type<T>& in) { std::get<index<T>>(data) = in; }
-  template <typename T> std::tuple_element_t<index<T>, data_container>& Get() {
-    return std::get<index<T>>(data);
-  }
-};
-
-template <typename T> struct Runner {
-  template <typename Exp, typename IL> struct Task;
-  template <typename Exp, typename... I> struct Task<Exp, List<I...>> {
-    inline void operator()(typename T::data_container& data) const noexcept {
-      if constexpr (!Exp::is_input)
-        std::get<T::template index<Exp>>(data) = Exp{}(std::get<T::template index<I>>(data)...);
-    }
-  };
-  template <typename Ts> struct RunnerImpl;
-  template <typename... Ts> struct RunnerImpl<List<Ts...>> {
-    inline void operator()(typename T::data_container& data) const noexcept {
-      (Task<Ts, typename Ts::InputExpr>{}(data), ...);
-    }
-  };
-  explicit Runner() = default;
-  inline void operator()(T& context) const noexcept {
-    RunnerImpl<typename T::data_type>{}(context.data);
-  }
-};
-
-template <typename F, typename X, typename D> using DirectionalDiff_t =
-    typename DirectionalDiff<F, X, D>::type;
-
-template <typename E> using Simpliest_t = typename FixedPoint<Simplify, E>::type;
-
 }  // namespace details
-
-template <typename F, typename X, typename D> using DirectionalDiff_t
-    = details::DirectionalDiff_t<F, X, D>;
-template <typename T> using Input = details::Input<T>;
-template <typename E> using Simpliest_t =
-    typename acg::utils::god::FixedPoint<details::Simplify, E>::type;
 
 template <typename T> using Ones = details::Ones<T>;
 template <typename E> using OnesLike = details::OnesLike<E>;
 template <typename T> using Zeros = details::Zeros<T>;
 template <typename E> using ZerosLike = details::ZerosLike<E>;
-template <typename L> using Context = details::Context<L>;
 template <typename T, int... dmd> using Dirac = details::Dirac<T, dmd...>;
 
 // NOLINTBEGIN(bugprone-macro-parentheses)
 #define Variable(type, name) \
-  struct name : public acg::sad::details::Input<type> {}
+  struct name : public acg::sad::details::Input<type, name> {}
+
 #define Constant_value(type, name, value)                                                  \
   struct name : public acg::sad::details::Constant<type> {                                 \
     inline decltype(auto) operator()() const noexcept { return static_cast<type>(value); } \
   }
+
 #define Constant_expr(type, name, expr)                    \
   struct name : public acg::sad::details::Constant<type> { \
     inline decltype(auto) operator()() const noexcept {    \
@@ -398,10 +252,7 @@ template <typename T, int... dmd> using Dirac = details::Dirac<T, dmd...>;
 template <typename L, typename R> using Add = details::Add<L, R>;
 template <typename L, typename R> using Sub = details::Sub<L, R>;
 template <typename L, typename R> using Mul = details::Mul<L, R>;
-template <typename T> inline T& run(T& t) {
-  details::Runner<T>()(t);
-  return t;
-}
+template <typename L> using Neg = details::Neg<L>;
 
 }  // namespace acg::sad
 // NOLINTEND(readability-identifier-naming)
