@@ -4,15 +4,14 @@
 #include "acg_core/core.hpp"
 
 #ifndef forceinline
-#ifdef _MSC_VER_ // for MSVC
-#define forceinline inline __forceinline
-#elif defined __GNUC__ // for gcc on Linux/Apple OS X
-#define forceinline inline __attribute__((always_inline))
-#else
-#define forceinline inline
+#  ifdef _MSC_VER_  // for MSVC
+#    define forceinline inline __forceinline
+#  elif defined __GNUC__       // for gcc on Linux/Apple OS X
+#    define forceinline inline /* __attribute__((always_inline)) */
+#  else
+#    define forceinline inline
+#  endif
 #endif
-#endif
-
 
 namespace acg::utils::god {
 namespace details {
@@ -208,7 +207,6 @@ template <typename T, typename L> using GetKeyValue = details::GetKeyValue<T, L>
 template <typename T, typename L> using GetKeyValue_t = typename GetKeyValue<T, L>::type;
 template <typename H, typename L> using Update = details::Update<H, L>;
 template <typename H, typename L> using Update_t = typename details::Update<H, L>::type;
-
 
 template <typename L> using Reverse = details::Reverse<L>;
 template <typename L> using Reverse_t = typename Reverse<L>::type;

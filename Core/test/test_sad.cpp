@@ -27,6 +27,7 @@ DEF_test(sad_lazy) {
     LazyContext<List<P, dx, ddx>> c;  // Compute Context
     c.Set<X>(10);                     // Setup Input X
     c.Set<Y>(20);                     // Setup Input Y
+    decltype(c)::lazy_layers ll;
     auto r = LazyResult(c);
     EXPECT_EQ(r.Get<X>(), 10);
     EXPECT_EQ(r.Get<Y>(), 20);

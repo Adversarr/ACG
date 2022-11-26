@@ -4,7 +4,6 @@
 #include <acg_core/sad/lazy.hpp>
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/real/eigen.hpp>
-#include <iostream>
 
 static void non_lazy(benchmark::State& state) {
   // Perform setup here
@@ -14,15 +13,14 @@ static void non_lazy(benchmark::State& state) {
   Constant_expr(acg::Vec3f, d2, v.x() = v.y() = 0; v.z() = 1);
   Variable(acg::Vec3f, X);
   Variable(acg::Vec3f, Y);
-  using FinalExp = Dot<Sub<X, Y>, Add<X, Y>>;
+  using FinalExp = Mul<Dot<Sub<X, Y>, Add<X, Y>>, Dot<X, Y>>;
   using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
   using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
   using Dx2 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d2>>;
   using Dy0 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d0>>;
   using Dy1 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d1>>;
   using Dy2 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d2>>;
-  using Dxy00 = Simpliest_t<DirectionalDiff_t<Dx0, Y, d2>>;
-  Context<acg::utils::god::List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2, Dxy00>> context;
+  Context<acg::utils::god::List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2>> context;
   context.Set<X>(acg::Vec3f{1, 2, 3});
   context.Set<Y>(acg::Vec3f{3, 2, 1});
   for (auto _ : state) {
@@ -31,6 +29,9 @@ static void non_lazy(benchmark::State& state) {
     benchmark::DoNotOptimize(context.Get<Dy1>());
     benchmark::DoNotOptimize(context.Get<Dy2>());
     benchmark::DoNotOptimize(context.Get<Dy0>());
+    benchmark::DoNotOptimize(context.Get<Dx1>());
+    benchmark::DoNotOptimize(context.Get<Dx2>());
+    benchmark::DoNotOptimize(context.Get<Dx0>());
   }
 }
 static void lazy(benchmark::State& state) {
@@ -41,15 +42,14 @@ static void lazy(benchmark::State& state) {
   Constant_expr(acg::Vec3f, d2, v.x() = v.y() = 0; v.z() = 1);
   Variable(acg::Vec3f, X);
   Variable(acg::Vec3f, Y);
-  using FinalExp = Dot<Sub<X, Y>, Add<X, Y>>;
+  using FinalExp = Mul<Dot<Sub<X, Y>, Add<X, Y>>, Dot<X, Y>>;
   using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
   using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
   using Dx2 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d2>>;
   using Dy0 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d0>>;
   using Dy1 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d1>>;
   using Dy2 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d2>>;
-  using Dxy00 = Simpliest_t<DirectionalDiff_t<Dx0, Y, d2>>;
-  LazyContext<acg::utils::god::List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2, Dxy00>> context;
+  LazyContext<acg::utils::god::List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2>> context;
   context.Set<X>(acg::Vec3f{1, 2, 3});
   context.Set<Y>(acg::Vec3f{3, 2, 1});
 
@@ -58,13 +58,18 @@ static void lazy(benchmark::State& state) {
     benchmark::DoNotOptimize(result.Get<Dy1>());
     benchmark::DoNotOptimize(result.Get<Dy2>());
     benchmark::DoNotOptimize(result.Get<Dy0>());
+    benchmark::DoNotOptimize(result.Get<Dx1>());
+    benchmark::DoNotOptimize(result.Get<Dx2>());
+    benchmark::DoNotOptimize(result.Get<Dx0>());
   }
 }
 
 using namespace autodiff;
 
 // The scalar function for which the gradient is needed
-real f(const ArrayXreal& x, const ArrayXreal& y) { return ((x + y) * (x - y)).sum(); }
+real f(const ArrayXreal& x, const ArrayXreal& y) {
+  return ((x + y) * (x - y)).sum() * (x * y).sum();
+}
 static void ghad(benchmark::State& state) {
   // Perform setup here
   using namespace acg::sad;

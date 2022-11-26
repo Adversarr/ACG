@@ -1,6 +1,6 @@
 package("autodiff")
   add_deps("cmake")
-  set_sourcedir(path.join(os.scriptdir(), "autodiff"))
+  set_sourcedir(os.scriptdir())
   on_install(function (package)
       local configs = {}
       table.insert(configs, "-DCMAKE_BUILD_TYPE=" .. (package:debug() and "Debug" or "Release"))

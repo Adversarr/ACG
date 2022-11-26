@@ -18,11 +18,11 @@ template <typename T, typename... E> struct Expr {
   static constexpr bool is_input = false;
 };
 
-template<typename T> struct IsConstant {
+template <typename T> struct IsConstant {
   static constexpr bool value = T::is_constant;
 };
 
-template<typename T> struct IsInput {
+template <typename T> struct IsInput {
   static constexpr bool value = T::is_input;
 };
 
@@ -318,7 +318,7 @@ template <typename X, typename D> struct DirectionalDiff<X, X, D> {
 };
 
 // Context
-template<typename L> struct Context{};
+template <typename L> struct Context {};
 template <typename... E> struct Context<List<E...>> {
   using outputs = Unique_t<List<typename FixedPoint<Simplify, E>::type...>>;
   using internals = Unique_t<Reduce_t<Concat, Map_t<GetSubNodes, outputs>>>;
@@ -332,9 +332,7 @@ template <typename... E> struct Context<List<E...>> {
   template <typename T> using param_type = std::tuple_element_t<index<T>, data_container>;
   data_container data;
 
-  template <typename T> void Set(const param_type<T>& in) {
-    std::get<index<T>>(data) = in;
-  }
+  template <typename T> void Set(const param_type<T>& in) { std::get<index<T>>(data) = in; }
   template <typename T> std::tuple_element_t<index<T>, data_container>& Get() {
     return std::get<index<T>>(data);
   }
@@ -367,8 +365,8 @@ template <typename E> using Simpliest_t = typename FixedPoint<Simplify, E>::type
 
 }  // namespace details
 
-template <typename F, typename X, typename D> using DirectionalDiff_t =
-    details::DirectionalDiff_t<F, X, D>;
+template <typename F, typename X, typename D> using DirectionalDiff_t
+    = details::DirectionalDiff_t<F, X, D>;
 template <typename T> using Input = details::Input<T>;
 template <typename E> using Simpliest_t =
     typename acg::utils::god::FixedPoint<details::Simplify, E>::type;
@@ -400,7 +398,10 @@ template <typename T, int... dmd> using Dirac = details::Dirac<T, dmd...>;
 template <typename L, typename R> using Add = details::Add<L, R>;
 template <typename L, typename R> using Sub = details::Sub<L, R>;
 template <typename L, typename R> using Mul = details::Mul<L, R>;
-template <typename T> inline void run(T& t) { details::Runner<T>()(t); }
+template <typename T> inline T& run(T& t) {
+  details::Runner<T>()(t);
+  return t;
+}
 
 }  // namespace acg::sad
 // NOLINTEND(readability-identifier-naming)
