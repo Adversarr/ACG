@@ -25,8 +25,15 @@ See `examples/nbody`.
 
 ### Core
 
+Maybe import some function from libigl
+
 - [ ] Half Edge data structure for high performance neighbour query.
 - [ ] Physics engine
 - [ ] Spatial Data structure
 - [ ] Math libraries
+- [ ] SAD: working in progress, static-auto-diff
+
+### Visualizer
+
+- [ ] MT-Visualizer: Non blocking when performing compute.
 

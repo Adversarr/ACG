@@ -18,7 +18,7 @@ target('acg_visualizer')
   add_deps('acg_core')
   -- set_pcxxheader("include/acg_vis/avk.hpp")
 
-  on_load(function(target) 
+  on_load(function(target)
     import('core.project.config')
     local build_dir = config.get("buildir")
     build_dir = path.absolute(build_dir)
