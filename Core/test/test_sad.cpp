@@ -4,10 +4,7 @@
 
 #include <Eigen/Eigen>
 #include <acg_core/math.hpp>
-#include <acg_core/sad/dual.hpp>
-#include <acg_core/sad/la.hpp>
-#include <acg_core/sad/lazy.hpp>
-#include <acg_core/sad/runner.hpp>
+#include <acg_core/sad/all.hpp>
 #include <acg_utils/god/algorithms.hpp>
 using namespace acg::utils::god;
 using namespace acg::sad;

@@ -10,7 +10,7 @@
 4. Plugins (not implemented)
    - libigl/cgal/... integration.
 5. Examples.
-5. ... (WIP)
+6. ... (WIP)
 
 
 ## Example Usage
@@ -18,6 +18,10 @@
 See `examples/nbody`.
 
 ## Todo Lists
+
+### Tops
+
+1. remove coost. (doctest/nloh.._json)
 
 ### Build System
 

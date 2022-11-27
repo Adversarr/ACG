@@ -45,6 +45,7 @@ template <typename T, typename Derived> struct Input : public Expr<T> {
   using InputNodes = List<Derived>;
 };
 
+///> Constants.
 template <typename T> struct Constant : public Expr<T> {
   static constexpr bool is_constant = true;
 };
@@ -72,7 +73,7 @@ template <> struct Zeros<float> : Constant<float> {
 template <> struct Zeros<double> : Constant<double> {
   inline decltype(auto) operator()() const noexcept { return static_cast<double>(0); }
 };
-template <typename X> struct ZerosLike : public Zeros<typename X::type> {};
+template <typename X> using ZerosLike = Zeros<typename X::type>;
 
 template <typename T, int... dmd> struct Dirac;
 
@@ -86,8 +87,9 @@ template <typename T, int r, int c> struct Dirac<T, r, c> : public Constant<T> {
         .reshaped(rows, cols);
   }
 };
+///< Constants
 
-// Add Operation, L::type should equals to R::type
+///> Add Operation, L::type should equals to R::type
 template <typename L, typename R> struct Add : public Expr<typename L::type, L, R> {
   static_assert(std::is_same_v<typename L::type, typename R::type>,
                 "Add between two different type is not permitted.");
@@ -98,7 +100,9 @@ template <typename L, typename R> struct Add : public Expr<typename L::type, L, 
   }
   template <typename X, typename DG> using Grad_t = DG;
 };
+///< Add
 
+///> Neg
 template <typename X> struct Neg : public Expr<typename X::type, X> {
   using T = typename X::type;
   template <typename XI> inline decltype(auto) operator()(XI&& in_x) const noexcept {
@@ -107,8 +111,9 @@ template <typename X> struct Neg : public Expr<typename X::type, X> {
 
   template <typename, typename G> using Grad_t = Neg<G>;
 };
+///< Neg
 
-// Multiplication.
+///> Multiplication.
 template <typename L, typename R, class = void> struct Mul;
 // Scalar * Scalar
 template <typename L, typename R>
@@ -200,8 +205,9 @@ template <typename L> struct Mul<
   }
   template <typename X, typename G> using Grad_t = Add<Mul<L, G>, Mul<G, L>>;
 };
+///< Multiplication
 
-// Substraction, L::type should equals to R::type
+///> Substraction, L::type should equals to R::type
 template <typename L, typename R> struct Sub : public Expr<typename L::type, L, R> {
   static_assert(std::is_same_v<typename L::type, typename R::type>,
                 "Substract between two different type is not permitted.");
@@ -221,6 +227,7 @@ template <typename L> struct Sub<L, L> : public Expr<typename L::type, L> {
   }
   template <typename X, typename G> using Grad_t = ZerosLike<G>;
 };
+///< Substraction
 
 }  // namespace details
 
@@ -232,7 +239,7 @@ template <typename T, int... dmd> using Dirac = details::Dirac<T, dmd...>;
 
 // NOLINTBEGIN(bugprone-macro-parentheses)
 #define Variable(type, name) \
-  struct name : public acg::sad::details::Input<type, name> {}
+  struct name : public acg::sad::details::Input<type, name> { const char* name = #name ;}
 
 #define Constant_value(type, name, value)                                                  \
   struct name : public acg::sad::details::Constant<type> {                                 \

@@ -1,4 +1,5 @@
 #pragma once
+// NOLINTBEGIN(readability-identifier-naming)
 
 #include "dual.hpp"
 #include "simplify.hpp"
@@ -8,11 +9,8 @@ namespace details {
 // Dual Chain.
 template <typename F, typename I, typename X, typename D> struct Chain;
 // Dual Diff.
-template <typename Y, typename X, typename D> struct DirectionalDiffActual {
-  using type = typename Chain<Y, typename Y::InputExpr, X, D>::type;
-};
 template <typename Y, typename X, typename D> struct DirectionalDiff {
-  using type = typename DirectionalDiffActual<Y, X, D>::type;
+  using type = typename Chain<Y, typename Y::InputExpr, X, D>::type;
 };
 template <typename F, typename X, typename D> struct Chain<F, List<>, X, D> {
   using type = Zeros<typename F::type>;
@@ -88,3 +86,4 @@ template <typename T> inline T& run(T& t) {
 template <typename F, typename X, typename D> using DirectionalDiff_t
     = details::DirectionalDiff_t<F, X, D>;
 }  // namespace acg::sad
+// NOLINTEND(readability-identifier-naming)

@@ -1,8 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <acg_core/sad/la.hpp>
-#include <acg_core/sad/lazy.hpp>
-#include <acg_core/sad/simplify.hpp>
+#include <acg_core/sad/all.hpp>
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/real/eigen.hpp>
 
@@ -13,10 +11,9 @@ Constant_expr(acg::Vec3f, d2, v.x() = v.y() = 0; v.z() = 1);
 Constant_value(float, OriginalLength, 1.0f);
 Variable(acg::Vec3f, X);
 Variable(acg::Vec3f, Y);
-using Distance = Dot<Sub<X, Y>, Sub<X, Y>>;
+using Distance = Dot<Add<X, Y>, Add<X, Y>>;
 using Energy = Mul<Sub<Distance, OriginalLength>, Sub<Distance, OriginalLength>>;
 using FinalExp = Energy;
-
 using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
 using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
 using Dx2 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d2>>;
