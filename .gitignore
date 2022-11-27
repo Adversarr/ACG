@@ -26,3 +26,5 @@ logs
 **/.xmake
 **/build
 .xmake
+.luarc.json
+.vscode
