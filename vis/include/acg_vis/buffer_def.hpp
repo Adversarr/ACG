@@ -4,7 +4,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <vector>
-#include <vulkan/vulkan.hpp>
+#include "avk.hpp"
 
 namespace acg::visualizer {
 
@@ -12,6 +12,7 @@ namespace details {
 constexpr auto VK_INDEX_TYPE = vk::IndexType::eUint32;
 using IndexType = uint32_t;
 }  // namespace details
+using IndexType = details::IndexType;
 
 /**
  * @brief Vertex Buffer.

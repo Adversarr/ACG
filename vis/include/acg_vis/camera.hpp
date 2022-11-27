@@ -22,13 +22,15 @@ public:
 
   Vec3f &GetPosition();
 
-  const Vec3f &GetCPosition() const;
+  const Vec3f &GetPosition() const;
 
-  const Vec3f &GetCFront() const;
+  const Vec3f &GetFront() const;
 
   Vec3f &GetFront();
 
-  void Move(glm::vec3 direction, F64 dt);
+  Vec3f &GetUp();
+
+  void Move(Vec3f direction, F64 dt);
 
   // Set the position of the camera. Returns true, if readlly changed.
   bool SetPosition(glm::vec3 position);

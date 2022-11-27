@@ -3,15 +3,16 @@
 //
 
 #include "acg_vis/camera.hpp"
-#include "acg_vis/aglm.hpp"
 
 #include "acg_vis/convent.hpp"
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace acg::visualizer {
 glm::mat4 Camera::GetView() const {
-  return glm::lookAt(to_glm(position_), 
-                     to_glm(Vec3f(position_ + front_)), 
-                     to_glm(up_));
+  return glm::lookAt(to_glm(position_), to_glm(Vec3f(position_ + front_)), to_glm(up_));
 }
 
 glm::mat4 Camera::GetProjection(float width, float height, bool inverted_y_axis) const {
@@ -28,10 +29,11 @@ glm::mat4 Camera::GetModel() const {
                      to_glm(model_rotate_axis_));
 }
 
-
 Vec3f& Camera::GetPosition() { return position_; }
 
 Vec3f& Camera::GetFront() { return front_; }
+
+Vec3f& Camera::GetUp() { return up_; }
 
 bool Camera::SetPosition(glm::vec3 position) {
   bool changed = to_eigen(position) != position_;
@@ -49,14 +51,9 @@ bool Camera::SetFront(glm::vec3 front) {
   return changed;
 }
 
-void Camera::Move(glm::vec3 direction, F64 dt) { position_ = position_ + to_eigen(direction) * dt; }
+void Camera::Move(Vec3f direction, F64 dt) { position_ = position_ + direction * dt; }
 
-const Vec3f &Camera::GetCPosition() const {
-  return position_;
-}
-const Vec3f &Camera::GetCFront() const {
-  return front_;
-}
-
+const Vec3f& Camera::GetPosition() const { return position_; }
+const Vec3f& Camera::GetFront() const { return front_; }
 
 }  // namespace acg::visualizer

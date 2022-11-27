@@ -128,10 +128,10 @@ void MeshPipeline::CreateGraphicsPipeline() {
   {
     auto code = read_file(SPV_HOME "/3d.vert.spv");
     vk::ShaderModuleCreateInfo info;
-    info.setPCode(reinterpret_cast<Idx *>(code.data())).setCodeSize(code.size());
+    info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     vert_module = renderer_.GetDevice().createShaderModule(info);
     code = read_file(SPV_HOME "/3d.frag.spv");
-    info.setPCode(reinterpret_cast<Idx *>(code.data())).setCodeSize(code.size());
+    info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     frag_module = renderer_.GetDevice().createShaderModule(info);
   }
 
@@ -408,7 +408,7 @@ void MeshPipeline::SetUbo(const Camera *camera, const Light *light, bool all_upd
   if (camera != nullptr) {
     ubo_.mvp = camera->GetProjection(extent.width, extent.height) * camera->GetView()
                * camera->GetModel();
-    ubo_.eye_position = to_glm(camera->GetCPosition());
+    ubo_.eye_position = to_glm(camera->GetPosition());
   }
 
   if (light != nullptr) {

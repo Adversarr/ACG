@@ -4,18 +4,19 @@ set_project('ACG')
 
 set_languages('cxx17')
 
-set_warnings('all') -- -Wall
+set_warnings('allextra') -- -Wall
 
 add_rules("mode.debug", "mode.release")
 
 set_optimize('faster')
 
 
-add_moduledirs('xmake')
+-- add_moduledirs('xmake')
 
 
 
 includes(
+  '3rdparty',
   'core',
   'vis'
 )

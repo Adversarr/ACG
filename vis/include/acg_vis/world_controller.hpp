@@ -11,10 +11,7 @@ namespace acg::visualizer {
 class WorldCtrlUiOnly {
   using KeyType = int;
 
-  struct KeyboardCallback {
-    const char* description;
-    std::function<bool()> callback;
-  };
+  using KeyboardCallback = std::function<bool()>;
 
 protected:
   /**
@@ -58,7 +55,7 @@ protected:
   virtual void RecreateSwapchainCallback();
 
   virtual void CleanUpCallback();
-  
+
   virtual void InitCallback();
 
 public:
@@ -68,12 +65,11 @@ public:
 
   WorldCtrlUiOnly& Run();
 
-  WorldCtrlUiOnly& Init();
-
   void CleanUp();
 
-  // WARN: Not implemented.
-  WorldCtrlUiOnly& RunAsync();
+  void RunAsync();
+
+  WorldCtrlUiOnly& Init();
 protected:
   /**
    * @brief Recreate Swapchain.
@@ -88,6 +84,7 @@ protected:
   vk::CommandBuffer DrawUI();
 
   void ProcessInput();
+private:
 
 
 protected:

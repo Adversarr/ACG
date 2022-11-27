@@ -5,7 +5,7 @@ Completion:
   AllScopes: No
 
 Diagnostics:
-  UnusedIncludes: Strict
+  UnusedIncludes: None
 
 Hover:
   ShowAKA: Yes
