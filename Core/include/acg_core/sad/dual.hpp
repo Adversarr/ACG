@@ -244,7 +244,6 @@ template <typename T, int... dmd> using Dirac = details::Dirac<T, dmd...>;
 // NOLINTBEGIN(bugprone-macro-parentheses)
 #define Variable(type, name)                                  \
   struct name : public acg::sad::details::Input<type, name> { \
-    const char* name = #name;                                 \
   }
 
 #define Constant_value(type, name, value)                                                  \
