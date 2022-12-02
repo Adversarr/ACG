@@ -25,7 +25,6 @@ DEF_test(sad_lazy) {
     LazyContext<List<P, dx, ddx>> c;  // Compute Context
     c.Set<X>(10);                     // Setup Input X
     c.Set<Y>(20);                     // Setup Input Y
-    decltype(c)::lazy_layers ll;
     auto r = LazyResult(c);
     EXPECT_EQ(r.Get<X>(), 10);
     EXPECT_EQ(r.Get<Y>(), 20);
@@ -65,7 +64,6 @@ DEF_test(sad_lazy) {
     using Dy1 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d1>>;
     using Dy2 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d2>>;
     LazyContext<List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2>> context;
-    decltype(context)::exprs exs;
     context.Set<X>(acg::Vec3f{1, 2, 3});
     context.Set<Y>(acg::Vec3f{3, 2, 1});
     auto result = LazyResult(context);
@@ -124,7 +122,6 @@ DEF_test(sad_nonlazy) {
     using Dy1 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d1>>;
     using Dy2 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d2>>;
     Context<List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2>> context;
-    decltype(context)::data_type c;
     context.Set<X>(acg::Vec3f{1, 1, 1});
     context.Set<Y>(acg::Vec3f{1, 1, 1});
     acg::sad::run(context);
@@ -174,6 +171,15 @@ DEF_test(sad_general) {
     EXPECT_EQ(result.Get<Dx2>(), 6);
   }
   DEF_case(transpose) { std::cout << Dirac<Eigen::Matrix3f, 1, 2>{}() << std::endl; }
+
+  DEF_case(CwiseMul) {
+    Variable(acg::Vec3f, X);
+    Variable(acg::Vec3f, Y);
+    using FinalExp = Dot<CwiseMul<X, Y>, CwiseMul<X, Y>>;
+    using dx = DirectionalDiff_t<FinalExp, X, OnesLike<X>>;
+    Context<List<FinalExp, dx>> ctx;
+    acg::sad::run(ctx);
+  }
 }
 
 }  // namespace test

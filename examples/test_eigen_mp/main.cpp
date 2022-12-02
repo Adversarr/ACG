@@ -10,7 +10,9 @@ int main(int argc, char** argv) {
   int n = 10000;
   Eigen::MatrixXf mat(n, n);
   mat.setRandom();
-
+  while (1) {
+    mat = mat * mat;
+  }
   mat = mat * mat;
   return 0;
 }

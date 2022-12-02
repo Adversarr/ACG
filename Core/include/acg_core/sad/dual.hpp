@@ -90,10 +90,10 @@ template <typename T, int r, int c> struct Dirac<T, r, c> : public Constant<T> {
 ///< Constants
 
 ///> Add Operation, L::type should equals to R::type
+/// NOTE: Add is cwise.
 template <typename L, typename R> struct Add : public Expr<typename L::type, L, R> {
   static_assert(std::is_same_v<typename L::type, typename R::type>,
                 "Add between two different type is not permitted.");
-  using T = typename L::type;
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
     return std::forward<Li>(l) + std::forward<Ri>(r);
@@ -104,7 +104,6 @@ template <typename L, typename R> struct Add : public Expr<typename L::type, L, 
 
 ///> Neg
 template <typename X> struct Neg : public Expr<typename X::type, X> {
-  using T = typename X::type;
   template <typename XI> inline decltype(auto) operator()(XI&& in_x) const noexcept {
     return -std::forward<XI>(in_x);
   }
@@ -112,6 +111,43 @@ template <typename X> struct Neg : public Expr<typename X::type, X> {
   template <typename, typename G> using Grad_t = Neg<G>;
 };
 ///< Neg
+
+///> Twice
+template <typename X> struct Twice : public Expr<typename X::type, X> {
+  template <typename Xi> inline decltype(auto) operator()(Xi&& x) const noexcept { return x + x; }
+
+  template <typename, typename G> using Grad_t = Twice<G>;
+};
+///< Twice
+
+///> Half
+template <typename X> struct Half : public Expr<typename X::type, X> {
+  template <typename Xi> inline decltype(auto) operator()(Xi&& x) const noexcept { return x / 2; }
+
+  template <typename, typename G> using Grad_t = Twice<G>;
+};
+///< Half
+
+///> Substraction, L::type should equals to R::type
+/// NOTE: sub is cwise.
+template <typename L, typename R> struct Sub : public Expr<typename L::type, L, R> {
+  static_assert(std::is_same_v<typename L::type, typename R::type>,
+                "Substract between two different type is not permitted.");
+  template <typename Li, typename Ri>
+  inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
+    return std::forward<Li>(l) - std::forward<Ri>(r);
+  }
+  template <typename X, typename G> using Grad_t
+      = std::conditional_t<std::is_same_v<L, X>, G, Neg<G>>;
+};
+
+template <typename L> struct Sub<L, L> : public Expr<typename L::type, L> {
+  template <typename Li> inline decltype(auto) operator()(Li&&) const noexcept {
+    return ZerosLike<Li>{}();
+  }
+  template <typename X, typename G> using Grad_t = ZerosLike<G>;
+};
+///< Substraction
 
 ///> Multiplication.
 template <typename L, typename R, class = void> struct Mul;
@@ -121,10 +157,6 @@ struct Mul<L, R,
            std::enable_if_t<!std::is_same_v<L, R> && TensorTrait<typename L::type>::is_scalar
                             && TensorTrait<typename R::type>::is_scalar>>
     : public Expr<typename L::type, L, R> {
-  // TODO: Replace all the T.
-  // using T = typename OpMul<L, R>::type;
-  using T = typename L::type;
-
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
     return std::forward<Li>(l) * std::forward<Ri>(r);
@@ -139,7 +171,6 @@ template <typename L> struct Mul<
     std::enable_if_t<TensorTrait<typename L::type>::cols == TensorTrait<typename L::type>::rows
                      && TensorTrait<typename L::type>::is_scalar>>
     : public Expr<typename L::type, L> {
-  using T = typename L::type;
   template <typename Li> inline decltype(auto) operator()(Li&& l) const noexcept { return l * l; }
   template <typename X, typename G> using Grad_t = Add<Mul<L, G>, Mul<G, L>>;
 };
@@ -150,7 +181,6 @@ struct Mul<L, R,
            std::enable_if_t<TensorTrait<typename L::type>::is_scalar
                             && !(TensorTrait<typename R::type>::is_scalar)>>
     : public Expr<typename R::type, L, R> {
-  using T = typename R::type;
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
     return std::forward<Li>(l) * std::forward<Ri>(r);
@@ -164,7 +194,6 @@ struct Mul<L, R,
            std::enable_if_t<!TensorTrait<typename L::type>::is_scalar
                             && TensorTrait<typename R::type>::is_scalar>>
     : public Expr<typename L::type, L, R> {
-  using T = typename L::type;
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
     return std::forward<Li>(l) * std::forward<Ri>(r);
@@ -183,8 +212,6 @@ struct Mul<L, R,
           L, R> {
   static_assert(TensorTrait<typename L::type>::cols == TensorTrait<typename R::type>::rows,
                 "L.col != R.rows");
-  using T = Eigen::Matrix<typename TensorTrait<typename L::type>::Scalar,
-                          TensorTrait<typename L::type>::rows, TensorTrait<typename R::type>::cols>;
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
     return std::forward<Li>(l) * std::forward<Ri>(r);
@@ -198,7 +225,6 @@ template <typename L> struct Mul<
     std::enable_if_t<TensorTrait<typename L::type>::cols == TensorTrait<typename L::type>::rows
                      && !TensorTrait<typename L::type>::is_scalar>>
     : public Expr<typename L::type, L> {
-  using T = typename L::type;
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
     return std::forward<Li>(l) * std::forward<Ri>(r);
@@ -206,28 +232,6 @@ template <typename L> struct Mul<
   template <typename X, typename G> using Grad_t = Add<Mul<L, G>, Mul<G, L>>;
 };
 ///< Multiplication
-
-///> Substraction, L::type should equals to R::type
-template <typename L, typename R> struct Sub : public Expr<typename L::type, L, R> {
-  static_assert(std::is_same_v<typename L::type, typename R::type>,
-                "Substract between two different type is not permitted.");
-  using T = typename L::type;
-  template <typename Li, typename Ri>
-  inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
-    return std::forward<Li>(l) - std::forward<Ri>(r);
-  }
-  template <typename X, typename G> using Grad_t
-      = std::conditional_t<std::is_same_v<L, X>, G, Neg<G>>;
-};
-
-template <typename L> struct Sub<L, L> : public Expr<typename L::type, L> {
-  using T = typename L::type;
-  template <typename Li> inline decltype(auto) operator()(Li&&) const noexcept {
-    return Zeros<T>{}();
-  }
-  template <typename X, typename G> using Grad_t = ZerosLike<G>;
-};
-///< Substraction
 
 }  // namespace details
 
@@ -238,8 +242,10 @@ template <typename E> using ZerosLike = details::ZerosLike<E>;
 template <typename T, int... dmd> using Dirac = details::Dirac<T, dmd...>;
 
 // NOLINTBEGIN(bugprone-macro-parentheses)
-#define Variable(type, name) \
-  struct name : public acg::sad::details::Input<type, name> { const char* name = #name ;}
+#define Variable(type, name)                                  \
+  struct name : public acg::sad::details::Input<type, name> { \
+    const char* name = #name;                                 \
+  }
 
 #define Constant_value(type, name, value)                                                  \
   struct name : public acg::sad::details::Constant<type> {                                 \
@@ -260,6 +266,8 @@ template <typename L, typename R> using Add = details::Add<L, R>;
 template <typename L, typename R> using Sub = details::Sub<L, R>;
 template <typename L, typename R> using Mul = details::Mul<L, R>;
 template <typename L> using Neg = details::Neg<L>;
+template <typename L> using Half = details::Half<L>;
+template <typename L> using Twice = details::Add<L, L>;
 
 }  // namespace acg::sad
 // NOLINTEND(readability-identifier-naming)

@@ -75,22 +75,22 @@ template <typename... E> struct LazyContext<List<E...>> {
   static_assert(std::is_same_v<non_lazy_exprs, Car_t<layers>>, "eval layers[0] != non lazy");
   using non_lazy_data_actual_type = Map_t<GetInnerType, non_lazy_exprs>;
   using data_container = typename non_lazy_data_actual_type::template cast<std::tuple>;
-  using lazy_container_dict = Reverse_t<typename DetermineLazyDataType<Reverse_t<exprs>>::type>;
+  // using lazy_container_dict = Reverse_t<typename DetermineLazyDataType<Reverse_t<exprs>>::type>;
 
   template <typename T> static constexpr size_t index
-      = Find<Simpliest_t<T>, non_lazy_exprs, ExprHasSameValue>::value;
+      = Find<T, non_lazy_exprs, ExprHasSameValue>::value;
   template <typename T> using param_type = std::tuple_element_t<index<T>, data_container>;
   data_container data;
 
   template <typename T> void Set(const param_type<T>& in) { std::get<index<T>>(data) = in; }
-  template <typename T, std::enable_if_t<Has_v<Simpliest_t<T>, non_lazy_exprs>, bool> = true>
+  template <typename T, std::enable_if_t<Has_v<T, non_lazy_exprs, ExprHasSameValue>, bool> = true>
   forceinline decltype(auto) Get() {
     return std::get<index<T>>(data);
   }
 
-  template <typename T, std::enable_if_t<!Has_v<Simpliest_t<T>, non_lazy_exprs>, bool> = true>
+  template <typename T, std::enable_if_t<!Has_v<T, non_lazy_exprs, ExprHasSameValue>, bool> = true>
   forceinline decltype(auto) Get() {
-    static_assert(!std::is_same_v<T, T>, "Error: Cannot Get this type");
+    static_assert(!std::is_same_v<T, T>, "Error: Cannot Get this type in context");
   }
   forceinline LazyContext() noexcept {
     LazySetupNonLazy<std::remove_reference_t<decltype(*this)>>{}(*this);
@@ -102,18 +102,9 @@ template <typename C, typename... Rest, typename... E>
 struct LazyResultImpl2<C, List<List<E...>, Rest...>> : private LazyResultImpl2<C, List<Rest...>> {
   using layer_output = List<E...>;
   using layer_last = List<Rest...>;
-  using lazy_container_dict = typename C::lazy_container_dict;
-  template <typename T> struct map_to_lazy {
-    using type = GetKeyValue_t<T, lazy_container_dict>;
-  };
-  using layer_output_inner_type = Map_t<map_to_lazy, layer_output>;
-  using data_container = typename layer_output_inner_type::template cast<std::tuple>;
   using base_type = LazyResultImpl2<C, layer_last>;
-
   template <typename T> static constexpr size_t index
-      = Find<Simpliest_t<T>, layer_output, ExprHasSameValue>::value;
-
-  data_container data_;
+      = Find<T, layer_output, ExprHasSameValue>::value;
 
   template <typename Exp, typename L> struct Task;
   template <typename Exp, typename... I> struct Task<Exp, List<I...>> {
@@ -122,11 +113,13 @@ struct LazyResultImpl2<C, List<List<E...>, Rest...>> : private LazyResultImpl2<C
     }
   };
 
-  template <typename T, std::enable_if_t<Has_v<Simpliest_t<T>, layer_output>, int> = 0>
+  decltype(std::make_tuple(Task<E, typename E::InputExpr>{}(std::declval<base_type&>())...)) data_;
+
+  template <typename T, std::enable_if_t<Has_v<T, layer_output, ExprHasSameValue>, int> = 0>
   forceinline decltype(auto) Get() {
     return std::get<index<T>>(data_);
   }
-  template <typename T, std::enable_if_t<!Has_v<Simpliest_t<T>, layer_output>, int> = 0>
+  template <typename T, std::enable_if_t<!Has_v<T, layer_output, ExprHasSameValue>, int> = 0>
   forceinline decltype(auto) Get() {
     return static_cast<base_type&>(*this).template Get<T>();
   }

@@ -2,6 +2,7 @@
 // NOLINTBEGIN(readability-identifier-naming)
 #include "dual.hpp"
 #include "la.hpp"
+#include "cwise.hpp"
 
 namespace acg::sad {
 
@@ -93,6 +94,53 @@ template <typename X, typename Z> struct Simplify<Dot<Zeros<Z>, Zeros<X>>> {
 };
 ///> Dot
 
+///> CwiseMul
+template <typename T, typename S> struct Simplify<CwiseMul<T, S>> {
+  using type = CwiseMul<Simplify_t<T>, Simplify_t<S>>;
+};
+template <typename S> struct Simplify<CwiseMul<Zeros<S>, Zeros<S>>> {
+  using type = Zeros<S>;
+};
+template <typename T, typename S> struct Simplify<CwiseMul<T, Zeros<S>>> {
+  using type = ZerosLike<T>;
+};
+template <typename T, typename S> struct Simplify<CwiseMul<Zeros<S>, T>> {
+  using type = ZerosLike<T>;
+};
+///< CwiseMul
+
+///> CwiseAbs2
+template <typename S> struct Simplify<CwiseAbs2<S>> {
+  using type = CwiseAbs2<Simplify_t<S>>;
+};
+///< CwiseAbs2
+
+///> CwiseInv
+template <typename S> struct Simplify<CwiseInv<S>> {
+  using type = CwiseInv<Simplify_t<S>>;
+};
+///< CwiseInv
+
+
+///> CwiseSqrt
+template <typename S> struct Simplify<CwiseSqrt<S>> {
+  using type = CwiseSqrt<Simplify_t<S>>;
+};
+///< CwiseSqrt
+
+///> Sum
+template <typename S> struct Simplify<Sum<S>> {
+  using type = Sum<Simplify_t<S>>;
+};
+///< Sum
+
+///> Norm
+template <typename S> struct Simplify<Norm<S>> {
+  using type = Norm<Simplify_t<S>>;
+};
+///< Norm
+
+///> ExprHasSameValue
 template <typename T, typename S> struct ExprHasSameValue {
   static constexpr bool value = std::is_same_v<T, S>;
 };

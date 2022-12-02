@@ -11,7 +11,7 @@ Constant_expr(acg::Vec3f, d2, v.x() = v.y() = 0; v.z() = 1);
 Constant_value(float, OriginalLength, 1.0f);
 Variable(acg::Vec3f, X);
 Variable(acg::Vec3f, Y);
-using Distance = Dot<Add<X, Y>, Add<X, Y>>;
+using Distance = Norm<Sub<X, Y>>;
 using Energy = Mul<Sub<Distance, OriginalLength>, Sub<Distance, OriginalLength>>;
 using FinalExp = Energy;
 using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
@@ -58,7 +58,7 @@ using namespace autodiff;
 
 // The scalar function for which the gradient is needed
 real f(const ArrayXreal& x, const ArrayXreal& y) {
-  auto dist2 = ((x - y) * (x - y)).sum();
+  auto dist2 = sqrt(((x - y) * (x - y)).sum());
   return (dist2 - 1) * (dist2 - 1);
 }
 static void ghad(benchmark::State& state) {

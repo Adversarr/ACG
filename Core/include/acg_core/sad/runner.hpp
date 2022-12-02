@@ -33,7 +33,7 @@ template <typename X, typename D> struct DirectionalDiff<X, X, D> {
 // Context
 template <typename L> struct Context {};
 template <typename... E> struct Context<List<E...>> {
-  using outputs = Unique_t<List<typename FixedPoint<Simplify, E>::type...>>;
+  using outputs = Unique_t<List<E...>>;
   using internals = Unique_t<Reduce_t<Concat, Map_t<GetSubNodes, outputs>>>;
   using inputs = Unique_t<Reduce_t<Concat, List<List<>, typename E::InputNodes...>>>;
   using data_type
@@ -41,7 +41,7 @@ template <typename... E> struct Context<List<E...>> {
                    Unique_t<Concat_t<inputs, Concat_t<internals, outputs>>, ExprHasSameValue>>;
   using data_actual_type = Map_t<GetInnerType, data_type>;
   template <typename T> static constexpr size_t index
-      = Find<Simpliest_t<T>, data_type, ExprHasSameValue>::value;
+      = Find<T, data_type, ExprHasSameValue>::value;
 
   using data_container = typename data_actual_type::template cast<std::tuple>;
   template <typename T> using param_type = std::tuple_element_t<index<T>, data_container>;

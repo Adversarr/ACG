@@ -197,8 +197,10 @@ template <int x, typename T> using Get_t = typename details::GetElem<x, T>::type
 template <typename S, typename T> using Concat = details::Concat<S, T>;
 template <typename S, typename T> using Concat_t = typename Concat<S, T>::type;
 
-template <typename T, typename L> using Has = details::IsElem<T, L>;
-template <typename T, typename L> static constexpr bool Has_v = Has<T, L>::value;
+template <typename T, typename L, template<typename, typename> typename Eq=std::is_same> 
+using Has = details::IsElem<T, L, Eq>;
+template <typename T, typename L, template<typename, typename> typename Eq=std::is_same> 
+ static constexpr bool Has_v = Has<T, L, Eq>::value;
 
 template <typename K, typename V> using Pair = details::Pair<K, V>;
 template <typename T> using GetKey = details::GetKey<T>;
