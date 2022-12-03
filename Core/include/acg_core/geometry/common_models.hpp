@@ -4,7 +4,7 @@
 
 namespace acg::geometry {
 
-using geometry::Mesh;
+using geometry::SimpleMesh;
 
 /**
  * @brief Return a UV based sphere
@@ -15,7 +15,7 @@ using geometry::Mesh;
  * @param n_stacks number of horizonal lines
  * @return TriangleMesh<f32>
  */
-Mesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks = 6, Idx n_slices = 12);
+SimpleMesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks = 6, Idx n_slices = 12);
 
 /**
  * @brief Create an icosphere
@@ -24,7 +24,7 @@ Mesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks = 6, Idx n_slices = 1
  * @param radius 
  * @return TriangleMesh<F32> 
  */
-Mesh<F32> sphere_20(Vec3f center, F32 radius);
+SimpleMesh<F32> sphere_20(Vec3f center, F32 radius);
 
 
 }  // namespace acg::visualizer::models

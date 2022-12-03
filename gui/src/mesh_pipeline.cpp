@@ -126,11 +126,11 @@ void MeshPipeline::CreateGraphicsPipeline() {
   // Setup Shaders.
   vk::ShaderModule vert_module, frag_module;
   {
-    auto code = read_file(SPV_HOME "/3d.vert.spv");
+    auto code = read_file(SPV_HOME "3d.vert.spv");
     vk::ShaderModuleCreateInfo info;
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     vert_module = renderer_.GetDevice().createShaderModule(info);
-    code = read_file(SPV_HOME "/3d.frag.spv");
+    code = read_file(SPV_HOME "3d.frag.spv");
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     frag_module = renderer_.GetDevice().createShaderModule(info);
   }

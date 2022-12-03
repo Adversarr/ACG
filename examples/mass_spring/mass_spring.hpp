@@ -13,7 +13,7 @@ using namespace acg::visualizer;
 
 class MassSpring : public MPWorldCtrl {
 public:
-  using Mesh = geometry::Mesh<F64>;
+  using Mesh = geometry::SimpleMesh<F64>;
 
   explicit MassSpring(Idx n);
 

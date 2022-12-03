@@ -2,7 +2,6 @@
 
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
-
 #ifndef ACG_IS_DEBUG
 #  define ACG_IS_DEBUG (1 - ACG_IS_RELEASE)
 #endif
@@ -13,8 +12,8 @@
 #  define LOG_FUNCTION_CALL_DEBUG \
     acg::utils::details::FunctionDeferredLogger _dloger(__PRETTY_FUNCTION__, __FILE__, __LINE__)
 #else
-#  define ACG_DEBUG_LOG(...) ((void*)0)
-#  define LOG_FUNCTION_CALL_DEBUG ((void*)0)
+#  define ACG_DEBUG_LOG(...) ((void)0)
+#  define LOG_FUNCTION_CALL_DEBUG ((void)0)
 #endif
 
 #ifndef ACG_CHECK

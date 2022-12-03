@@ -117,7 +117,7 @@ Scene& Scene::AddParticle(const geometry::Particle<F32>& particle, const Vec3f& 
   return *this;
 }
 
-Scene& Scene::AddMesh(geometry::Mesh<F32> mesh, std::optional<AttrVec<F32, 3>> opt_normals,
+Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<AttrVec<F32, 3>> opt_normals,
                       AttrVec<F32, 3> colors) {
   meshes_.emplace_back(std::move(mesh));
   normals_.emplace_back(std::move(opt_normals));

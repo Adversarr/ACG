@@ -1,12 +1,12 @@
 #include "mass_spring.hpp"
 
-geometry::Mesh<F64> make_plane_xy(Idx n) {
+geometry::SimpleMesh<F64> make_plane_xy(Idx n) {
   // z = 0, xy in [0, 1]
   // 3x3 => x = 0, 0.5, 1
   //        y = 0, 0.5, 1
   //        z = 0.
   AttrVec<F64, 3> vertices(3, n * n);
-  geometry::Mesh<F64>::FaceListType faces(3, 2 * (n - 1) * (n - 1));
+  geometry::SimpleMesh<F64>::FaceListType faces(3, 2 * (n - 1) * (n - 1));
   for (Idx i = 0; i < n; ++i) {
     for (Idx j = 0; j < n; ++j) {
       Idx idx = i * n + j;
