@@ -1,4 +1,4 @@
-#include "acg_vis/world_controller.hpp"
+#include "acg_gui/world_controller.hpp"
 
 #include <co/co.h>
 #include <co/time.h>

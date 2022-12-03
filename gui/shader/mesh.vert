@@ -4,6 +4,8 @@ layout(binding = 0) uniform UniformBufferObject {
   mat4 mvp;
   vec3 eye_position;
   vec4 ambient_light_color;
+  
+  // Point Lights
   vec3 light_color;
   vec3 light_position;
   int options[4];

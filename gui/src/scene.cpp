@@ -1,11 +1,11 @@
-#include "acg_vis/scene.hpp"
+#include "acg_gui/scene.hpp"
 
 #include <acg_core/geometry/common_models.hpp>
 #include <vector>
-#include "acg_vis/avk.hpp"
+#include "acg_gui/backend/avk.hpp"
 #include "acg_core/geometry/common_models.hpp"
-#include "acg_vis/buffer_def.hpp"
-#include "acg_vis/convent.hpp"
+#include "acg_gui/backend/buffer_def.hpp"
+#include "acg_gui/convent.hpp"
 
 namespace acg::visualizer {
 

@@ -1,22 +1,20 @@
-
 #pragma once
 
 #include <acg_core/geometry/particle.hpp>
 
-#include <acg_vis/mesh_pipeline.hpp>
-#include <acg_vis/point_light.hpp>
-#include <acg_vis/scene.hpp>
-#include <acg_vis/world_controller.hpp>
+#include "point_light.hpp"
+#include "scene.hpp"
+#include "world_controller.hpp"
+#include "backend/mesh_pipeline.hpp"
 
 namespace acg::visualizer::details {
 
 class MPWorldCtrl : public WorldCtrlUiOnly {
 protected:
-
   void CleanUpCallback() final;
 
   void RecreateSwapchainCallback() final;
-  
+
   void InitCallback() final;
 
   std::vector<vk::CommandBuffer> DrawScene() final;
@@ -40,10 +38,8 @@ protected:
   const vk::DeviceSize buffer_minimum_size_ = 1024;
 };
 
-}
+}  // namespace acg::visualizer::details
 
 namespace acg::visualizer {
-
 using details::MPWorldCtrl;
-
 }

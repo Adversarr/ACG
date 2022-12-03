@@ -12,8 +12,8 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
-#include "acg_vis/avk.hpp"
-#include "buffer_def.hpp"
+#include "backend/avk.hpp"
+#include "backend/buffer_def.hpp"
 
 namespace acg::visualizer {
 

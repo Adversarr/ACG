@@ -1,4 +1,4 @@
-#include "acg_vis/mp_scene.hpp"
+#include "acg_gui/mp_scene.hpp"
 
 #include <acg_core/geometry/common_models.hpp>
 #include <acg_core/math.hpp>

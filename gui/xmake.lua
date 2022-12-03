@@ -20,7 +20,7 @@ target('acg_shaders')
   end)
 target_end()
 
-target('acg_visualizer')
+target('acg_gui')
   set_kind('static')
   add_includedirs('include', { public = true })
   add_files('src/**.cpp')

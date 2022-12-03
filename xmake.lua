@@ -18,7 +18,7 @@ set_optimize('faster')
 includes(
   '3rdparty',
   'core',
-  'vis'
+  'gui'
 )
 
 includes('examples')

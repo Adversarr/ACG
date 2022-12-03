@@ -1,14 +1,14 @@
 target('ui_only_world')
   add_files('ui_only_world/**.cpp')
-  add_deps('acg_visualizer')
+  add_deps('acg_gui')
 
 target('nbody')
   add_files('nbody/**.cpp')
-  add_deps('acg_visualizer', 'acg_core')
+  add_deps('acg_gui', 'acg_core')
 
 target('free-fall')
   add_files('free_fall/**.cpp')
-  add_deps('acg_visualizer', 'acg_core')
+  add_deps('acg_gui', 'acg_core')
 target_end()
 
 add_requires('openmp')
@@ -19,7 +19,7 @@ target('test_eigen_mp')
  
 target('mass-spring')
   add_files('mass_spring/**.cpp')
-  add_deps('acg_visualizer', 'acg_core')
+  add_deps('acg_gui', 'acg_core')
 target_end()
 
 add_requires('benchmark', 'autodiff')

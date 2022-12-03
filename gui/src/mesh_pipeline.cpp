@@ -1,11 +1,11 @@
-#include "acg_vis/mesh_pipeline.hpp"
+#include "acg_gui/backend/mesh_pipeline.hpp"
 
 #include <spdlog/spdlog.h>
 
 #include <fstream>
 
 #include "acg_utils/log.hpp"
-#include "acg_vis/convent.hpp"
+#include "acg_gui/convent.hpp"
 
 static std::vector<char> read_file(std::string path) {
   std::ifstream input_file{path, std::ios::ate | std::ios::binary};
@@ -115,7 +115,7 @@ void MeshPipeline::CreateDescriptorSetLayout() {
       .setDescriptorCount(1)
       .setDescriptorType(vk::DescriptorType::eUniformBuffer)
       .setPImmutableSamplers(nullptr)
-      .setStageFlags(vk::ShaderStageFlagBits::eVertex);
+      .setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
   vk::DescriptorSetLayoutCreateInfo layout_create_info;
   layout_create_info.setBindings(ubo_layout_binding);
@@ -412,7 +412,8 @@ void MeshPipeline::SetUbo(const Camera *camera, const Light *light, bool all_upd
   }
 
   if (light != nullptr) {
-    ubo_.ambient_light_color = glm::vec4(to_glm(light->ambient_light_color_), light->ambient_light_density_);
+    ubo_.ambient_light_color
+        = glm::vec4(to_glm(light->ambient_light_color_), light->ambient_light_density_);
     ubo_.light_color = to_glm(light->light_color_);
     ubo_.light_position = to_glm(light->light_position_);
     ubo_.options[0] = 1;

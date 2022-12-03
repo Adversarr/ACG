@@ -4,7 +4,7 @@
 #include <map>
 #include <functional>
 
-#include "ui_pipeline.hpp"
+#include "backend/ui_pipeline.hpp"
 
 namespace acg::visualizer {
 

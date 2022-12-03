@@ -1,4 +1,4 @@
-#include "acg_vis/renderer.hpp"
+#include "acg_gui/backend/vkcontext.hpp"
 
 #include <glm/ext/matrix_transform.hpp>
 #include <set>
@@ -9,7 +9,7 @@
 
 #include <acg_utils/log.hpp>
 #include <acg_utils/singleton.hpp>
-#include <acg_vis/scene.hpp>
+#include <acg_gui/scene.hpp>
 #include <fstream>
 #include <vulkan/vulkan_handles.hpp>
 

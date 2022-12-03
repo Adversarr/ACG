@@ -1,7 +1,7 @@
-#include <acg_vis/world_controller.hpp>
+#include <acg_gui/world_controller.hpp>
 #include <acg_utils/log.hpp>
 #include <spdlog/spdlog.h>
-#include <acg_vis/hook.hpp>
+#include <acg_gui/hook.hpp>
 
 int main(int argc, char** argv) {
   acg::visualizer::VkContextHooker::Hook();

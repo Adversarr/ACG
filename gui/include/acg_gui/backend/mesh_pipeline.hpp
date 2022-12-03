@@ -1,12 +1,13 @@
 #pragma once
 
-#include "./renderer.hpp"
+#include "vkcontext.hpp"
 #include "buffer_def.hpp"
-#include "camera.hpp"
-#include "point_light.hpp"
+#include "../camera.hpp"
+#include "../point_light.hpp"
 
 namespace acg::visualizer::details {
 
+// WARN: Deprecated in future.
 class MeshPipeline {
 public:
   class Builder;

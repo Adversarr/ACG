@@ -2,9 +2,9 @@
 // Created by jerryyang on 2022/10/18.
 //
 
-#include "acg_vis/camera.hpp"
+#include "acg_gui/camera.hpp"
 
-#include "acg_vis/convent.hpp"
+#include "acg_gui/convent.hpp"
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>

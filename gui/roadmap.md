@@ -93,10 +93,12 @@ Camera::SetZNear(float near);
 class Canvas {
 public:
   // if colors.cols() == 1, then per_vertex_color will be applied.
-  void DrawCircles(AttrVec<float, 3> centers, AttrVec<float, 3> radius, AttrVec<float, 3> colors);
+  void DrawCircles(AttrVec<float, 2> centers, AttrVec<float, 3> radius, AttrVec<float, 3> colors);
   // if colors.cols() == 1, then per_vertex_color will be applied.
-  void DrawLines(AttrVec<float, 3> vertices, AttrVec<float, 1> width,
+  void DrawLines(AttrVec<float, 2> vertices, AttrVec<float, 1> width,
     AttrVec<Idx, 2> indices, AttrVec<float, 3> colors);
+  void AddArrows(AttrVec<float, 2> origin, AttrVec<float, 2> direction, AttrVec<float, 1> radius, AttrVec<float, 3> colors);
+  void AddArrowField(AttrVec<float, 2> direction, AttrVec<float, 3> colors, AttrVec<float, 1> radius);
   // Each canvas has zero or one unique scene for rendering.
   unique_ptr<Scene>& GetScene();
 };
@@ -127,6 +129,9 @@ class Scene {
   void ClearPhysicsObjects();
   void AddParticles(centers, color, index_offset, index_count); // Particles should be add in group.
   void AddMesh();
+
+  void AddArrows();
+  void AddArrowField();
   // todo: transform support, instance offset support ...
   void AddMeshes(Vert, Indi, Color, bool is_two_sided);
 };

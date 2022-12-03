@@ -1,7 +1,7 @@
 #include <acg_utils/log.hpp>
-#include "acg_vis/window.hpp"
+#include "acg_gui/backend/window.hpp"
 #include <spdlog/spdlog.h>
-#include "acg_vis/avk.hpp"
+#include "acg_gui/backend/avk.hpp"
 
 namespace acg::visualizer::details {
 

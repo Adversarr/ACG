@@ -3,11 +3,11 @@
 #include <acg_core/geometry/particle.hpp>
 #include <acg_core/geometry/mesh.hpp>
 
-#include <acg_vis/mesh_pipeline.hpp>
-#include <acg_vis/point_light.hpp>
-#include <acg_vis/scene.hpp>
-#include <acg_vis/world_controller.hpp>
-#include <acg_vis/mp_scene.hpp>
+#include <acg_gui/backend/mesh_pipeline.hpp>
+#include <acg_gui/point_light.hpp>
+#include <acg_gui/scene.hpp>
+#include <acg_gui/world_controller.hpp>
+#include <acg_gui/mp_scene.hpp>
 using namespace acg;
 using namespace acg::visualizer;
 

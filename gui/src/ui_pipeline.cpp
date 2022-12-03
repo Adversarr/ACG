@@ -1,4 +1,4 @@
-#include "acg_vis/ui_pipeline.hpp"
+#include "acg_gui/backend/ui_pipeline.hpp"
 #include "acg_utils/log.hpp"
 
 #include <acg_utils/singleton.hpp>
