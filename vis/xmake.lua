@@ -1,7 +1,4 @@
 local spv_home = '/shader/outputs/'
-
-
-
 add_requires("glslang", {configs = {binaryonly = true}})
 add_requires('glm', {system=false})
 add_requires('glfw')
@@ -9,6 +6,19 @@ add_requires('coost')
 add_requires('vulkansdk', {system=true})
 add_requires('imgui', {configs = {glfw_vulkan = true}})
 
+target('acg_shaders')
+  set_kind('phony')
+  add_rules('utils.glsl2spv', {outputdir = "$(buildir)" .. spv_home, bin2c=false})
+  add_files('shader/*.vert', 'shader/*.frag')
+  add_packages('glslang')
+  after_build(function (tg)
+    if os.isdir("$(projectdir)/data/shaders/") then
+      os.mkdir("$(projectdir)/data/shaders/")
+    end
+    os.rm("$(projectdir)/data/shaders/*.spv")
+    os.cp("$(buildir)" .. spv_home .. "/*.spv", "$(projectdir)/data/shaders/")
+  end)
+target_end()
 
 target('acg_visualizer')
   set_kind('static')
@@ -24,7 +34,6 @@ target('acg_visualizer')
     build_dir = path.absolute(build_dir)
     target:add("defines", 'SPV_HOME="' .. string.gsub(build_dir, '\\', '/') .. spv_home .. '"')
   end)
-  add_rules('utils.glsl2spv', {outputdir = "$(buildir)" .. spv_home, bin2c=true})
-  add_files('shader/*.vert', 'shader/*.frag')
-  add_packages('glslang')
+  add_deps('acg_shaders')
 target_end()
+
