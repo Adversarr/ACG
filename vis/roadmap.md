@@ -64,7 +64,6 @@ Set right clip
 Camera::SetRight(float);
 ```
 
-
 Set Up:
 
 ```cpp
@@ -86,6 +85,8 @@ Camera::SetZNear(float near);
 ### Canvas
 
 > This is the context manager for managing drawing commands on a window. You should not instantiate this class directly via `__init__`, instead please call the `GetCanvas()` method of Window.
+>
+> Note: This class handles all the 2d-draw.
 
 ```cpp
 // Actually, The renderer takes the canvas for rendering.
@@ -103,14 +104,62 @@ public:
 
 ### Scene
 
-has light, and some physical objects
+> This is the manager for 3d-draw;
+
+Has camera, light, and some physical objects, e.g. Particles and Mesh.
+
+Light:
+- ambient light -- color
+- point light -- position, color
+
+> Depends on Ubo.
+
+In the future, more features should be included:
+
+1. Marching cube algorithm
+2. ...
+
+```cpp
+class Scene {
+  void SetLight(Light light);
+  void SetCamera(Camera cam);
+  void AddLines(Vert, Indi, width, color)
+  void ClearPhysicsObjects();
+  void AddParticles(centers, color, index_offset, index_count); // Particles should be add in group.
+  void AddMesh();
+  // todo: transform support, instance offset support ...
+  void AddMeshes(Vert, Indi, Color, bool is_two_sided);
+};
+```
 
 ### World, Window, GUI
 
 - World: the class for deriving, has one (or at least one in future?) window. 
-- Window: 
-- The ui interface class, can draw.
+- GUI: The ui interface class, can draw.
+- Window: handles all the keyboard/mouse io.
 
+```cpp
+class Gui {
+public:
+  
+};
+```
+
+```cpp
+class Window {
+public:
+  Canvas& GetCanvas();
+  // ...
+  // -> Handles ImGui Calls.
+  // ...
+  bool SaveImage(const char* path);
+  // (Optional)
+  bool IsRunning();
+};
+```
+
+
+Many API should be refitted to our application.
 
 ## Todo List
 
