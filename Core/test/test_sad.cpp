@@ -3,7 +3,8 @@
 #include <co/unitest.h>
 
 #include <Eigen/Eigen>
-#include <acg_core/math.hpp>
+#include <acg_core/math/common.hpp>
+#include <acg_core/math/tensor_traits.hpp>
 #include <acg_core/sad/all.hpp>
 #include <acg_utils/god/algorithms.hpp>
 using namespace acg::utils::god;

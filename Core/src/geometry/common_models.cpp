@@ -1,11 +1,12 @@
 #include "acg_core/geometry/common_models.hpp"
+#include "acg_core/math/constants.hpp"
 namespace acg::geometry {
 
 SimpleMesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks, Idx n_slices) {
   auto n_faces = 2 * n_slices * n_stacks;
   auto n_vertices = 2 + n_slices * n_stacks;
-  SimpleMesh<F32>::StateType vertices(3, n_vertices);
-  SimpleMesh<F32>::FaceListType indices(3, n_faces);
+  SimpleMesh<F32>::VerticesType vertices(3, n_vertices);
+  SimpleMesh<F32>::FacesType indices(3, n_faces);
 
   // 1. fill the vertices
   // north pole
@@ -55,17 +56,17 @@ SimpleMesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks, Idx n_slices) 
 }
 
 SimpleMesh<F32> sphere_20(Vec3f center, F32 radius) {
-  SimpleMesh<F32>::StateType vertices(3, 12);
-  SimpleMesh<F32>::FaceListType indices(3, 20);
+  SimpleMesh<F32>::VerticesType vertices(3, 12);
+  SimpleMesh<F32>::FacesType indices(3, 20);
   F32 x = .525731112119133606;
   F32 z = .850650808352039932;
-  vertices = AttrVecTrans<F32, 3>{{-x, 0.0, z}, {x, 0.0, z},  {-x, 0.0, -z}, {x, 0.0, -z},
+  vertices = AttrTrans<F32, 3>{{-x, 0.0, z}, {x, 0.0, z},  {-x, 0.0, -z}, {x, 0.0, -z},
                                   {0.0, z, x},  {0.0, z, -x}, {0.0, -z, x},  {0.0, -z, -x},
                                   {z, x, 0.0},  {-z, x, 0.0}, {z, -x, 0.0},  {-z, -x, 0.0}}
                  .transpose();
   vertices = vertices * radius;
   vertices.colwise() += center;
-  indices = AttrVecTrans<Idx, 3>{{1, 4, 0},  {4, 9, 0},  {4, 5, 9},  {8, 5, 4},  {1, 8, 4},
+  indices = AttrTrans<Idx, 3>{{1, 4, 0},  {4, 9, 0},  {4, 5, 9},  {8, 5, 4},  {1, 8, 4},
                                  {1, 10, 8}, {10, 3, 8}, {8, 3, 5},  {3, 2, 5},  {3, 7, 2},
                                  {3, 10, 7}, {10, 6, 7}, {6, 11, 7}, {6, 0, 11}, {6, 1, 0},
                                  {10, 1, 6}, {11, 0, 9}, {2, 11, 9}, {5, 2, 9},  {11, 2, 7}}

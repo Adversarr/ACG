@@ -1,10 +1,11 @@
 #pragma once
 
 #include <Eigen/Eigen>
-#include "../math.hpp"
+#include "../math/common.hpp"
 
 namespace acg::geometry {
 
+// TODO: Deprecate
 template<typename Tp=F32>
 class Particle {
 private:

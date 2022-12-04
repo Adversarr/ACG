@@ -5,7 +5,7 @@
 #include <memory>
 #include <optional>
 
-#include "acg_core/math.hpp"
+#include "acg_core/math/common.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS
@@ -49,21 +49,21 @@ public:
   *     geometry::Mesh<F32> mesh(v, f);
   *     scene_.AddMesh(mesh, AttrVecTrans<F32, 3>{{1, 0, 0}, {1, 0, 0}, {1, 0, 0}}.transpose(), Vec3f(.5, .6, .7));
   */
-  Scene& AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<AttrVec<F32, 3>> opt_normals,
-                 AttrVec<F32, 3> colors);
+  Scene& AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Attr<F32, 3>> opt_normals,
+                 Attr<F32, 3> colors);
 
   vk::DeviceSize GetRequiredVertexBufferSize() const;
 
   vk::DeviceSize GetRequiredIndexBufferSize() const;
 
-  std::pair<std::vector<Vertex>, std::vector<IndexType>> Build() const;
+  std::pair<std::vector<Vertex>, std::vector<GuiIdx>> Build() const;
 
 private:
   std::vector<geometry::SimpleMesh<F32>> meshes_;
 
-  std::vector<std::optional<AttrVec<F32, 3>>> normals_;
+  std::vector<std::optional<Attr<F32, 3>>> normals_;
 
-  std::vector<AttrVec<F32, 3>> mesh_colors_;
+  std::vector<Attr<F32, 3>> mesh_colors_;
 
   std::vector<geometry::Particle<F32>> particles_;
 

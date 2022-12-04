@@ -1,12 +1,13 @@
 #pragma once
 // NOLINTBEGIN(readability-identifier-naming)
 
-#include "acg_core/math.hpp"
+#include "../math/all.hpp"
 #include "acg_utils/god/algorithms.hpp"
 
 namespace acg::sad {
 namespace details {
 using namespace acg::utils::god;
+using namespace acg::details;
 
 // Expr
 template <typename T, typename... E> struct Expr {

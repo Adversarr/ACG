@@ -1,6 +1,6 @@
 #pragma once
 #include "mesh.hpp"
-#include "../math.hpp"
+#include "../math/common.hpp"
 
 namespace acg::geometry {
 

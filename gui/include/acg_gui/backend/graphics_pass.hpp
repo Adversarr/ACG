@@ -1,14 +1,12 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include <acg_core/math/common.hpp>
 
 #include "buffer_def.hpp"
-#include "../camera.hpp"
-#include "../point_light.hpp"
 #include "vkcontext.hpp"
 
 namespace acg::visualizer {
-
 namespace details {
 
 class GraphicsRenderPass {
@@ -18,8 +16,6 @@ public:
   ~GraphicsRenderPass();
 
   void RecreateSwapchain();
-
-  void SetUbo(const Camera* cam, const Light* light, bool all_update = false);
 
   /**
    * @brief Begin render pass, and return the command buffer in use.
@@ -35,8 +31,10 @@ public:
    */
   vk::CommandBuffer& EndRender();
 
+  void SetBackgroundColor(const acg::attr::Rgba& color);
+
 private:
-  explicit GraphicsRenderPass(bool is_dst_present);
+  explicit GraphicsRenderPass();
 
   void Init();
   void Cleanup();
@@ -45,7 +43,6 @@ private:
   void CreateDescriptorSetLayout();
   void CreateDepthResources();
   void CreateFramebuffers();
-  void CreateUniformBuffers();
   void CreateCommandBuffers();
   void CreateDescriptorPool();
   void CreateDescriptorSets();
@@ -57,7 +54,6 @@ private:
   // Render pass and Pipeline
   bool is_inited_{false};
   bool is_render_pass_begin_{false};
-  const bool is_dst_present_{false};
 
   vk::ClearColorValue background_color_{std::array{0.0f, 0.0f, 0.0f, 1.0f}};
   vk::ClearDepthStencilValue depth_stencil_value_{{1.0f, 0}};
@@ -76,20 +72,11 @@ private:
 
   vk::CommandPool command_pool_;
   std::vector<vk::CommandBuffer> command_buffers_;
-  Ubo ubo_;
 };
 
 class GraphicsRenderPass::Builder {
-  bool is_dst_present_{false};
-
-public:
-  inline Builder& SetIsDstPresent(bool is_present) {
-    is_dst_present_ = is_present;
-    return *this;
-  }
-  inline std::unique_ptr<GraphicsRenderPass> Build() const {
-    auto retval = std::unique_ptr<GraphicsRenderPass>(
-        new GraphicsRenderPass(is_dst_present_));
+  inline static std::unique_ptr<GraphicsRenderPass> Build() {
+    auto retval = std::unique_ptr<GraphicsRenderPass>(new GraphicsRenderPass);
     retval->Init();
     return retval;
   }

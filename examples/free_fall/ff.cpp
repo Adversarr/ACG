@@ -1,7 +1,7 @@
 #include "ff.hpp"
 
 #include <acg_core/geometry/common_models.hpp>
-#include <acg_core/math.hpp>
+#include <acg_core/math/common.hpp>
 #include <acg_utils/log.hpp>
 #include <cmath>
 

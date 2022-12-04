@@ -1,6 +1,6 @@
 #pragma once
 
-#include <acg_core/core.hpp>
+#include <acg_core/common.hpp>
 #include <map>
 #include <functional>
 

@@ -57,7 +57,7 @@ vk::DeviceSize Scene::GetRequiredIndexBufferSize() const {
   }
   // INFO: 20 is hard coded because we use sphere_20 for particle rendering.
   size += particles_.size() * 20;
-  return size * 3 * sizeof(details::IndexType);
+  return size * 3 * sizeof(details::GuiIdx);
 }
 
 void Scene::Reset() {
@@ -68,9 +68,9 @@ void Scene::Reset() {
   particles_colors_.clear();
 }
 
-std::pair<std::vector<Vertex>, std::vector<IndexType>> Scene::Build() const {
+std::pair<std::vector<Vertex>, std::vector<GuiIdx>> Scene::Build() const {
   std::vector<Vertex> vertices;
-  std::vector<IndexType> indices;
+  std::vector<GuiIdx> indices;
   for (size_t i = 0; i < meshes_.size(); ++i) {
     const auto& m = meshes_[i];
     const auto& c = mesh_colors_[i];
@@ -117,8 +117,8 @@ Scene& Scene::AddParticle(const geometry::Particle<F32>& particle, const Vec3f& 
   return *this;
 }
 
-Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<AttrVec<F32, 3>> opt_normals,
-                      AttrVec<F32, 3> colors) {
+Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Attr<F32, 3>> opt_normals,
+                      Attr<F32, 3> colors) {
   meshes_.emplace_back(std::move(mesh));
   normals_.emplace_back(std::move(opt_normals));
   mesh_colors_.emplace_back(std::move(colors));

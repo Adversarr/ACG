@@ -2,32 +2,33 @@
 #include <Eigen/Eigen>
 #include <type_traits>
 
-#include "../core.hpp"
-#include "../math.hpp"
+#include "../common.hpp"
+#include "../math/common.hpp"
 
 namespace acg::geometry {
 
 /**
  * @brief Triangle Mesh Geometry.
+ * TODO: Do not use this class any more!
  *
  * @tparam T the float point number in use. default = float (32-bit)
  */
 template <typename T = F32> class SimpleMesh {
 public:
-  using VerticeType = Vec3<T>;
+  using VertexType = Vec3<T>;
 
-  using StateType = AttrVec<T, 3>;
+  using VerticesType = Attr<T, 3>;
 
   using FaceType = Vec3<Idx>;
 
-  using FaceListType = AttrVec<Idx, 3>;
+  using FacesType = Attr<Idx, 3>;
 
 private:
   // Mesh should be column major, AoS layout.
-  StateType vertices_;
+  VerticesType vertices_;
 
   // the same for indice.
-  FaceListType faces_;
+  FacesType faces_;
 
 public:
   /**
@@ -36,7 +37,7 @@ public:
    * @param vert
    * @param indi
    */
-  SimpleMesh(const StateType& vert, const FaceListType& indi);
+  SimpleMesh(const VerticesType& vert, const FacesType& indi);
 
   /**
    * @brief Construct a triangle mesh object, with no vertices and indices initialized. Will return
@@ -56,23 +57,23 @@ public:
 
   SimpleMesh& operator=(const SimpleMesh&) = default;
 
-  inline const StateType& GetVertices() const;
+  inline const VerticesType& GetVertices() const;
 
-  inline const FaceListType& GetFaces() const;
+  inline const FacesType& GetFaces() const;
 
-  inline SimpleMesh<T>& SetVertices(const AttrVec<T, 3>& vertices) {
+  inline SimpleMesh<T>& SetVertices(const Attr<T, 3>& vertices) {
     assert(vertices_.cols() == vertices.cols());
     vertices_ = vertices;
     return *this;
   }
 
-  inline SimpleMesh<T>& SetFaces(const AttrVec<Idx, 3>& faces) {
+  inline SimpleMesh<T>& SetFaces(const Attr<Idx, 3>& faces) {
     assert(faces_.cols() == faces.cols());
     faces_ = faces;
     return *this;
   }
 
-  inline SimpleMesh<T>& Set(const AttrVec<T, 3>& vertices, const AttrVec<Idx, 3>& faces) {
+  inline SimpleMesh<T>& Set(const Attr<T, 3>& vertices, const Attr<Idx, 3>& faces) {
     vertices_ = vertices;
     faces_ = faces;
     return *this;
@@ -90,15 +91,17 @@ public:
   inline Idx GetNumFaces() const { return faces_.cols(); }
 };
 
-template <typename T> const typename SimpleMesh<T>::StateType& SimpleMesh<T>::GetVertices() const {
+template <typename T>
+const typename SimpleMesh<T>::VerticesType& SimpleMesh<T>::GetVertices() const {
   return vertices_;
 }
 
-template <typename T> const typename SimpleMesh<T>::FaceListType& SimpleMesh<T>::GetFaces() const {
+template <typename T> const typename SimpleMesh<T>::FacesType& SimpleMesh<T>::GetFaces() const {
   return faces_;
 }
 
-template <typename T> SimpleMesh<T>::SimpleMesh(const StateType& vertices, const FaceListType& indices)
+template <typename T>
+SimpleMesh<T>::SimpleMesh(const VerticesType& vertices, const FacesType& indices)
     : vertices_(vertices), faces_(indices) {}
 
 template <typename T> template <typename T2> SimpleMesh<T2> SimpleMesh<T>::Cast() const {

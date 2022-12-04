@@ -1,5 +1,6 @@
 #pragma once
 
+// NOLINTBEGIN(readability-identifier-naming)
 #include <limits>
 
 #include "god.hpp"
@@ -300,3 +301,4 @@ constexpr size_t Find_v = Find<T, L, Eq>::value;
 template <typename L, typename R> using Cross = details::Cross<L, R>;
 template <typename L, typename R> using Cross_t = typename details::Cross<L, R>::type;
 }  // namespace acg::utils::god
+// NOLINTEND(readability-identifier-naming)

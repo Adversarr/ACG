@@ -4,11 +4,12 @@
 #include <Eigen/Eigen>
 #include <initializer_list>
 
-#include "../core.hpp"
+#include "../common.hpp"
 #include "particle.hpp"
 
 namespace acg::geometry {
 
+// TODO: Refactor
 template <typename T = F32> class ParticleSystem {
 private:
   // Center position coordinate in world space.

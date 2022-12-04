@@ -1,7 +1,8 @@
 #pragma once
 #include <type_traits>
 
-#include "acg_core/core.hpp"
+// NOLINTBEGIN(readability-identifier-naming)
+#include "acg_core/common.hpp"
 
 #ifndef forceinline
 #  ifdef _MSC_VER_  // for MSVC
@@ -215,3 +216,4 @@ template <typename H, typename L> using Update_t = typename details::Update<H, L
 template <typename L> using Reverse = details::Reverse<L>;
 template <typename L> using Reverse_t = typename Reverse<L>::type;
 }  // namespace acg::utils::god
+// NOLINTEND(readability-identifier-naming)

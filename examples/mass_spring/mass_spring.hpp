@@ -35,7 +35,7 @@ private:
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> position_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> velocity_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> acceleration_;
-  AttrVec<Idx, 2> edges_;
+  Attr<Idx, 2> edges_;
   Mesh mesh_;
   Mesh new_mesh_;
 

@@ -37,8 +37,12 @@ using F32 = float;
 using F64 = double;
 
 /**
+ * @brief Default floating-point type is Float 64, aka double.
+ */
+using Float = F64;
+
+/**
  * @brief Index & Size type for mesh, particle system, rendering(index buffer), etc.
- *
  */
 using Idx = int64_t;
 

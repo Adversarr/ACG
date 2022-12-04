@@ -1,7 +1,7 @@
 #include "acg_gui/mp_scene.hpp"
 
 #include <acg_core/geometry/common_models.hpp>
-#include <acg_core/math.hpp>
+#include <acg_core/math/all.hpp>
 #include <acg_utils/log.hpp>
 #include <cmath>
 

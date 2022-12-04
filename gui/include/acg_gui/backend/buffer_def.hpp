@@ -9,10 +9,15 @@
 namespace acg::visualizer {
 
 namespace details {
+
 constexpr auto VK_INDEX_TYPE = vk::IndexType::eUint32;
-using IndexType = uint32_t;
+using GuiIdx = uint32_t;
+
+
 }  // namespace details
-using IndexType = details::IndexType;
+
+
+using GuiIdx = details::GuiIdx;
 
 /**
  * @brief Vertex Buffer.

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "acg_core/math.hpp"
+#include "acg_core/math/common.hpp"
 
 namespace acg::visualizer {
 struct Light {
