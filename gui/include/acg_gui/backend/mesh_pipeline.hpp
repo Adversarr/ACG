@@ -1,9 +1,9 @@
 #pragma once
 
-#include "vkcontext.hpp"
-#include "buffer_def.hpp"
 #include "../camera.hpp"
 #include "../point_light.hpp"
+#include "buffer_def.hpp"
+#include "vkcontext.hpp"
 
 namespace acg::gui::details {
 
@@ -32,7 +32,6 @@ public:
    */
   vk::CommandBuffer& EndRender();
 
-
 private:
   /**
    * @brief Construct a new Mesh Pipeline object
@@ -43,10 +42,10 @@ private:
    * @param cull
    * @param front
    */
-  explicit MeshPipeline(VkContext& renderer, bool is_present = true,
-                        vk::PolygonMode polygon = vk::PolygonMode::eFill,
-                        vk::CullModeFlags cull = vk::CullModeFlagBits::eNone,
-                        vk::FrontFace front = vk::FrontFace::eClockwise);
+  [[deprecated]] explicit MeshPipeline(VkContext& renderer, bool is_present = true,
+                                       vk::PolygonMode polygon = vk::PolygonMode::eFill,
+                                       vk::CullModeFlags cull = vk::CullModeFlagBits::eNone,
+                                       vk::FrontFace front = vk::FrontFace::eClockwise);
 
   void Init();
   void Cleanup();
@@ -122,8 +121,8 @@ public:
   }
 
   inline std::unique_ptr<MeshPipeline> Build() const {
-    auto retval = std::unique_ptr<MeshPipeline>(
-        new MeshPipeline(get_vk_context(), is_dst_present_, polygon_mode_, cull_mode_, front_face_));
+    auto retval = std::unique_ptr<MeshPipeline>(new MeshPipeline(
+        get_vk_context(), is_dst_present_, polygon_mode_, cull_mode_, front_face_));
     retval->Init();
     return retval;
   }

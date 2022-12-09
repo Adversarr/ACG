@@ -1,6 +1,7 @@
 #include "acg_gui/scene.hpp"
 
 #include <acg_core/geometry/common_models.hpp>
+#include <acg_core/geometry/normal.hpp>
 #include <vector>
 #include "acg_gui/backend/avk.hpp"
 #include "acg_core/geometry/common_models.hpp"
@@ -120,6 +121,7 @@ Scene& Scene::AddParticle(const geometry::Particle<F32>& particle, const Vec3f& 
 Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Attr<F32, 3>> opt_normals,
                       Attr<F32, 3> colors) {
   meshes_.emplace_back(std::move(mesh));
+  normals_.emplace_back(acg::geometry::Normal<F32>{mesh.GetFaces(), mesh.GetVertices()}.PerVertex());
   normals_.emplace_back(std::move(opt_normals));
   mesh_colors_.emplace_back(std::move(colors));
   return *this;

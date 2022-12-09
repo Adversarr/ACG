@@ -133,7 +133,8 @@ void GraphicsRenderPass::CreateDescriptorPool() {
       .setDescriptorCount(get_vk_context().GetSwapchainSize());
 
   vk::DescriptorPoolCreateInfo pool_create_info;
-  pool_create_info.setPoolSizes(pool_size).setMaxSets(get_vk_context().GetSwapchainSize());
+  pool_create_info.setPoolSizes(pool_size)
+      .setMaxSets(get_vk_context().GetSwapchainSize());
 
   descriptor_pool_ = get_vk_context().GetDevice().createDescriptorPool(pool_create_info);
 }
@@ -149,7 +150,9 @@ void GraphicsRenderPass::CreateDescriptorSets() {
 
   for (size_t i = 0; i < get_vk_context().GetSwapchainSize(); ++i) {
     vk::DescriptorBufferInfo buffer_info;
-    buffer_info.setBuffer(uniform_buffers_[i]->GetBuffer()).setOffset(0).setRange(sizeof(Ubo));
+    buffer_info.setBuffer(uniform_buffers_[i]->GetBuffer())
+        .setOffset(0)
+        .setRange(sizeof(Ubo));
     vk::WriteDescriptorSet desc_write;
     desc_write.setDstSet(descriptor_sets_[i])
         .setDstBinding(0)
