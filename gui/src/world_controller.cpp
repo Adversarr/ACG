@@ -11,7 +11,7 @@
 
 #include <acg_utils/singleton.hpp>
 
-namespace acg::visualizer {
+namespace acg::gui {
 
 WorldCtrlUiOnly& WorldCtrlUiOnly::Run() {
   PreRun();
@@ -147,4 +147,4 @@ WorldCtrlUiOnly& WorldCtrlUiOnly::Init() {
   return *this;
 }
 
-}  // namespace acg::visualizer
+}  // namespace acg::gui

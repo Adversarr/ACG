@@ -7,7 +7,7 @@
 #include "world_controller.hpp"
 #include "backend/mesh_pipeline.hpp"
 
-namespace acg::visualizer::details {
+namespace acg::gui::details {
 
 class MPWorldCtrl : public WorldCtrlUiOnly {
 protected:
@@ -38,8 +38,8 @@ protected:
   const vk::DeviceSize buffer_minimum_size_ = 1024;
 };
 
-}  // namespace acg::visualizer::details
+}  // namespace acg::gui::details
 
-namespace acg::visualizer {
+namespace acg::gui {
 using details::MPWorldCtrl;
 }

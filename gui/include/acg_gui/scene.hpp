@@ -15,7 +15,7 @@
 #include "backend/avk.hpp"
 #include "backend/buffer_def.hpp"
 
-namespace acg::visualizer {
+namespace acg::gui {
 
 class Scene {
   // todo: add marching cube support.
@@ -70,4 +70,4 @@ private:
   std::vector<Vec3f> particles_colors_;
 };
 
-}  // namespace acg::visualizer
+}  // namespace acg::gui

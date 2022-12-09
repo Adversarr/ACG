@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <acg_core/math/common.hpp>
 
-namespace acg::visualizer {
+namespace acg::gui {
 
 
 inline glm::vec2 to_glm(Vec2f v){

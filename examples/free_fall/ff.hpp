@@ -7,8 +7,8 @@
 #include <acg_gui/scene.hpp>
 #include <acg_gui/world_controller.hpp>
 using namespace acg;
-using namespace acg::visualizer;
-using namespace acg::visualizer::details;
+using namespace acg::gui;
+using namespace acg::gui::details;
 
 class FreeFall : public WorldCtrlUiOnly {
 public:

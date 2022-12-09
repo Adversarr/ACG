@@ -27,4 +27,4 @@ SimpleMesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks = 6, Idx n_slic
 SimpleMesh<F32> sphere_20(Vec3f center, F32 radius);
 
 
-}  // namespace acg::visualizer::models
+}  // namespace acg::gui::models

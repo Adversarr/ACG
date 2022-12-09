@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.hpp>
 #include "vkcontext.hpp"
 
-namespace acg::visualizer::details {
+namespace acg::gui::details {
 
 class UiPipeline {
 public:
@@ -59,4 +59,4 @@ public:
   }
 };
 
-}  // namespace acg::visualizer::details
+}  // namespace acg::gui::details

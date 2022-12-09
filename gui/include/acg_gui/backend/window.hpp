@@ -7,7 +7,7 @@
 #include <tuple>
 #include <vulkan/vulkan.hpp>
 
-namespace acg::visualizer::details {
+namespace acg::gui::details {
 
 class Window {
 public:
@@ -43,7 +43,7 @@ private:
 
   GLFWwindow* window_{nullptr};
 
-  std::string title_{"Vulkan Visualizer"};
+  std::string title_{"Vulkan Gui"};
 
   int width_{DEFAULT_WIDTH_};
 
@@ -64,4 +64,4 @@ inline GLFWwindow* Window::GetWindow() const noexcept { return window_; }
 
 inline bool Window::ShouldClose() const { return glfwWindowShouldClose(window_); }
 
-}  // namespace acg::visualizer::details
+}  // namespace acg::gui::details

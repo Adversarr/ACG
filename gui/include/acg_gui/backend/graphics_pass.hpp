@@ -6,7 +6,7 @@
 #include "buffer_def.hpp"
 #include "vkcontext.hpp"
 
-namespace acg::visualizer {
+namespace acg::gui {
 namespace details {
 
 class GraphicsRenderPass {
@@ -84,4 +84,4 @@ class GraphicsRenderPass::Builder {
 
 }  // namespace details
 
-}  // namespace acg::visualizer
+}  // namespace acg::gui

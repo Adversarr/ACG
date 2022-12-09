@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.hpp>
 #include "window.hpp"
 
-namespace acg::visualizer {
+namespace acg::gui {
 
 namespace details {
 
@@ -325,7 +325,6 @@ private:
   void CreateSwapchain();
   void CreateImageViews();
   void CreateSyncObjects();
-
   void CleanupSwapchain();
 
   // Helpers:
@@ -349,7 +348,7 @@ private:
   // Pre-build Options
   bool is_inited_{false};
   bool enable_validation_{true};
-  std::string title_{"ACG Visualizer (Vulkan)"};
+  std::string title_{"ACG Gui (Vulkan)"};
 
   // Basic Context
   std::unique_ptr<Window> window_{nullptr};
@@ -371,8 +370,6 @@ private:
   vk::Extent2D swapchain_extent_;
   std::vector<vk::Image> swapchain_images_;
   std::vector<vk::ImageView> swapchain_image_views_;
-  // TODO: Depth images should be placed here. see Piccolo.
-  // Render Loop
   std::vector<RenderSyncObjects> semaphores_;
   size_t current_frame_{0};
   uint32_t swapchain_size_{3};
@@ -386,4 +383,4 @@ private:
 }  // namespace details
 using VkContext = details::VkContext;
 VkContext& get_vk_context();
-}  // namespace acg::visualizer
+}  // namespace acg::gui

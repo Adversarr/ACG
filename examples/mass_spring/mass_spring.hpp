@@ -9,7 +9,7 @@
 #include <acg_gui/world_controller.hpp>
 #include <acg_gui/mp_scene.hpp>
 using namespace acg;
-using namespace acg::visualizer;
+using namespace acg::gui;
 
 class MassSpring : public MPWorldCtrl {
 public:

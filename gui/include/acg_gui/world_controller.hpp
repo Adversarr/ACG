@@ -6,7 +6,7 @@
 
 #include "backend/ui_pipeline.hpp"
 
-namespace acg::visualizer {
+namespace acg::gui {
 
 class WorldCtrlUiOnly {
   using KeyType = int;
@@ -116,4 +116,4 @@ protected:
   F64 loop_time_{0};
 };
 
-}  // namespace acg::visualizer
+}  // namespace acg::gui

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace acg::visualizer{
+namespace acg::gui{
 
 namespace details {
 

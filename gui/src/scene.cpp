@@ -7,7 +7,7 @@
 #include "acg_gui/backend/buffer_def.hpp"
 #include "acg_gui/convent.hpp"
 
-namespace acg::visualizer {
+namespace acg::gui {
 
 std::vector<vk::VertexInputBindingDescription> Vertex::GetBindingDescriptions() {
   vk::VertexInputBindingDescription binding;
@@ -126,4 +126,4 @@ Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Attr<F32, 3>
 }
 
 
-}  // namespace acg::visualizer
+}  // namespace acg::gui

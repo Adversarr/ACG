@@ -8,7 +8,7 @@ static void check_vk_result(VkResult err) {
   ACG_CHECK(err == VK_SUCCESS, "error detected: {}", vk::to_string((vk::Result)err));
 }
 
-namespace acg::visualizer::details {
+namespace acg::gui::details {
 
 UiPipeline::UiPipeline():
   renderer_(utils::Singleton<VkContext>{}.GetRef()) {}

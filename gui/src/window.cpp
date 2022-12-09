@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 #include "acg_gui/backend/avk.hpp"
 
-namespace acg::visualizer::details {
+namespace acg::gui::details {
 
 Window::Window(std::string_view title) noexcept : title_(title) {
   ACG_CHECK(glfwInit() == GLFW_TRUE, "Failed to init GLFW.");
@@ -50,4 +50,4 @@ bool Window::IsKeyPressed(int glfw_key) const {
 }
 
 
-}  // namespace acg::visualizer
+}  // namespace acg::gui

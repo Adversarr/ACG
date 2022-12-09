@@ -10,7 +10,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-namespace acg::visualizer {
+namespace acg::gui {
 glm::mat4 Camera::GetView() const {
   return glm::lookAt(to_glm(position_), to_glm(Vec3f(position_ + front_)), to_glm(up_));
 }
@@ -56,4 +56,4 @@ void Camera::Move(Vec3f direction, F64 dt) { position_ = position_ + direction *
 const Vec3f& Camera::GetPosition() const { return position_; }
 const Vec3f& Camera::GetFront() const { return front_; }
 
-}  // namespace acg::visualizer
+}  // namespace acg::gui

@@ -6,7 +6,7 @@
 #include <vector>
 #include "avk.hpp"
 
-namespace acg::visualizer {
+namespace acg::gui {
 
 namespace details {
 
@@ -52,4 +52,4 @@ struct Ubo {
   alignas(16) int options[4] = {0, 0, 0, 0};
 };
 
-}  // namespace acg::visualizer
+}  // namespace acg::gui

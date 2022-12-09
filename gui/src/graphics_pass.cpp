@@ -4,7 +4,7 @@
 
 #include "acg_gui/convent.hpp"
 
-namespace acg::visualizer::details {
+namespace acg::gui::details {
 
 GraphicsRenderPass::GraphicsRenderPass() { Init(); }
 
@@ -216,7 +216,6 @@ vk::CommandBuffer &GraphicsRenderPass::BeginRender() {
   render_pass_info.renderArea.offset.setY(0);
   render_pass_info.setClearValues(clear_value);
   current_command_buffer.beginRenderPass(render_pass_info, vk::SubpassContents::eInline);
-  // Bind Pipeline
   is_render_pass_begin_ = true;
   return current_command_buffer;
 }
@@ -229,4 +228,4 @@ vk::CommandBuffer &GraphicsRenderPass::EndRender() {
   is_render_pass_begin_ = false;
   return current_command_buffer;
 }
-}  // namespace acg::visualizer::details
+}  // namespace acg::gui::details

@@ -2,6 +2,7 @@
 
 #include <acg_core/geometry/common_models.hpp>
 #include <acg_core/math/common.hpp>
+#include <acg_core/math/constants.hpp>
 #include <acg_utils/log.hpp>
 #include <cmath>
 
@@ -53,7 +54,7 @@ void FreeFall::InitCallback() {
 
 void FreeFall::CleanUpCallback() {
   ACG_DEBUG_LOG("Mesh ppl Cleanup");
-  acg::visualizer::get_vk_context().GetDevice().waitIdle();
+  acg::gui::get_vk_context().GetDevice().waitIdle();
   vertex_buffer_->Release();
   indice_buffer_->Release();
   mesh_ppl_.reset(nullptr);
@@ -82,10 +83,10 @@ void FreeFall::PreRun() {
   RegenerateScene();
   spdlog::info("buffersize = {} + {}", scene_.GetRequiredVertexBufferSize(),
                scene_.GetRequiredIndexBufferSize());
-  vertex_buffer_ = acg::visualizer::get_vk_context().CreateBuffer(
+  vertex_buffer_ = acg::gui::get_vk_context().CreateBuffer(
       scene_.GetRequiredVertexBufferSize(), vk::BufferUsageFlagBits::eVertexBuffer,
       vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
-  indice_buffer_ = acg::visualizer::get_vk_context().CreateBuffer(
+  indice_buffer_ = acg::gui::get_vk_context().CreateBuffer(
       scene_.GetRequiredIndexBufferSize(), vk::BufferUsageFlagBits::eIndexBuffer,
       vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
 
@@ -137,10 +138,10 @@ std::vector<vk::CommandBuffer> FreeFall::DrawScene() {
     update_camera_ = false;
   }
   auto [vertices, indices] = scene_.Build();
-  acg::visualizer::get_vk_context().GetDevice().waitIdle();
-  acg::visualizer::get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
+  acg::gui::get_vk_context().GetDevice().waitIdle();
+  acg::gui::get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
                                                      vertices.size() * sizeof(Vertex));
-  acg::visualizer::get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
+  acg::gui::get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
                                                      indices.size() * sizeof(indices.front()));
 
   auto cb = mesh_ppl_->BeginRender();

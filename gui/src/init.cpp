@@ -3,7 +3,7 @@
 #include "acg_gui/hook.hpp"
 #include "acg_gui/backend/vkcontext.hpp"
 
-namespace acg::visualizer::details {
+namespace acg::gui::details {
 void VkContextHooker::Hook() noexcept {
   static bool is_hooked{false};
   if (is_hooked) {
@@ -13,9 +13,9 @@ void VkContextHooker::Hook() noexcept {
 
   acg::details::InitHook hook;
   hook.priority = 10;
-  hook.on_init = []() { acg::visualizer::details::VkContext::Builder().Build(); };
-  hook.on_exit = []() { acg::utils::Singleton<acg::visualizer::details::VkContext>::Release(); };
+  hook.on_init = []() { acg::gui::details::VkContext::Builder().Build(); };
+  hook.on_exit = []() { acg::utils::Singleton<acg::gui::details::VkContext>::Release(); };
   hook.name = "VkContext";
   acg::details::add_hook(hook);
 };
-}  // namespace acg::visualizer::details
+}  // namespace acg::gui::details

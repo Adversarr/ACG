@@ -3,7 +3,7 @@
 **Project Structure**: 
 
 1. Core: Utilities/Mesh/Math/Data Structures/...
-3. Visualizer:
+3. Gui:
    - Scene visualization
    - Scene Editing/Storaging/...
    - ImGUI & Vulkan based. high performance, no block when rendering.(WIP)
@@ -36,7 +36,7 @@ See `examples/nbody`.
 - [ ] SAD: working in progress, static-auto-diff
 - [ ] Tensor Iterator Support
 
-### Visualizer
+### Gui
 
-- [ ] MT-Visualizer: Non blocking when performing compute.
+- [ ] MT-Gui: Non blocking when performing compute.
 

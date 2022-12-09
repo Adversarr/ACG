@@ -6,7 +6,7 @@
 #include <acg_gui/scene.hpp>
 #include <acg_gui/world_controller.hpp>
 using namespace acg;
-using namespace acg::visualizer;
+using namespace acg::gui;
 
 class NBodySim : public MPWorldCtrl {
 public:

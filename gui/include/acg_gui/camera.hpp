@@ -6,7 +6,7 @@
 
 #include <acg_core/math/common.hpp>
 
-namespace acg::visualizer {
+namespace acg::gui {
 
 class Camera {
 public:
@@ -54,4 +54,4 @@ private:
   float near_{0.1f};
   float far_{100.0f};
 };
-}  // namespace acg::visualizer
+}  // namespace acg::gui

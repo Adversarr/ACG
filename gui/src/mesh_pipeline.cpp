@@ -21,7 +21,7 @@ static std::vector<char> read_file(std::string path) {
   return buffer;
 }
 
-namespace acg::visualizer::details {
+namespace acg::gui::details {
 
 MeshPipeline::MeshPipeline(VkContext &renderer, bool is_present, vk::PolygonMode polygon,
                            vk::CullModeFlags cull, vk::FrontFace front)
@@ -432,4 +432,4 @@ void MeshPipeline::SetUbo(const Camera *camera, const Light *light, bool all_upd
 
 MeshPipeline::~MeshPipeline() { Cleanup(); }
 
-}  // namespace acg::visualizer::details
+}  // namespace acg::gui::details

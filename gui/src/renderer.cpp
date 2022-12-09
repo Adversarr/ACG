@@ -103,7 +103,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_message_callback(
   return false;
 }
 
-namespace acg::visualizer {
+namespace acg::gui {
 
 namespace details {
 
@@ -847,4 +847,4 @@ void VkContext::BufMem::Release() {
 
 } 
 VkContext &get_vk_context() { return acg::utils::Singleton<VkContext>().GetRef(); }
-}  // namespace acg::visualizer
+}  // namespace acg::gui

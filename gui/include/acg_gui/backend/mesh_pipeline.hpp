@@ -5,7 +5,7 @@
 #include "../camera.hpp"
 #include "../point_light.hpp"
 
-namespace acg::visualizer::details {
+namespace acg::gui::details {
 
 // WARN: Deprecated in future.
 class MeshPipeline {
@@ -129,4 +129,4 @@ public:
   }
 };
 
-}  // namespace acg::visualizer::details
+}  // namespace acg::gui::details

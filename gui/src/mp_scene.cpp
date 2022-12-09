@@ -7,7 +7,7 @@
 
 #include "co/god.h"
 
-namespace acg::visualizer::details {
+namespace acg::gui::details {
 
 void MPWorldCtrl::InitCallback() {
   mesh_ppl_ = MeshPipeline::Builder()
@@ -28,7 +28,7 @@ void MPWorldCtrl::InitCallback() {
 
 void MPWorldCtrl::CleanUpCallback() {
   ACG_DEBUG_LOG("Mesh ppl Cleanup.");
-  acg::visualizer::get_vk_context().GetDevice().waitIdle();
+  acg::gui::get_vk_context().GetDevice().waitIdle();
   vertex_buffer_->Release();
   indice_buffer_->Release();
   mesh_ppl_.reset(nullptr);
@@ -41,10 +41,10 @@ std::vector<vk::CommandBuffer> MPWorldCtrl::DrawScene() {
     update_camera_ = false;
   }
   auto [vertices, indices] = scene_.Build();
-  acg::visualizer::get_vk_context().GetDevice().waitIdle();
-  acg::visualizer::get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
+  acg::gui::get_vk_context().GetDevice().waitIdle();
+  acg::gui::get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
                                                      vertices.size() * sizeof(Vertex));
-  acg::visualizer::get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
+  acg::gui::get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
                                                      indices.size() * sizeof(indices.front()));
 
   auto cb = mesh_ppl_->BeginRender();
@@ -89,4 +89,4 @@ void MPWorldCtrl::RefitBuffers() {
   }
 }
 
-}  // namespace acg::visualizer::details
+}  // namespace acg::gui::details
