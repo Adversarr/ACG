@@ -8,6 +8,8 @@ namespace acg::gui::details {
 
 GraphicsRenderPass::GraphicsRenderPass() { Init(); }
 
+GraphicsRenderPass::~GraphicsRenderPass() { Cleanup(); }
+
 void GraphicsRenderPass::Init() {
   if (is_inited_) {
     return;
@@ -19,7 +21,6 @@ void GraphicsRenderPass::Init() {
   CreateFramebuffers();
   CreateCommandBuffers();
   CreateDescriptorPool();
-  CreateDescriptorSets();
   is_inited_ = true;
 }
 
@@ -129,39 +130,13 @@ void GraphicsRenderPass::CreateCommandBuffers() {
 
 void GraphicsRenderPass::CreateDescriptorPool() {
   vk::DescriptorPoolSize pool_size;
+  // TODO: size is not accurate.
   pool_size.setType(vk::DescriptorType::eUniformBuffer)
-      .setDescriptorCount(get_vk_context().GetSwapchainSize());
+      .setDescriptorCount(get_vk_context().GetSwapchainSize() * 3);
 
   vk::DescriptorPoolCreateInfo pool_create_info;
-  pool_create_info.setPoolSizes(pool_size)
-      .setMaxSets(get_vk_context().GetSwapchainSize());
-
+  pool_create_info.setPoolSizes(pool_size).setMaxSets(get_vk_context().GetSwapchainSize());
   descriptor_pool_ = get_vk_context().GetDevice().createDescriptorPool(pool_create_info);
-}
-
-void GraphicsRenderPass::CreateDescriptorSets() {
-  std::vector<vk::DescriptorSetLayout> layouts(get_vk_context().GetSwapchainSize(),
-                                               descriptor_set_layout_);
-  vk::DescriptorSetAllocateInfo alloc_info;
-  alloc_info.setDescriptorPool(descriptor_pool_)
-      .setSetLayouts(layouts)
-      .setDescriptorSetCount(get_vk_context().GetSwapchainSize());
-  descriptor_sets_ = get_vk_context().GetDevice().allocateDescriptorSets(alloc_info);
-
-  for (size_t i = 0; i < get_vk_context().GetSwapchainSize(); ++i) {
-    vk::DescriptorBufferInfo buffer_info;
-    buffer_info.setBuffer(uniform_buffers_[i]->GetBuffer())
-        .setOffset(0)
-        .setRange(sizeof(Ubo));
-    vk::WriteDescriptorSet desc_write;
-    desc_write.setDstSet(descriptor_sets_[i])
-        .setDstBinding(0)
-        .setDstArrayElement(0)
-        .setDescriptorCount(1)
-        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-        .setPBufferInfo(&buffer_info);
-    get_vk_context().GetDevice().updateDescriptorSets(desc_write, {});
-  }
 }
 
 void GraphicsRenderPass::Cleanup() {
@@ -170,10 +145,6 @@ void GraphicsRenderPass::Cleanup() {
   }
   CleanupSwapchain();
   auto device = get_vk_context().GetDevice();
-  for (auto &buf : uniform_buffers_) {
-    buf->Release();
-  }
-  uniform_buffers_.clear();
   device.destroy(descriptor_set_layout_);
   device.destroy(descriptor_pool_);
   device.destroy(render_pass_);
@@ -231,4 +202,12 @@ vk::CommandBuffer &GraphicsRenderPass::EndRender() {
   is_render_pass_begin_ = false;
   return current_command_buffer;
 }
+
+vk::Format GraphicsRenderPass::FindDepthFormat() const {
+  vk::Format depth_format = get_vk_context().FindSupportedFormat(
+      {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
+      vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+  return depth_format;
+}
+
 }  // namespace acg::gui::details

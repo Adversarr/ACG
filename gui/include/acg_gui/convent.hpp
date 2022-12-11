@@ -5,7 +5,6 @@
 
 namespace acg::gui {
 
-
 inline glm::vec2 to_glm(Vec2f v){
   return {v.x(), v.y()};
 }

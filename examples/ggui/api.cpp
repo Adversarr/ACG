@@ -1,20 +1,19 @@
-#include "acg_gui/mp_scene.hpp"
+#include "api.hpp"
+#include <co/god.h>
+#include <acg_core/math/common.hpp>
+using namespace acg;
 
-#include <acg_core/geometry/common_models.hpp>
-#include <acg_core/math/all.hpp>
-#include <acg_utils/log.hpp>
-#include <cmath>
+void Api::CleanUpCallback() {
+  ACG_DEBUG_LOG("Mesh ppl Cleanup.");
+  acg::gui::get_vk_context().GetDevice().waitIdle();
+  vertex_buffer_->Release();
+  indice_buffer_->Release();
+  mesh_ppl_.reset(nullptr);
+}
 
-#include "co/god.h"
-
-namespace acg::gui::details {
-
-void MPWorldCtrl::InitCallback() {
-  mesh_ppl_ = MeshPipeline::Builder()
-                  .SetCullMode(vk::CullModeFlagBits::eNone)
-                  .SetPolygonMode(vk::PolygonMode::eFill)
-                  .SetIsDstPresent(false)
-                  .Build();
+void Api::InitCallback() {
+  graphics_render_pass_ = details::GraphicsRenderPass::Builder().Build();
+  mesh_ppl_ = details::MeshPipeline2::Builder{}.Build(*graphics_render_pass_);
   ACG_DEBUG_LOG("Mesh pipeline created.");
   ui_only_mode_ = false;
   camera_.SetPosition({-10, 0, 0});
@@ -23,44 +22,37 @@ void MPWorldCtrl::InitCallback() {
   light_.ambient_light_color_ = Vec3f(1, 1, 1);
   light_.ambient_light_density_ = 0.5;
   light_.light_color_ = Vec3f(0.7, .7, .7);
-  mesh_ppl_->SetUbo(&camera_, &light_, true);
+  mesh_ppl_->SetCamera(camera_);
+  mesh_ppl_->SetLight(light_);
+  mesh_ppl_->UpdateUbo(true);
 }
 
-void MPWorldCtrl::CleanUpCallback() {
-  ACG_DEBUG_LOG("Mesh ppl Cleanup.");
-  acg::gui::get_vk_context().GetDevice().waitIdle();
-  vertex_buffer_->Release();
-  indice_buffer_->Release();
-  mesh_ppl_.reset(nullptr);
-}
-
-std::vector<vk::CommandBuffer> MPWorldCtrl::DrawScene() {
-  if (update_camera_) {
-    mesh_ppl_->SetUbo(&camera_, &light_, true);
-    update_camera_ = false;
-  }
+std::vector<vk::CommandBuffer> Api::DrawScene() {
+  scene_.Reset();
+  scene_.AddParticle(geometry::Particle<F32>({3, 2, 1}, 1), {.5, .6, .7});
+  RefitBuffers();
   auto [vertices, indices] = scene_.Build();
+  ACG_DEBUG_LOG("v: {}, i: {}", vertices.size(), indices.size());
+
   acg::gui::get_vk_context().GetDevice().waitIdle();
   acg::gui::get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
                                               vertices.size() * sizeof(Vertex));
   acg::gui::get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
                                               indices.size() * sizeof(indices.front()));
 
-  auto cb = mesh_ppl_->BeginRender();
+  auto cb = graphics_render_pass_->BeginRender();
+  mesh_ppl_->BeginPipeline(cb);
   cb.bindVertexBuffers(0, vertex_buffer_->GetBuffer(), static_cast<vk::DeviceSize>(0));
   cb.bindIndexBuffer(indice_buffer_->GetBuffer(), 0, vk::IndexType::eUint32);
   cb.drawIndexed(indices.size(), 1, 0, 0, 0);
-  return {mesh_ppl_->EndRender()};
+  graphics_render_pass_->EndRender();
+  return {cb};
 }
 
-void MPWorldCtrl::RecreateSwapchainCallback() {
-  mesh_ppl_->RecreateSwapchain();
-  update_camera_ = true;
-}
-
-void MPWorldCtrl::RefitBuffers() {
+void Api::RefitBuffers() {
   auto vs = scene_.GetRequiredVertexBufferSize();
   auto is = scene_.GetRequiredIndexBufferSize();
+  decltype(vs) buffer_minimum_size_ = 1024;
   vs = std::max(vs, buffer_minimum_size_);
   is = std::max(is, buffer_minimum_size_);
 
@@ -88,4 +80,3 @@ void MPWorldCtrl::RefitBuffers() {
   }
 }
 
-}  // namespace acg::gui::details

@@ -22,6 +22,11 @@ target('mass-spring')
   add_deps('acg_gui', 'acg_core')
 target_end()
 
+target('ggui')
+  add_files('ggui/**.cpp')
+  add_deps('acg_gui', 'acg_core')
+target_end()
+
 add_requires('benchmark', 'autodiff')
 target('sad_bench')
   add_files('sad_bench/*.cpp')

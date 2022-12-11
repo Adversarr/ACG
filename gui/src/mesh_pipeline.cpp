@@ -6,20 +6,8 @@
 
 #include "acg_utils/log.hpp"
 #include "acg_gui/convent.hpp"
+#include "acg_utils/raw_fileio.hpp"
 
-static std::vector<char> read_file(std::string path) {
-  std::ifstream input_file{path, std::ios::ate | std::ios::binary};
-  ACG_CHECK(input_file.is_open(), "Failed to open file: {}", path);
-  size_t buffer_size = input_file.tellg();
-
-  input_file.seekg(0);
-  std::vector<char> buffer(buffer_size);
-  input_file.read(buffer.data(), buffer_size);
-  ACG_CHECK(input_file, "Failed to read from file: {}", path);
-
-  input_file.close();  // (optional) Explicitly close input file
-  return buffer;
-}
 
 namespace acg::gui::details {
 
@@ -126,11 +114,11 @@ void MeshPipeline::CreateGraphicsPipeline() {
   // Setup Shaders.
   vk::ShaderModule vert_module, frag_module;
   {
-    auto code = read_file(SPV_HOME "3d.vert.spv");
+    auto code = acg::utils::io::read_binary_file(SPV_HOME "3d.vert.spv");
     vk::ShaderModuleCreateInfo info;
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     vert_module = renderer_.GetDevice().createShaderModule(info);
-    code = read_file(SPV_HOME "3d.frag.spv");
+    code = acg::utils::io::read_binary_file(SPV_HOME "3d.frag.spv");
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     frag_module = renderer_.GetDevice().createShaderModule(info);
   }
@@ -269,7 +257,6 @@ void MeshPipeline::CreateFramebuffers() {
 
 void MeshPipeline::CreateUniformBuffers() {
   auto buffer_size = static_cast<vk::DeviceSize>(sizeof(Ubo));
-
   uniform_buffers_.clear();
   for (size_t i = 0; i < renderer_.GetSwapchainSize(); ++i) {
     auto buffer = renderer_.CreateBuffer(

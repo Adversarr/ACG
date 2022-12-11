@@ -48,5 +48,5 @@ void init(int argc, char** argv) {
 /**
   * @param
   */
-void cleanup() { details::cleanup(); }
+void clean_up() { details::cleanup(); }
 }  // namespace acg

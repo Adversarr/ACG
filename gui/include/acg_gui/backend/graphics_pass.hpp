@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
 #include <acg_core/math/common.hpp>
+#include <vulkan/vulkan.hpp>
 
 #include "buffer_def.hpp"
 #include "vkcontext.hpp"
@@ -45,7 +45,6 @@ private:
   void CreateFramebuffers();
   void CreateCommandBuffers();
   void CreateDescriptorPool();
-  void CreateDescriptorSets();
   void CleanupSwapchain();
 
   // Private Helpers:
@@ -65,16 +64,22 @@ private:
 
   vk::RenderPass render_pass_;
 
-  std::vector<std::unique_ptr<VkContext::BufMem>> uniform_buffers_;
   vk::DescriptorPool descriptor_pool_;
+  // UBO Descriptor pool
   vk::DescriptorSetLayout descriptor_set_layout_;
   std::vector<vk::DescriptorSet> descriptor_sets_;
 
   vk::CommandPool command_pool_;
   std::vector<vk::CommandBuffer> command_buffers_;
+
+public:
+  inline vk::RenderPass GetRenderPass() const { return render_pass_; }
+
+  inline vk::DescriptorPool GetDescriptorPool() const { return descriptor_pool_; }
 };
 
 class GraphicsRenderPass::Builder {
+public:
   inline static std::unique_ptr<GraphicsRenderPass> Build() {
     auto retval = std::unique_ptr<GraphicsRenderPass>(new GraphicsRenderPass);
     retval->Init();

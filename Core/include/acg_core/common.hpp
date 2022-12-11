@@ -63,6 +63,6 @@ constexpr char logo[]
 
 void init(int argc, char** argv);
 
-void cleanup();
+void clean_up();
 
 }  // namespace acg
