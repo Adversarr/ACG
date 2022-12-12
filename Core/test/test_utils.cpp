@@ -1,8 +1,12 @@
 #include <co/unitest.h>
 
+#include <acg_utils/emum_iter.hpp>
 #include <acg_utils/god/algorithms.hpp>
 #include <acg_utils/god/god.hpp>
 #include <cassert>
+#include <vector>
+
+#include "Eigen/Eigen"
 
 using namespace acg::utils::god::details;
 
@@ -14,21 +18,21 @@ template <typename L, typename R> struct Left {
   using type = L;
 };
 struct X {
-  static constexpr int value = 1; // NOLINT
+  static constexpr int value = 1;  // NOLINT
 };
 
 struct Y {
-  static constexpr int value = 2; // NOLINT
+  static constexpr int value = 2;  // NOLINT
 };
 
 struct Z {
-  static constexpr int value = 3; // NOLINT
+  static constexpr int value = 3;  // NOLINT
 };
 template <typename X, typename Y> struct Pred {
-  static constexpr bool value = X::value < Y::value; // NOLINT
+  static constexpr bool value = X::value < Y::value;  // NOLINT
 };
 
-DEF_test(acg_utils) {
+DEF_test(god) {
   DEF_case(TList) {
     EXPECT((std::is_same_v<List<int>::extend<float>, List<int, float>>));
     EXPECT((std::is_same_v<ConcatType<List<int>, List<float, long>>, List<int, float, long>>));
@@ -50,5 +54,33 @@ DEF_test(acg_utils) {
     EXPECT((std::is_same_v<Merge<Pred, List<X, Z>, List<Y>>::type, List<X, Y, Z>>));
     EXPECT((std::is_same_v<MergeSort<Pred, List<X, Z, Y>>::type, List<X, Y, Z>>));
     EXPECT((std::is_same_v<MergeSort<Pred, List<Z, X, Y>>::type, List<X, Y, Z>>));
+  }
+}
+
+DEF_test(enum_iter) {
+  DEF_case(vector) {
+    std::vector<int> a = {1, 2, 3};
+    for (const auto& v : Enumerate(a)) {
+      std::cout << v.first << ": " << v.second << std::endl;
+    }
+  }
+  DEF_case(eigen) {
+    Eigen::Matrix3f a;
+    a.reshaped().setLinSpaced(0, 1);
+    std::cout << a << std::endl;
+    auto b = a.colwise();
+    auto ret = Enumerate(b);
+    std::cout << std::distance(a.colwise().begin(), a.colwise().end()) << std::endl;
+    for (auto it = begin(ret); it != end(ret); ++it) {
+      auto val = *(it.mItr);
+      std::cout << val << std::endl;
+    }
+    for (auto v : Enumerate(a.colwise())) {
+      std::cout << v.first << ": " << v.second << std::endl;
+    }
+
+    for (auto it = a.colwise().cbegin(); it != a.colwise().cend(); ++it) {
+      std::cout << *it << std::endl;
+    }
   }
 }

@@ -39,15 +39,15 @@ DEF_test(test1) {
   }
 
   DEF_case(uniform_laplacian_smoother) {
-    acg::Attr<float, 3> attr;
-    acg::geometry::topology::TriangleList tl;
-    tl.resize(3, 1);
-    tl(0, 0) = 0;
-    tl(1, 0) = 1;
-    tl(2, 0) = 2;
-    attr.setOnes(Eigen::NoChange, 3);
-    std::cout << attr << std::endl;
-    std::cout << acg::geometry::UniformLaplacianSmoother(tl).Compute(attr) << std::endl;
+    // acg::Attr<float, 3> attr;
+    // acg::geometry::topology::TriangleList tl;
+    // tl.resize(3, 1);
+    // tl(0, 0) = 0;
+    // tl(1, 0) = 1;
+    // tl(2, 0) = 2;
+    // attr.setOnes(Eigen::NoChange, 3);
+    // std::cout << attr << std::endl;
+    // std::cout << acg::geometry::UniformLaplacianSmoother(tl).Compute(attr) << std::endl;
   }
 }
 
