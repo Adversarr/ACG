@@ -10,7 +10,7 @@
 namespace acg::gui::details {
 
 void MPWorldCtrl::InitCallback() {
-  mesh_ppl_ = MeshPipeline::Builder()
+  mesh_ppl_ = MeshPipelineWithRenderPass::Builder()
                   .SetCullMode(vk::CullModeFlagBits::eNone)
                   .SetPolygonMode(vk::PolygonMode::eFill)
                   .SetIsDstPresent(false)

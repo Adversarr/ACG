@@ -14,12 +14,15 @@ protected:
   void CleanUpCallback() final;
 
   void InitCallback() final;
+
+  void RecreateSwapchainCallback() final;
+
   void RefitBuffers();
 
   std::vector<vk::CommandBuffer> DrawScene() final;
 
 private:
-  std::unique_ptr<details::MeshPipeline2> mesh_ppl_{nullptr};
+  std::unique_ptr<details::MeshPipeline> mesh_ppl_{nullptr};
 
   std::unique_ptr<details::GraphicsRenderPass> graphics_render_pass_{nullptr};
 

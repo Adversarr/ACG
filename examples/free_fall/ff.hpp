@@ -36,7 +36,7 @@ protected:
 private:
   void RegenerateScene();
 
-  std::unique_ptr<MeshPipeline> mesh_ppl_;
+  std::unique_ptr<MeshPipelineWithRenderPass> mesh_ppl_;
 
   Idx n_;
 

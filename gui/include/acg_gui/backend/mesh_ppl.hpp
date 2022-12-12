@@ -7,7 +7,7 @@
 namespace acg::gui {
 namespace details {
 
-class MeshPipeline2 {
+class MeshPipeline {
 public:
   class Builder;
 
@@ -18,6 +18,7 @@ public:
   void CleanUp();
 
   void CreateDescriptorSetLayout();
+  
   void CreateDescriptorSets(const GraphicsRenderPass& pass);
 
   void CreateUniformBuffers();
@@ -32,10 +33,10 @@ public:
 
   void UpdateUbo(bool fast = false);
 
-  ~MeshPipeline2();
+  ~MeshPipeline();
 
 private:
-  MeshPipeline2() = default;
+  MeshPipeline() = default;
   void Init(const GraphicsRenderPass& graphics_pass);
   bool is_inited_{false};
 
@@ -50,14 +51,13 @@ private:
   vk::FrontFace front_face_{vk::FrontFace::eCounterClockwise};
 
   std::vector<std::unique_ptr<VkContext::BufMem>> uniform_buffers_;
-
   Ubo ubo_;
 };
 
-class MeshPipeline2::Builder {
+class MeshPipeline::Builder {
 public:
-  inline std::unique_ptr<MeshPipeline2> Build(const GraphicsRenderPass& r) const {
-    auto retval = std::unique_ptr<MeshPipeline2>(new MeshPipeline2);
+  inline std::unique_ptr<MeshPipeline> Build(const GraphicsRenderPass& r) const {
+    auto retval = std::unique_ptr<MeshPipeline>(new MeshPipeline);
     retval->Init(r);
     return retval;
   }

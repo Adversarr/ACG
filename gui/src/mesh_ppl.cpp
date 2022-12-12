@@ -5,7 +5,7 @@
 #include "acg_gui/convent.hpp"
 namespace acg::gui::details {
 
-void MeshPipeline2::Init(const GraphicsRenderPass &graphics_pass) {
+void MeshPipeline::Init(const GraphicsRenderPass &graphics_pass) {
   if (is_inited_) {
     return;
   }
@@ -16,7 +16,8 @@ void MeshPipeline2::Init(const GraphicsRenderPass &graphics_pass) {
   is_inited_ = true;
 }
 
-void MeshPipeline2::CleanUp() {
+
+void MeshPipeline::CleanUp() {
   if (!is_inited_) {
     return;
   }
@@ -26,11 +27,11 @@ void MeshPipeline2::CleanUp() {
   is_inited_ = false;
 }
 
-MeshPipeline2::~MeshPipeline2() {
+MeshPipeline::~MeshPipeline() {
   CleanUp();
 }
 
-void MeshPipeline2::CreateUniformBuffers() {
+void MeshPipeline::CreateUniformBuffers() {
   // TODO: Ubo is a place holder now
   auto buffer_size = static_cast<vk::DeviceSize>(sizeof(Ubo));
   uniform_buffers_.clear();
@@ -43,7 +44,7 @@ void MeshPipeline2::CreateUniformBuffers() {
   }
 }
 
-void MeshPipeline2::CreateDescriptorSetLayout() {
+void MeshPipeline::CreateDescriptorSetLayout() {
   // TODO: Ubo is a place holder now
   vk::DescriptorSetLayoutBinding ubo_layout_binding;
   ubo_layout_binding.setBinding(0)
@@ -58,7 +59,7 @@ void MeshPipeline2::CreateDescriptorSetLayout() {
       = get_vk_context().GetDevice().createDescriptorSetLayout(layout_create_info);
 }
 
-void MeshPipeline2::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pass) {
+void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pass) {
   vk::ShaderModule vert_module, frag_module;
   {
     auto code = acg::utils::io::read_binary_file(SPV_HOME "3d.vert.spv");
@@ -169,7 +170,7 @@ void MeshPipeline2::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pa
   get_vk_context().GetDevice().destroy(frag_module);
 }
 
-void MeshPipeline2::BeginPipeline(vk::CommandBuffer &current_command_buffer) {
+void MeshPipeline::BeginPipeline(vk::CommandBuffer &current_command_buffer) {
   // Bind Pipeline
   auto extent = get_vk_context().GetSwapchainExtent();
   current_command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_);
@@ -185,17 +186,17 @@ void MeshPipeline2::BeginPipeline(vk::CommandBuffer &current_command_buffer) {
       ubo_descriptor_sets_[get_vk_context().GetCurrentIndex()], {});
 }
 
-void MeshPipeline2::EndPipeline(vk::CommandBuffer & /* current_command_buffer */) {
+void MeshPipeline::EndPipeline(vk::CommandBuffer & /* current_command_buffer */) {
   // Nothing todo.
 }
 
-void MeshPipeline2::SetCamera(const Camera &cam) {
+void MeshPipeline::SetCamera(const Camera &cam) {
   auto extent = get_vk_context().GetSwapchainExtent();
   ubo_.mvp = cam.GetProjection(extent.width, extent.height) * cam.GetView() * cam.GetModel();
   ubo_.eye_position = to_glm(cam.GetPosition());
 }
 
-void MeshPipeline2::SetLight(const Light &light) {
+void MeshPipeline::SetLight(const Light &light) {
   ubo_.ambient_light_color
       = glm::vec4(to_glm(light.ambient_light_color_), light.ambient_light_density_);
   ubo_.light_color = to_glm(light.light_color_);
@@ -203,7 +204,7 @@ void MeshPipeline2::SetLight(const Light &light) {
   ubo_.options[0] = 1;
 }
 
-void MeshPipeline2::UpdateUbo(bool fast) {
+void MeshPipeline::UpdateUbo(bool fast) {
   if (!fast) {
     get_vk_context().GetDevice().waitIdle();
   }
@@ -213,7 +214,7 @@ void MeshPipeline2::UpdateUbo(bool fast) {
   }
 }
 
-void MeshPipeline2::CreateDescriptorSets(const GraphicsRenderPass &pass) {
+void MeshPipeline::CreateDescriptorSets(const GraphicsRenderPass &pass) {
   std::vector<vk::DescriptorSetLayout> layouts(get_vk_context().GetSwapchainSize(),
                                                descriptor_set_layout_);
   vk::DescriptorSetAllocateInfo alloc_info;

@@ -3,8 +3,8 @@
 #include <acg_utils/acg_utils.hpp>
 #include <memory>
 #include <optional>
-
 #include <vulkan/vulkan.hpp>
+
 #include "window.hpp"
 
 namespace acg::gui {
@@ -37,7 +37,7 @@ public:
   public:
     BufMem(vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize size);
     BufMem(const BufMem&) = delete;  // disable copy
-    BufMem(BufMem&&);       // enable  move
+    BufMem(BufMem&&);                // enable  move
     ~BufMem();
 
     vk::Buffer GetBuffer();
@@ -74,18 +74,19 @@ public:
   ~VkContext();
 
   /**
+   * @brief Get the Device object
+   *
+   * @return const vk::Device&
+   */
+  const vk::Device& GetDevice() const;
+
+  /**
    * @brief Get the Instance object
    *
    * @return const vk::Instance&
    */
   const vk::Instance& GetInstance() const;
 
-  /**
-   * @brief Get the Device object
-   *
-   * @return const vk::Device&
-   */
-  const vk::Device& GetDevice() const;
 
   /**
    * @brief Get the Physical Device object
@@ -242,7 +243,7 @@ public:
    * @return Renderer::BufMem
    */
   std::unique_ptr<VkContext::BufMem> CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
-                                 vk::MemoryPropertyFlags properties);
+                                                  vk::MemoryPropertyFlags properties);
 
   void DestroyBufmem(BufMem& bufmem);
 

@@ -8,11 +8,11 @@
 namespace acg::gui::details {
 
 // WARN: Deprecated in future.
-class MeshPipeline {
+class MeshPipelineWithRenderPass {
 public:
   class Builder;
 
-  ~MeshPipeline();
+  ~MeshPipelineWithRenderPass();
 
   void RecreateSwapchain();
 
@@ -42,7 +42,7 @@ private:
    * @param cull
    * @param front
    */
-  [[deprecated]] explicit MeshPipeline(VkContext& renderer, bool is_present = true,
+  [[deprecated]] explicit MeshPipelineWithRenderPass(VkContext& renderer, bool is_present = true,
                                        vk::PolygonMode polygon = vk::PolygonMode::eFill,
                                        vk::CullModeFlags cull = vk::CullModeFlagBits::eNone,
                                        vk::FrontFace front = vk::FrontFace::eClockwise);
@@ -95,7 +95,7 @@ private:
   Ubo ubo_;
 };
 
-class MeshPipeline::Builder {
+class MeshPipelineWithRenderPass::Builder {
 private:
   bool is_dst_present_{false};
   vk::PolygonMode polygon_mode_{vk::PolygonMode::eFill};
@@ -120,8 +120,8 @@ public:
     return *this;
   }
 
-  inline std::unique_ptr<MeshPipeline> Build() const {
-    auto retval = std::unique_ptr<MeshPipeline>(new MeshPipeline(
+  inline std::unique_ptr<MeshPipelineWithRenderPass> Build() const {
+    auto retval = std::unique_ptr<MeshPipelineWithRenderPass>(new MeshPipelineWithRenderPass(
         get_vk_context(), is_dst_present_, polygon_mode_, cull_mode_, front_face_));
     retval->Init();
     return retval;

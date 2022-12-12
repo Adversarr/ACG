@@ -1,5 +1,7 @@
 #include "api.hpp"
+
 #include <co/god.h>
+
 #include <acg_core/math/common.hpp>
 using namespace acg;
 
@@ -13,7 +15,7 @@ void Api::CleanUpCallback() {
 
 void Api::InitCallback() {
   graphics_render_pass_ = details::GraphicsRenderPass::Builder().Build();
-  mesh_ppl_ = details::MeshPipeline2::Builder{}.Build(*graphics_render_pass_);
+  mesh_ppl_ = details::MeshPipeline::Builder{}.Build(*graphics_render_pass_);
   ACG_DEBUG_LOG("Mesh pipeline created.");
   ui_only_mode_ = false;
   camera_.SetPosition({-10, 0, 0});
@@ -79,3 +81,6 @@ void Api::RefitBuffers() {
   }
 }
 
+void Api::RecreateSwapchainCallback()  {
+  graphics_render_pass_->RecreateSwapchain();
+}

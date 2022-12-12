@@ -11,7 +11,7 @@
 
 namespace acg::gui::details {
 
-MeshPipeline::MeshPipeline(VkContext &renderer, bool is_present, vk::PolygonMode polygon,
+MeshPipelineWithRenderPass::MeshPipelineWithRenderPass(VkContext &renderer, bool is_present, vk::PolygonMode polygon,
                            vk::CullModeFlags cull, vk::FrontFace front)
     : is_dst_present_(is_present),
       polygon_mode_(polygon),
@@ -19,7 +19,7 @@ MeshPipeline::MeshPipeline(VkContext &renderer, bool is_present, vk::PolygonMode
       front_face_(front),
       renderer_(renderer) {}
 
-void MeshPipeline::Init() {
+void MeshPipelineWithRenderPass::Init() {
   if (is_inited_) {
     return;
   }
@@ -36,14 +36,14 @@ void MeshPipeline::Init() {
   is_inited_ = true;
 }
 
-void MeshPipeline::CreateCommandPool() {
+void MeshPipelineWithRenderPass::CreateCommandPool() {
   vk::CommandPoolCreateInfo pool_info;
   pool_info.setQueueFamilyIndex(renderer_.GetGraphicsFamily())
       .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
   command_pool_ = renderer_.GetDevice().createCommandPool(pool_info);
 }
 
-void MeshPipeline::CreateRenderPass() {
+void MeshPipelineWithRenderPass::CreateRenderPass() {
   vk::AttachmentDescription color_attachment;
   color_attachment.setFormat(renderer_.GetSwapchainImageFormat())
       .setSamples(vk::SampleCountFlagBits::e1)
@@ -97,7 +97,7 @@ void MeshPipeline::CreateRenderPass() {
   render_pass_ = renderer_.GetDevice().createRenderPass(info);
 }
 
-void MeshPipeline::CreateDescriptorSetLayout() {
+void MeshPipelineWithRenderPass::CreateDescriptorSetLayout() {
   vk::DescriptorSetLayoutBinding ubo_layout_binding;
   ubo_layout_binding.setBinding(0)
       .setDescriptorCount(1)
@@ -110,7 +110,7 @@ void MeshPipeline::CreateDescriptorSetLayout() {
   descriptor_set_layout_ = renderer_.GetDevice().createDescriptorSetLayout(layout_create_info);
 }
 
-void MeshPipeline::CreateGraphicsPipeline() {
+void MeshPipelineWithRenderPass::CreateGraphicsPipeline() {
   // Setup Shaders.
   vk::ShaderModule vert_module, frag_module;
   {
@@ -222,7 +222,7 @@ void MeshPipeline::CreateGraphicsPipeline() {
   renderer_.GetDevice().destroy(frag_module);
 }
 
-void MeshPipeline::CreateDepthResources() {
+void MeshPipelineWithRenderPass::CreateDepthResources() {
   auto depth_format = FindDepthFormat();
   ACG_DEBUG_LOG("Depth format = {}", vk::to_string(depth_format));
   std::tie(depth_image_, depth_image_memory_) = renderer_.CreateImage(
@@ -233,14 +233,14 @@ void MeshPipeline::CreateDepthResources() {
       = renderer_.CreateImageView(depth_image_, depth_format, vk::ImageAspectFlagBits::eDepth);
 }
 
-vk::Format MeshPipeline::FindDepthFormat() const {
+vk::Format MeshPipelineWithRenderPass::FindDepthFormat() const {
   vk::Format depth_format = renderer_.FindSupportedFormat(
       {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
       vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits::eDepthStencilAttachment);
   return depth_format;
 }
 
-void MeshPipeline::CreateFramebuffers() {
+void MeshPipelineWithRenderPass::CreateFramebuffers() {
   for (auto imageview : renderer_.GetSwapchainImageviews()) {
     auto attachments = std::array{imageview, depth_image_view_};
 
@@ -255,7 +255,7 @@ void MeshPipeline::CreateFramebuffers() {
   }
 }
 
-void MeshPipeline::CreateUniformBuffers() {
+void MeshPipelineWithRenderPass::CreateUniformBuffers() {
   auto buffer_size = static_cast<vk::DeviceSize>(sizeof(Ubo));
   uniform_buffers_.clear();
   for (size_t i = 0; i < renderer_.GetSwapchainSize(); ++i) {
@@ -266,7 +266,7 @@ void MeshPipeline::CreateUniformBuffers() {
     uniform_buffers_.emplace_back(std::move(buffer));
   }
 }
-void MeshPipeline::CreateCommandBuffers() {
+void MeshPipelineWithRenderPass::CreateCommandBuffers() {
   vk::CommandBufferAllocateInfo info;
   info.setCommandPool(command_pool_)
       .setCommandBufferCount(renderer_.GetSwapchainSize())
@@ -274,7 +274,7 @@ void MeshPipeline::CreateCommandBuffers() {
   command_buffers_ = renderer_.GetDevice().allocateCommandBuffers(info);
 }
 
-void MeshPipeline::CreateDescriptorPool() {
+void MeshPipelineWithRenderPass::CreateDescriptorPool() {
   vk::DescriptorPoolSize pool_size;
   pool_size.setType(vk::DescriptorType::eUniformBuffer)
       .setDescriptorCount(renderer_.GetSwapchainSize());
@@ -285,7 +285,7 @@ void MeshPipeline::CreateDescriptorPool() {
   descriptor_pool_ = renderer_.GetDevice().createDescriptorPool(pool_create_info);
 }
 
-void MeshPipeline::CreateDescriptorSets() {
+void MeshPipelineWithRenderPass::CreateDescriptorSets() {
   std::vector<vk::DescriptorSetLayout> layouts(renderer_.GetSwapchainSize(),
                                                descriptor_set_layout_);
   vk::DescriptorSetAllocateInfo alloc_info;
@@ -308,7 +308,7 @@ void MeshPipeline::CreateDescriptorSets() {
   }
 }
 
-void MeshPipeline::Cleanup() {
+void MeshPipelineWithRenderPass::Cleanup() {
   if (!is_inited_) {
     return;
   }
@@ -326,7 +326,7 @@ void MeshPipeline::Cleanup() {
   device.destroy(command_pool_);
 }
 
-void MeshPipeline::CleanupSwapchain() {
+void MeshPipelineWithRenderPass::CleanupSwapchain() {
   auto device = renderer_.GetDevice();
   // Depth Resources
   device.destroy(depth_image_);
@@ -339,13 +339,13 @@ void MeshPipeline::CleanupSwapchain() {
   framebuffers_.clear();
 }
 
-void MeshPipeline::RecreateSwapchain() {
+void MeshPipelineWithRenderPass::RecreateSwapchain() {
   CleanupSwapchain();
   CreateDepthResources();
   CreateFramebuffers();
 }
 
-vk::CommandBuffer &MeshPipeline::BeginRender() {
+vk::CommandBuffer &MeshPipelineWithRenderPass::BeginRender() {
   ACG_CHECK(!is_render_pass_begin_, "Render pass has begin.");
   auto extent = renderer_.GetSwapchainExtent();
   auto current_index = renderer_.GetCurrentIndex();
@@ -381,7 +381,7 @@ vk::CommandBuffer &MeshPipeline::BeginRender() {
   return current_command_buffer;
 }
 
-vk::CommandBuffer &MeshPipeline::EndRender() {
+vk::CommandBuffer &MeshPipelineWithRenderPass::EndRender() {
   ACG_CHECK(is_render_pass_begin_, "Render pass has not begin.");
   auto &current_command_buffer = command_buffers_[renderer_.GetCurrentIndex()];
   current_command_buffer.endRenderPass();
@@ -390,7 +390,7 @@ vk::CommandBuffer &MeshPipeline::EndRender() {
   return current_command_buffer;
 }
 
-void MeshPipeline::SetUbo(const Camera *camera, const Light *light, bool all_update) {
+void MeshPipelineWithRenderPass::SetUbo(const Camera *camera, const Light *light, bool all_update) {
   auto extent = renderer_.GetSwapchainExtent();
   if (camera != nullptr) {
     ubo_.mvp = camera->GetProjection(extent.width, extent.height) * camera->GetView()
@@ -417,6 +417,6 @@ void MeshPipeline::SetUbo(const Camera *camera, const Light *light, bool all_upd
   }
 }
 
-MeshPipeline::~MeshPipeline() { Cleanup(); }
+MeshPipelineWithRenderPass::~MeshPipelineWithRenderPass() { Cleanup(); }
 
 }  // namespace acg::gui::details

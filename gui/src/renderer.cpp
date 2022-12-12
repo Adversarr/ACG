@@ -1,15 +1,15 @@
-#include "acg_gui/backend/vkcontext.hpp"
-
 #include <glm/ext/matrix_transform.hpp>
 #include <set>
 #include <vector>
+
+#include "acg_gui/backend/vkcontext.hpp"
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
+#include <acg_gui/scene.hpp>
 #include <acg_utils/log.hpp>
 #include <acg_utils/singleton.hpp>
-#include <acg_gui/scene.hpp>
 #include <fstream>
 #include <vulkan/vulkan_handles.hpp>
 
@@ -845,6 +845,6 @@ void VkContext::BufMem::Release() {
   }
 }
 
-} 
+}  // namespace details
 VkContext &get_vk_context() { return acg::utils::Singleton<VkContext>().GetRef(); }
 }  // namespace acg::gui

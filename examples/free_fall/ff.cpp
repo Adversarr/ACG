@@ -43,7 +43,7 @@ int FreeFall::RunPhysicsImpl(F64 dt) {
 }
 
 void FreeFall::InitCallback() {
-  mesh_ppl_ = MeshPipeline::Builder()
+  mesh_ppl_ = MeshPipelineWithRenderPass::Builder()
                   .SetCullMode(vk::CullModeFlagBits::eNone)
                   .SetPolygonMode(vk::PolygonMode::eFill)
                   .SetIsDstPresent(false)
