@@ -38,6 +38,17 @@ public:
   // Set the front direction of the camera. Returns true, if really changed.
   bool SetFront(glm::vec3 front);
 
+  Camera& SetFov(F32 angle);
+
+  Camera& SetLeft(F32 left);
+  Camera& SetRight(F32 right);
+  Camera& SetTop(F32 top);
+  Camera& SetBottom(F32 bottom);
+
+  Camera& SetLookAt(Vec3f look_at);
+
+  Camera& SetProjectionMode(bool is_perspective = true);
+
 private:
   // Extra Rotation/transform applied to each model.
   Vec3f model_rotate_axis_{0.0f, 0.0f, 1.0f};

@@ -33,8 +33,6 @@ std::vector<vk::CommandBuffer> Api::DrawScene() {
   scene_.AddParticle(geometry::Particle<F32>({0, 0, 0}, 1), {.5, .6, .7});
   RefitBuffers();
   auto [vertices, indices] = scene_.Build();
-  ACG_DEBUG_LOG("v: {}, i: {}", vertices.size(), indices.size());
-
   acg::gui::get_vk_context().GetDevice().waitIdle();
   acg::gui::get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
                                               vertices.size() * sizeof(Vertex));
@@ -53,21 +51,21 @@ std::vector<vk::CommandBuffer> Api::DrawScene() {
 void Api::RefitBuffers() {
   auto vs = scene_.GetRequiredVertexBufferSize();
   auto is = scene_.GetRequiredIndexBufferSize();
-  decltype(vs) buffer_minimum_size_ = 1024;
-  vs = std::max(vs, buffer_minimum_size_);
-  is = std::max(is, buffer_minimum_size_);
+  decltype(vs) buffer_minimum_size = 1024;
+  vs = std::max(vs, buffer_minimum_size);
+  is = std::max(is, buffer_minimum_size);
 
   std::unique_ptr<VkContext::BufMem> new_vb{nullptr}, new_ib{nullptr};
 
   if (!vertex_buffer_ || vertex_buffer_->GetSize() < vs) {
-    vs = god::align_up(vs, buffer_minimum_size_);
+    vs = god::align_up(vs, buffer_minimum_size);
     new_vb = get_vk_context().CreateBuffer(
         vs, vk::BufferUsageFlagBits::eVertexBuffer,
         vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
     spdlog::info("Created a new vertex buffer. size = {}", vs);
   }
   if (!indice_buffer_ || indice_buffer_->GetSize() < is) {
-    is = god::align_up(is, buffer_minimum_size_);
+    is = god::align_up(is, buffer_minimum_size);
     new_ib = get_vk_context().CreateBuffer(
         is, vk::BufferUsageFlagBits::eIndexBuffer,
         vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
@@ -83,4 +81,7 @@ void Api::RefitBuffers() {
 
 void Api::RecreateSwapchainCallback()  {
   graphics_render_pass_->RecreateSwapchain();
+  mesh_ppl_->Recreate(*graphics_render_pass_);
+  mesh_ppl_->SetCamera(camera_);
+  mesh_ppl_->UpdateUbo(true);
 }

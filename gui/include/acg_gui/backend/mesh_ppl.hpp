@@ -18,7 +18,7 @@ public:
   void CleanUp();
 
   void CreateDescriptorSetLayout();
-  
+
   void CreateDescriptorSets(const GraphicsRenderPass& pass);
 
   void CreateUniformBuffers();
@@ -32,6 +32,8 @@ public:
   void EndPipeline(vk::CommandBuffer& current_command_buffer);
 
   void UpdateUbo(bool fast = false);
+
+  void Recreate(const GraphicsRenderPass& graphics_pass);
 
   ~MeshPipeline();
 
@@ -52,6 +54,22 @@ private:
 
   std::vector<std::unique_ptr<VkContext::BufMem>> uniform_buffers_;
   Ubo ubo_;
+
+public:
+  inline MeshPipeline& SetPolygonMode(vk::PolygonMode polygon_mode) noexcept {
+    polygon_mode_ = polygon_mode;
+    return *this;
+  }
+
+  inline MeshPipeline& SetCullMode(vk::CullModeFlags cull_mode) noexcept {
+    cull_mode_ = cull_mode;
+    return *this;
+  }
+
+  inline MeshPipeline& SetFrontFace(vk::FrontFace front) noexcept {
+    front_face_ = front;
+    return *this;
+  }
 };
 
 class MeshPipeline::Builder {

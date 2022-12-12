@@ -25,7 +25,7 @@ Matrix3x3 Camera::GetProjection(float aspect_ratio) const;
 Get view matrix:
 
 ```cpp
-Camera::GetViewMatrix() const;
+Camera::GetView() const;
 ```
 
 Set the left clipping plane:

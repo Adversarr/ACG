@@ -58,7 +58,6 @@ void MeshPipeline::CreateDescriptorSetLayout() {
   descriptor_set_layout_
       = get_vk_context().GetDevice().createDescriptorSetLayout(layout_create_info);
 }
-
 void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pass) {
   vk::ShaderModule vert_module, frag_module;
   {
@@ -164,6 +163,116 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
 
   auto rv = get_vk_context().GetDevice().createGraphicsPipeline(VK_NULL_HANDLE, info);
   ACG_CHECK(rv.result == vk::Result::eSuccess, "Failed to create graphics pipeline");
+  pipeline_ = rv.value;
+
+  get_vk_context().GetDevice().destroy(vert_module);
+  get_vk_context().GetDevice().destroy(frag_module);
+}
+
+
+void MeshPipeline::Recreate(const GraphicsRenderPass &graphics_pass) {
+  vk::ShaderModule vert_module, frag_module;
+  {
+    auto code = acg::utils::io::read_binary_file(SPV_HOME "3d.vert.spv");
+    vk::ShaderModuleCreateInfo info;
+    info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
+    vert_module = get_vk_context().GetDevice().createShaderModule(info);
+    code = acg::utils::io::read_binary_file(SPV_HOME "3d.frag.spv");
+    info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
+    frag_module = get_vk_context().GetDevice().createShaderModule(info);
+  }
+
+  vk::PipelineShaderStageCreateInfo vert_stage_info;
+  vert_stage_info.setStage(vk::ShaderStageFlagBits::eVertex)
+      .setModule(vert_module)
+      .setPName("main");
+  vk::PipelineShaderStageCreateInfo frag_stage_info;
+  frag_stage_info.setStage(vk::ShaderStageFlagBits::eFragment)
+      .setModule(frag_module)
+      .setPName("main");
+  auto shader_stages = std::array{vert_stage_info, frag_stage_info};
+
+  // Setup Vertex input
+  vk::PipelineVertexInputStateCreateInfo vertex_input_create_info;
+  auto vertex_binding_desc = Vertex::GetBindingDescriptions();
+  auto vertex_attr_desc = Vertex::GetAttributeDescriptions();
+  vertex_input_create_info.setVertexBindingDescriptions(vertex_binding_desc)
+      .setVertexAttributeDescriptions(vertex_attr_desc);
+
+  vk::PipelineInputAssemblyStateCreateInfo input_assembly_info;
+  input_assembly_info.setTopology(vk::PrimitiveTopology::eTriangleList)
+      .setPrimitiveRestartEnable(VK_FALSE);
+
+  // Setup Viewport
+  vk::PipelineViewportStateCreateInfo viewport_info;
+  viewport_info.setViewportCount(1).setScissorCount(1);
+
+  // Setup Rasterization
+  vk::PipelineRasterizationStateCreateInfo rasterizer_info;
+  rasterizer_info.setDepthBiasEnable(VK_FALSE)
+      .setRasterizerDiscardEnable(VK_FALSE)
+      .setLineWidth(1.0f)
+      .setPolygonMode(polygon_mode_)
+      .setCullMode(cull_mode_)
+      .setFrontFace(front_face_)
+      .setDepthBiasEnable(VK_FALSE);
+
+  // Setup Multi sampling: No multisampling for better performance.
+  vk::PipelineMultisampleStateCreateInfo multi_sample_info;
+  multi_sample_info.setSampleShadingEnable(VK_FALSE).setRasterizationSamples(
+      vk::SampleCountFlagBits::e1);
+
+  // Setup alpha blending: We do not use color blend. although options are set
+  vk::PipelineColorBlendAttachmentState color_blend_attachment;
+  color_blend_attachment
+      .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG
+                         | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
+      .setBlendEnable(VK_FALSE)  // todo: add alpha blending support
+      .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+      .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+      .setColorBlendOp(vk::BlendOp::eAdd)
+      .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+      .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
+      .setAlphaBlendOp(vk::BlendOp::eAdd);
+
+  vk::PipelineColorBlendStateCreateInfo color_blend_info;
+  color_blend_info.setLogicOpEnable(VK_FALSE)
+      .setLogicOp(vk::LogicOp::eCopy)
+      .setAttachments(color_blend_attachment)
+      .setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f});
+
+  auto dynamic_states = std::array{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+  vk::PipelineDynamicStateCreateInfo dynamic_state_info;
+  dynamic_state_info.setDynamicStates(dynamic_states);
+
+
+  // Depth Testing.
+  vk::PipelineDepthStencilStateCreateInfo depth_stencil;
+  depth_stencil.setDepthTestEnable(VK_TRUE)
+      .setDepthWriteEnable(VK_TRUE)
+      .setDepthCompareOp(vk::CompareOp::eLess)
+      .setDepthBoundsTestEnable(VK_FALSE)
+      .setStencilTestEnable(VK_FALSE);
+
+  vk::GraphicsPipelineCreateInfo info;
+  info.setStages(shader_stages)
+      .setPVertexInputState(&vertex_input_create_info)
+      .setPInputAssemblyState(&input_assembly_info)
+      .setPViewportState(&viewport_info)
+      .setPRasterizationState(&rasterizer_info)
+      .setPMultisampleState(&multi_sample_info)
+      .setPDepthStencilState(&depth_stencil)
+      .setPColorBlendState(&color_blend_info)
+      .setPDynamicState(&dynamic_state_info)
+      .setLayout(pipeline_layout_)
+      .setRenderPass(graphics_pass.GetRenderPass())
+      .setSubpass(0)
+      .setBasePipelineHandle(VK_NULL_HANDLE)
+      .setBasePipelineIndex(-1);
+
+  auto rv = get_vk_context().GetDevice().createGraphicsPipeline(VK_NULL_HANDLE, info);
+  ACG_CHECK(rv.result == vk::Result::eSuccess, "Failed to create graphics pipeline");
+  get_vk_context().GetDevice().destroy(pipeline_);
   pipeline_ = rv.value;
 
   get_vk_context().GetDevice().destroy(vert_module);
