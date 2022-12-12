@@ -18,18 +18,17 @@ void Api::InitCallback() {
   ui_only_mode_ = false;
   camera_.SetPosition({-10, 0, 0});
   camera_.SetFront({1, 0, 0});
-  light_.light_position_ = Vec3f(3, 0, 0);
-  light_.ambient_light_color_ = Vec3f(1, 1, 1);
-  light_.ambient_light_density_ = 0.5;
-  light_.light_color_ = Vec3f(0.7, .7, .7);
+  light_.light_position_ = Vec3f(3, 3, 3);
   mesh_ppl_->SetCamera(camera_);
   mesh_ppl_->SetLight(light_);
   mesh_ppl_->UpdateUbo(true);
+
+  graphics_render_pass_->SetBackgroundColor({0.3, 0.3, 0.3, 1});
 }
 
 std::vector<vk::CommandBuffer> Api::DrawScene() {
   scene_.Reset();
-  scene_.AddParticle(geometry::Particle<F32>({3, 2, 1}, 1), {.5, .6, .7});
+  scene_.AddParticle(geometry::Particle<F32>({0, 0, 0}, 1), {.5, .6, .7});
   RefitBuffers();
   auto [vertices, indices] = scene_.Build();
   ACG_DEBUG_LOG("v: {}, i: {}", vertices.size(), indices.size());

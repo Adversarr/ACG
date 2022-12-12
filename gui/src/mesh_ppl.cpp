@@ -200,6 +200,7 @@ void MeshPipeline2::SetLight(const Light &light) {
       = glm::vec4(to_glm(light.ambient_light_color_), light.ambient_light_density_);
   ubo_.light_color = to_glm(light.light_color_);
   ubo_.light_position = to_glm(light.light_position_);
+  ubo_.options[0] = 1;
 }
 
 void MeshPipeline2::UpdateUbo(bool fast) {
