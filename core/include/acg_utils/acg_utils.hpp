@@ -32,7 +32,7 @@ inline constexpr PlatformType get_platform_type() {
   return PlatformType::kApple;
 #elif defined (_WIN32) 
   return PlatformType::kWin;
-#elif defiend(__linux__)
+#elif defined(__linux__)
   return PlatformType::kLinux;
 #endif
 }

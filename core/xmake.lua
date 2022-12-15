@@ -12,6 +12,6 @@ target_end()
 
 target('acg_core_test')
   add_files('test/**.cpp')
-  add_packages('coost', 'doctest')
+  add_packages('doctest')
   add_deps('acg_core')
 target_end()
