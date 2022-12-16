@@ -1,6 +1,4 @@
-#include <co/fastream.h>
-#include <co/fastring.h>
-#include <co/unitest.h>
+#include <doctest/doctest.h>
 
 #include <Eigen/Eigen>
 #include <acg_core/math/common.hpp>
@@ -14,27 +12,24 @@ template <typename T> decltype(auto) identity(T&& value) { return std::forward<T
 
 namespace test {
 
-DEF_test(sad_lazy) {
-  DEF_case(scalar) {
-    Variable(float, X);
-    Variable(float, Y);
-    using X2 = Mul<X, X>;           // X * X
-    using E = Add<X2, Y>;           // X * X + Y
-    using P = Add<E, Ones<float>>;  // X * X + Y + 1
-    using dx = Simpliest_t<DirectionalDiff_t<P, X, OnesLike<X>>>;
-    using ddx = Simpliest_t<DirectionalDiff_t<dx, X, OnesLike<X>>>;
-    LazyContext<List<P, dx, ddx>> c;  // Compute Context
-    c.Set<X>(10);                     // Setup Input X
-    c.Set<Y>(20);                     // Setup Input Y
-    auto r = LazyResult(c);
-    EXPECT_EQ(r.Get<X>(), 10);
-    EXPECT_EQ(r.Get<Y>(), 20);
-    EXPECT_EQ(r.Get<P>(), 121);
-    EXPECT_EQ(r.Get<dx>(), 20);
-    EXPECT_EQ(r.Get<ddx>(), 2);
-  }
-
-  DEF_case(matrix) {
+TEST_CASE("Scalar Non Lazy Auto Diff") {
+  Variable(float, X);
+  Variable(float, Y);
+  using X2 = Mul<X, X>;           // X * X
+  using E = Add<X2, Y>;           // X * X + Y
+  using P = Add<E, Ones<float>>;  // X * X + Y + 1
+  using dx = Simpliest_t<DirectionalDiff_t<P, X, OnesLike<X>>>;
+  using ddx = Simpliest_t<DirectionalDiff_t<dx, X, OnesLike<X>>>;
+  LazyContext<List<P, dx, ddx>> c;  // Compute Context
+  c.Set<X>(10);                     // Setup Input X
+  c.Set<Y>(20);                     // Setup Input Y
+  auto r = LazyResult(c);
+  CHECK_EQ(r.Get<X>(), 10);
+  CHECK_EQ(r.Get<Y>(), 20);
+  CHECK_EQ(r.Get<P>(), 121);
+  CHECK_EQ(r.Get<dx>(), 20);
+  CHECK_EQ(r.Get<ddx>(), 2);
+  {
     Variable(Eigen::Matrix2f, Mx);
     Variable(Eigen::Matrix2f, My);
     using Yx = Mul<My, Mx>;
@@ -51,7 +46,7 @@ DEF_test(sad_lazy) {
     }
   }
 
-  DEF_case(vector) {
+  SUBCASE("vector") {
     Constant_expr(acg::Vec3f, d0, v.y() = v.z() = 0; v.x() = 1);
     Constant_expr(acg::Vec3f, d1, v.x() = v.z() = 0; v.y() = 1);
     Constant_expr(acg::Vec3f, d2, v.x() = v.y() = 0; v.z() = 1);
@@ -74,8 +69,8 @@ DEF_test(sad_lazy) {
   }
 }
 
-DEF_test(sad_nonlazy) {
-  DEF_case(scalar) {
+TEST_CASE("Sad Non-lazy") {
+  SUBCASE("scalar") {
     Variable(float, X);
     Variable(float, Y);
     using X2 = Mul<X, X>;           // X * X
@@ -87,14 +82,14 @@ DEF_test(sad_nonlazy) {
     c.Set<X>(10);                 // Setup Input X
     c.Set<Y>(20);                 // Setup Input Y
     acg::sad::run(c);
-    EXPECT_EQ(c.Get<X>(), 10);
-    EXPECT_EQ(c.Get<Y>(), 20);
-    EXPECT_EQ(c.Get<P>(), 121);
-    EXPECT_EQ(c.Get<dx>(), 20);
-    EXPECT_EQ(c.Get<ddx>(), 2);
+    CHECK_EQ(c.Get<X>(), 10);
+    CHECK_EQ(c.Get<Y>(), 20);
+    CHECK_EQ(c.Get<P>(), 121);
+    CHECK_EQ(c.Get<dx>(), 20);
+    CHECK_EQ(c.Get<ddx>(), 2);
   }
 
-  DEF_case(matrix) {
+  SUBCASE("matrix") {
     Variable(Eigen::Matrix2f, Mx);
     Variable(Eigen::Matrix2f, My);
     using Yx = Mul<My, Mx>;
@@ -109,7 +104,7 @@ DEF_test(sad_nonlazy) {
     std::cout << c.Get<dy>() << std::endl;
   }
 
-  DEF_case(vector) {
+  SUBCASE("vector") {
     Constant_expr(acg::Vec3f, d0, v.y() = v.z() = 0; v.x() = 1);
     Constant_expr(acg::Vec3f, d1, v.x() = v.z() = 0; v.y() = 1);
     Constant_expr(acg::Vec3f, d2, v.x() = v.y() = 0; v.z() = 1);
@@ -132,8 +127,8 @@ DEF_test(sad_nonlazy) {
   }
 }
 
-DEF_test(sad_general) {
-  DEF_case(matrix_sad) {
+TEST_CASE("sad_general") {
+  SUBCASE("matrix_sad") {
     Variable(Eigen::Matrix2f, Mx);
     Variable(Eigen::Matrix2f, My);
     using Yx = Mul<My, Mx>;
@@ -146,7 +141,7 @@ DEF_test(sad_general) {
     acg::sad::run(c);
     std::cout << c.Get<dy>() << std::endl;
   }
-  DEF_case(vector_sad) {
+  SUBCASE("vector_sad") {
     Constant_expr(acg::Vec3f, d0, v.y() = v.z() = 0; v.x() = 1);
     Constant_expr(acg::Vec3f, d1, v.x() = v.z() = 0; v.y() = 1);
     Constant_expr(acg::Vec3f, d2, v.x() = v.y() = 0; v.z() = 1);
@@ -164,16 +159,16 @@ DEF_test(sad_general) {
     context.Set<Y>(acg::Vec3f{1, 2, 3});
     // acg::sad::run(context);
     auto result = LazyResult(context);
-    EXPECT_EQ(result.Get<Dy0>(), -2);
-    EXPECT_EQ(result.Get<Dy1>(), -4);
-    EXPECT_EQ(result.Get<Dy2>(), -6);
-    EXPECT_EQ(result.Get<Dx0>(), 2);
-    EXPECT_EQ(result.Get<Dx1>(), 4);
-    EXPECT_EQ(result.Get<Dx2>(), 6);
+    CHECK_EQ(result.Get<Dy0>(), -2);
+    CHECK_EQ(result.Get<Dy1>(), -4);
+    CHECK_EQ(result.Get<Dy2>(), -6);
+    CHECK_EQ(result.Get<Dx0>(), 2);
+    CHECK_EQ(result.Get<Dx1>(), 4);
+    CHECK_EQ(result.Get<Dx2>(), 6);
   }
-  DEF_case(transpose) { std::cout << Dirac<Eigen::Matrix3f, 1, 2>{}() << std::endl; }
+  SUBCASE("transpose") { std::cout << Dirac<Eigen::Matrix3f, 1, 2>{}() << std::endl; }
 
-  DEF_case(CwiseMul) {
+  SUBCASE("CwiseMul") {
     Variable(acg::Vec3f, X);
     Variable(acg::Vec3f, Y);
     using FinalExp = Dot<CwiseMul<X, Y>, CwiseMul<X, Y>>;

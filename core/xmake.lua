@@ -1,13 +1,13 @@
 add_requires('eigen')
-add_requires('coost')
 add_requires('spdlog', {configs={fmt_external = true}})
 add_requires("doctest", {})
+add_requires('nlohmann_json')
 
 target("acg_core")
   set_kind('static')
   add_includedirs('include', {public = true})
   add_files('src/**.cpp')
-  add_packages('eigen', 'coost', 'spdlog', {public = true})
+  add_packages('eigen', 'nlohmann_json', 'spdlog', {public = true})
 target_end()
 
 target('acg_core_test')

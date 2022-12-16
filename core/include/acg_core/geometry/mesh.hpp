@@ -17,11 +17,11 @@ template <typename T = F32> class SimpleMesh {
 public:
   using VertexType = Vec3<T>;
 
-  using VerticesType = Attr<T, 3>;
+  using VerticesType = Field<T, 3>;
 
   using FaceType = Vec3<Idx>;
 
-  using FacesType = Attr<Idx, 3>;
+  using FacesType = Field<Idx, 3>;
 
 private:
   // Mesh should be column major, AoS layout.
@@ -61,19 +61,19 @@ public:
 
   inline const FacesType& GetFaces() const;
 
-  inline SimpleMesh<T>& SetVertices(const Attr<T, 3>& vertices) {
+  inline SimpleMesh<T>& SetVertices(const Field<T, 3>& vertices) {
     assert(vertices_.cols() == vertices.cols());
     vertices_ = vertices;
     return *this;
   }
 
-  inline SimpleMesh<T>& SetFaces(const Attr<Idx, 3>& faces) {
+  inline SimpleMesh<T>& SetFaces(const Field<Idx, 3>& faces) {
     assert(faces_.cols() == faces.cols());
     faces_ = faces;
     return *this;
   }
 
-  inline SimpleMesh<T>& Set(const Attr<T, 3>& vertices, const Attr<Idx, 3>& faces) {
+  inline SimpleMesh<T>& Set(const Field<T, 3>& vertices, const Field<Idx, 3>& faces) {
     vertices_ = vertices;
     faces_ = faces;
     return *this;

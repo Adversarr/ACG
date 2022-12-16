@@ -4,8 +4,8 @@
 #include <acg_core/math/all.hpp>
 #include <acg_utils/log.hpp>
 #include <cmath>
+#include <acg_utils/align.hpp>
 
-#include "co/god.h"
 
 namespace acg::gui::details {
 
@@ -67,14 +67,14 @@ void MPWorldCtrl::RefitBuffers() {
   std::unique_ptr<VkContext::BufMem> new_vb{nullptr}, new_ib{nullptr};
 
   if (!vertex_buffer_ || vertex_buffer_->GetSize() < vs) {
-    vs = god::align_up(vs, buffer_minimum_size_);
+    vs = acg::utils::align_up(vs, buffer_minimum_size_);
     new_vb = get_vk_context().CreateBuffer(
         vs, vk::BufferUsageFlagBits::eVertexBuffer,
         vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
     spdlog::info("Created a new vertex buffer. size = {}", vs);
   }
   if (!indice_buffer_ || indice_buffer_->GetSize() < is) {
-    is = god::align_up(is, buffer_minimum_size_);
+    is = acg::utils::align_up(is, buffer_minimum_size_);
     new_ib = get_vk_context().CreateBuffer(
         is, vk::BufferUsageFlagBits::eIndexBuffer,
         vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);

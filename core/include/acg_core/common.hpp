@@ -41,28 +41,18 @@ using F64 = double;
  */
 using Float = F64;
 
+using I32 = int32_t;
+using Ui32 = uint32_t;
+using I64 = int64_t;
+using Ui64 = uint64_t;
+
+
 /**
  * @brief Index & Size type for mesh, particle system, rendering(index buffer), etc.
  */
-using Idx = int64_t;
+using Idx = I64;
 
-using ULIdx = uint64_t;
+using ULIdx = Ui64;
 
-constexpr char logo[]
-    = "      ___           ___           ___     \n"
-      "     /\\  \\         /\\__\\         /\\__\\    \n"
-      "    /::\\  \\       /:/  /        /:/ _/_   \n"
-      "   /:/\\:\\  \\     /:/  /        /:/ /\\  \\  \n"
-      "  /:/ /::\\  \\   /:/  /  ___   /:/ /::\\  \\ \n"
-      " /:/_/:/\\:\\__\\ /:/__/  /\\__\\ /:/__\\/\\:\\__\\\n"
-      " \\:\\/:/  \\/__/ \\:\\  \\ /:/  / \\:\\  \\ /:/  /\n"
-      "  \\::/__/       \\:\\  /:/  /   \\:\\  /:/  / \n"
-      "   \\:\\  \\        \\:\\/:/  /     \\:\\/:/  /  \n"
-      "    \\:\\__\\        \\::/  /       \\::/  /   \n"
-      "     \\/__/         \\/__/         \\/__/    \n";
-
-void init(int argc, char** argv);
-
-void clean_up();
 
 }  // namespace acg

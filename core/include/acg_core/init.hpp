@@ -2,8 +2,24 @@
 #include <functional>
 #include <optional>
 #include <vector>
+namespace acg {
+constexpr char logo[]
+    = "      ___           ___           ___     \n"
+      "     /\\  \\         /\\__\\         /\\__\\    \n"
+      "    /::\\  \\       /:/  /        /:/ _/_   \n"
+      "   /:/\\:\\  \\     /:/  /        /:/ /\\  \\  \n"
+      "  /:/ /::\\  \\   /:/  /  ___   /:/ /::\\  \\ \n"
+      " /:/_/:/\\:\\__\\ /:/__/  /\\__\\ /:/__\\/\\:\\__\\\n"
+      " \\:\\/:/  \\/__/ \\:\\  \\ /:/  / \\:\\  \\ /:/  /\n"
+      "  \\::/__/       \\:\\  /:/  /   \\:\\  /:/  / \n"
+      "   \\:\\  \\        \\:\\/:/  /     \\:\\/:/  /  \n"
+      "    \\:\\__\\        \\::/  /       \\::/  /   \n"
+      "     \\/__/         \\/__/         \\/__/    \n";
 
-namespace acg::details {
+void init(int argc, char** argv);
+
+void clean_up();
+namespace details {
 
 struct InitHook {
   std::optional<std::function<void()>> on_init;
@@ -24,4 +40,5 @@ void init();
  */
 void cleanup();
 
-}  // namespace acg::details
+}  // namespace details
+}  // namespace acg

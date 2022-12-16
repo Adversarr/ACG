@@ -1,6 +1,6 @@
 #pragma once
 #include <cstddef>
-namespace acg{
+namespace acg {
 
 namespace utils {
 
@@ -10,10 +10,7 @@ constexpr bool is_debug_mode = false;
 constexpr bool is_debug_mode = true;
 #endif
 
-
-enum class BuildType {
-  kRelease, kDebug
-};
+enum class BuildType { kRelease, kDebug };
 
 inline constexpr BuildType get_build_type() {
   if constexpr (is_debug_mode) {
@@ -23,19 +20,16 @@ inline constexpr BuildType get_build_type() {
   }
 }
 
-enum class PlatformType: int {
-  kApple, kWin, kLinux
-};
+enum class PlatformType : int { kApple, kWin, kLinux };
 
 inline constexpr PlatformType get_platform_type() {
 #ifdef __APPLE__
   return PlatformType::kApple;
-#elif defined (_WIN32) 
+#elif defined(_WIN32)
   return PlatformType::kWin;
 #elif defined(__linux__)
   return PlatformType::kLinux;
 #endif
 }
-}
-}
-
+}  // namespace utils
+}  // namespace acg

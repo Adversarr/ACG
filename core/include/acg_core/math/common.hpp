@@ -29,7 +29,7 @@ using Vec3Idx = Eigen::Vector3<Idx>;
 
 using Vec4Idx = Eigen::Vector4<Idx>;
 
-template <typename T, int n_attrib> using Attr
+template <typename T, int n_attrib> using Field
     = Eigen::Matrix<T, n_attrib, Eigen::Dynamic,
                     Eigen::AutoAlign | (n_attrib == 1 ? Eigen::RowMajor : Eigen::ColMajor)>;
 
@@ -42,11 +42,11 @@ template <typename T> using TransposeType
 
 namespace attr {
 template <typename Scalar, int dim = 3> using Position = Vec3<Scalar>;
-template <typename Scalar, int dim = 3> using PositionList = Attr<Scalar, dim>;
+template <typename Scalar, int dim = 3> using PositionList = Field<Scalar, dim>;
 using Rgb = Vec3f;
-using RgbList = Attr<F32, 3>;
+using RgbList = Field<F32, 3>;
 using Rgba = Vec4f;
-using RgbaList = Attr<F32, 4>;
-template <typename Scalar> using ScalarList = Attr<Scalar, 1>;
+using RgbaList = Field<F32, 4>;
+template <typename Scalar> using ScalarList = Field<Scalar, 1>;
 }  // namespace attribute
 }  // namespace acg

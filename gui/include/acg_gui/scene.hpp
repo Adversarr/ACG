@@ -49,8 +49,8 @@ public:
   *     geometry::Mesh<F32> mesh(v, f);
   *     scene_.AddMesh(mesh, AttrVecTrans<F32, 3>{{1, 0, 0}, {1, 0, 0}, {1, 0, 0}}.transpose(), Vec3f(.5, .6, .7));
   */
-  Scene& AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Attr<F32, 3>> opt_normals,
-                 Attr<F32, 3> colors);
+  Scene& AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Field<F32, 3>> opt_normals,
+                 Field<F32, 3> colors);
 
   vk::DeviceSize GetRequiredVertexBufferSize() const;
 
@@ -61,9 +61,9 @@ public:
 private:
   std::vector<geometry::SimpleMesh<F32>> meshes_;
 
-  std::vector<std::optional<Attr<F32, 3>>> normals_;
+  std::vector<std::optional<Field<F32, 3>>> normals_;
 
-  std::vector<Attr<F32, 3>> mesh_colors_;
+  std::vector<Field<F32, 3>> mesh_colors_;
 
   std::vector<geometry::Particle<F32>> particles_;
 

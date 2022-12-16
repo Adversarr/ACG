@@ -1,7 +1,5 @@
 #include "acg_gui/world_controller.hpp"
 
-#include <co/co.h>
-#include <co/time.h>
 #include <spdlog/spdlog.h>
 
 #include <chrono>
@@ -10,6 +8,7 @@
 #include <GLFW/glfw3.h>
 
 #include <acg_utils/singleton.hpp>
+#include <acg_utils/time.hpp>
 
 namespace acg::gui {
 
@@ -17,7 +16,7 @@ WorldCtrlUiOnly& WorldCtrlUiOnly::Run() {
   PreRun();
   is_running_ = true;
   while (is_running_) {
-    auto start = now::us();
+    auto start = acg::utils::GetTimeUs();
     // 1: Process basic keyboard input.
     ProcessInput();
     if (!is_running_) {
@@ -34,11 +33,10 @@ WorldCtrlUiOnly& WorldCtrlUiOnly::Run() {
     }
     // 4. FPS Limitation
     if (fps_limit_ > 0) {
-      using namespace std::chrono;
-      loop_time_ = (now::us() - start) / 1000.0;
+      loop_time_ = (acg::utils::GetTimeUs() - start) / 1000.0;
       auto ms_sleep = 1000.0 / fps_limit_ - loop_time_;
       if (ms_sleep > 1) {
-        co::sleep(static_cast<uint32_t>(ms_sleep));
+        acg::utils::SleepMs(static_cast<uint32_t>(ms_sleep));
       }
     }
   }

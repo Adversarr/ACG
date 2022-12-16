@@ -2,7 +2,6 @@
 
 #include <spdlog/spdlog.h>
 
-#include "co/flag.h"
 #include <spdlog/spdlog.h>
 
 namespace acg::details {
@@ -41,8 +40,6 @@ namespace acg {
 
 void init(int argc, char** argv) { 
   details::init(); 
-  flag::init(argc, argv);
-
 }
 
 /**

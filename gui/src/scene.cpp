@@ -118,10 +118,9 @@ Scene& Scene::AddParticle(const geometry::Particle<F32>& particle, const Vec3f& 
   return *this;
 }
 
-Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Attr<F32, 3>> opt_normals,
-                      Attr<F32, 3> colors) {
+Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Field<F32, 3>> opt_normals,
+                      Field<F32, 3> colors) {
   meshes_.emplace_back(std::move(mesh));
-  normals_.emplace_back(acg::geometry::Normal<F32>{mesh.GetFaces(), mesh.GetVertices()}.PerVertex());
   normals_.emplace_back(std::move(opt_normals));
   mesh_colors_.emplace_back(std::move(colors));
   return *this;
