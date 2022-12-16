@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <iterator>
 
 template <typename IteratorT> class EnumerateIt
@@ -10,8 +11,7 @@ public:
   IteratorT mItr;
   using ValueT = typename std::iterator_traits<IteratorT>::value_type;
 
-  explicit EnumerateIt(IteratorT iterator)
-      : mCurIdx{0}, mItr{std::move(iterator)} {}
+  explicit EnumerateIt(IteratorT iterator) : mCurIdx{0}, mItr{std::move(iterator)} {}
 
   EnumerateIt(IteratorT iterator, size_t startingCount)
       : mCurIdx{startingCount}, mItr{std::move(iterator)} {}
@@ -29,7 +29,7 @@ public:
   bool operator!=(const EnumerateIt& enumItr) const { return !(*this == enumItr); }
 
   decltype(auto) operator*() {
-    return std::make_pair(mCurIdx, std::forward<decltype(*mItr)>(*mItr));
+    return std::make_pair(mCurIdx, std::ref(*mItr));
   }
 
   decltype(auto) operator*() const {

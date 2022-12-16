@@ -61,9 +61,11 @@ TEST_CASE("god") {
 TEST_CASE("enum_iter") {
   SUBCASE("vector") {
     std::vector<int> a = {1, 2, 3};
-    for (const auto& v : Enumerate(a)) {
-      std::cout << v.first << ": " << v.second << std::endl;
+    for (auto [k, v]: Enumerate(a)) {
+      std::cout << k << ": " << v << std::endl;
+      v = 1;
     }
+    std::cout << a[0] << a[1] << a[2];
   }
   SUBCASE("eigen") {
     Eigen::Matrix3f a;
