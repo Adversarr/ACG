@@ -31,5 +31,5 @@ private:
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> velocity_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> acceleration_;
 
-  Attr<Idx, 2> edges_;
+  Field<Idx, 2> edges_;
 };

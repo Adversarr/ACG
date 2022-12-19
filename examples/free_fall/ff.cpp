@@ -6,8 +6,7 @@
 #include <acg_utils/log.hpp>
 #include <cmath>
 
-#include "co/random.h"
-
+#include <acg_utils/random.hpp>
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 
@@ -63,7 +62,7 @@ void FreeFall::CleanUpCallback() {
 void FreeFall::PreRun() {
   F64 r = 3;
   for (int i = 0; i < n_; ++i) {
-    Random rand;
+    acg::utils::Random rand;
     Vec3f center((rand.next() % 1000) / 1000.0, r * sin(2.0 * i / n_ * acg::constants::pi<F32>),
                  r * cos(2.0 * i / n_ * acg::constants::pi<F32>));
     Vec3f color = 0.5f * (Vec3f::Random() + Vec3f::Ones());

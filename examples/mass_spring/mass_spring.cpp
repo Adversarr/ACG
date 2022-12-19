@@ -5,7 +5,7 @@ geometry::SimpleMesh<F64> make_plane_xy(Idx n) {
   // 3x3 => x = 0, 0.5, 1
   //        y = 0, 0.5, 1
   //        z = 0.
-  Attr<F64, 3> vertices(3, n * n);
+  Field<F64, 3> vertices(3, n * n);
   geometry::SimpleMesh<F64>::FacesType faces(3, 2 * (n - 1) * (n - 1));
   for (Idx i = 0; i < n; ++i) {
     for (Idx j = 0; j < n; ++j) {
@@ -55,7 +55,7 @@ int MassSpring::RunPhysicsImpl(F64 dt) {
 
 
   auto new_velocity = velocity_ + acceleration_ * dt;
-  Attr<F64, 3> position = mesh_.GetVertices() + (velocity_ + new_velocity) * 0.5 * dt;
+  Field<F64, 3> position = mesh_.GetVertices() + (velocity_ + new_velocity) * 0.5 * dt;
   position.col(0) = Vec3d::Zero();
   position.col(n_ - 1) = Vec3d(0, 1, 0);
   velocity_ = new_velocity * .9;

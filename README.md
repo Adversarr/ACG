@@ -21,7 +21,7 @@ See `examples/nbody`.
 
 ### Tops
 
-1. remove coost. (doctest/nloh.._json)
+[x] remove coost. (doctest/nloh.._json)
 
 ### Build System
 
