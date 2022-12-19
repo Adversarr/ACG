@@ -19,7 +19,7 @@ out
 .idea
 cmake-build-*
 
-*.spv
+**.spv
 
 logs
 
