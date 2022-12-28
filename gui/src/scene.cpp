@@ -8,6 +8,12 @@
 #include "acg_gui/backend/buffer_def.hpp"
 #include "acg_gui/convent.hpp"
 
+namespace acg::gui::details {
+
+
+}
+
+
 namespace acg::gui {
 
 std::vector<vk::VertexInputBindingDescription> Vertex::GetBindingDescriptions() {

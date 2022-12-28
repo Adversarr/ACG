@@ -1,6 +1,8 @@
 #pragma once
 
+#include "acg_core/geometry/fv_transform.hpp"
 #include "common.hpp"
+#include "face_area.hpp"
 
 namespace acg::geometry {
 
@@ -26,8 +28,8 @@ public:
 };
 
 template <typename Scalar> Field<Scalar, 3> Normal<Scalar>::PerFace() const noexcept {
-  Field<Scalar, 3> face_normal;
   int n_face = triangle_list_.cols();
+  Field<Scalar, 3> face_normal(3, n_face);
   for (Idx i = 0; i < n_face; ++i) {
     const auto& face = triangle_list_.col(i);
     auto d0 = positions_.col(face.y()) - positions_.col(face.x());
@@ -43,21 +45,22 @@ Field<Scalar, 3> Normal<Scalar>::PerVertex(NormalPerVertexMode mode) const noexc
   Field<Scalar, 3> vertex_normal;
   vertex_normal.resizeLike(positions_);
   attr::ScalarList<Scalar> weight;
-  weight.resize(1, positions_.cols());
   switch (mode) {
     case NormalPerVertexMode::kUniform:
+      weight.resize(1, positions_.cols());
+      weight.setOnes();
       break;
 
     case NormalPerVertexMode::kArea:
-      // TODO: do compute
+      weight = geometry::face_area(triangle_list_, positions_);
       break;
 
     case NormalPerVertexMode::kAngle:
-      // TODO: do compute
+      // TODO: Not Implemented Error.
       break;
   }
-
-  return vertex_normal;
+  FVTransform fvt(triangle_list_, positions_.cols());
+  return fvt.template FaceToVertex<Scalar, 3>(face_normal, weight);
 }
 
 }  // namespace acg::geometry

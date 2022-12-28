@@ -5,9 +5,10 @@
 namespace acg {
 
 namespace geometry {
-template <typename Scalar, int dim = 3> attr::ScalarList<Scalar> compute_face_area(
-    const topology::TriangleList& triangles,
-    const attr::PositionList<Scalar, dim>& positions) {
+template <typename Scalar, int dim = 3>
+attr::ScalarList<Scalar> face_area(const topology::TriangleList& triangles,
+                                   const attr::PositionList<Scalar, dim>& positions) {
+  static_assert(dim == 2 || dim == 3, "Face area computing requires dim = 2 or 3.");
   attr::ScalarList<Scalar> areas;
   areas.resize(1, triangles.cols());
   for (Idx i = 0; i < triangles.cols(); ++i) {
@@ -16,7 +17,7 @@ template <typename Scalar, int dim = 3> attr::ScalarList<Scalar> compute_face_ar
     int z = triangles(2, i);
     auto d0 = positions.col(x) - positions.col(z);
     auto d1 = positions.col(y) - positions.col(z);
-    areas.col(i) = d0.cross(d1).norm();
+    areas(i) = d0.cross(d1).norm();
   }
   areas *= 0.5;
   return areas;
