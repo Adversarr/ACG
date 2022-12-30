@@ -1,6 +1,5 @@
 #include <doctest/doctest.h>
 
-#include <acg_utils/emum_iter.hpp>
 #include <acg_utils/god/algorithms.hpp>
 #include <acg_utils/god/god.hpp>
 #include <cassert>
@@ -58,25 +57,3 @@ TEST_CASE("god") {
   }
 }
 
-TEST_CASE("enum_iter") {
-  SUBCASE("vector") {
-    std::vector<int> a = {1, 2, 3};
-    for (auto [k, v]: Enumerate(a)) {
-      std::cout << k << ": " << v << std::endl;
-      v = 1;
-    }
-    std::cout << a[0] << a[1] << a[2];
-  }
-  SUBCASE("eigen") {
-    Eigen::Matrix3f a;
-    a.reshaped().setLinSpaced(0, 1);
-    std::cout << a << std::endl;
-    auto b = a.colwise();
-    auto ret = Enumerate(b);
-    std::cout << std::distance(a.colwise().begin(), a.colwise().end()) << std::endl;
-    for (auto it = begin(ret); it != end(ret); ++it) {
-      auto val = *(it.mItr);
-      std::cout << val << std::endl;
-    }
-  }
-}

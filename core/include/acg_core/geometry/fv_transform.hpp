@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "common.hpp"
+#include <acg_utils/log.hpp>
 
 namespace acg::geometry {
 
@@ -15,14 +16,16 @@ struct FVTransform {
 
   template <typename Scalar0, int n_attr>
   Field<Scalar0, n_attr> FaceToVertex(const Field<Scalar0, n_attr>& x,
-                                      const attr::ScalarList<Scalar0>& weight) const;
+                                      const types::ScalarList<Scalar0>& weight) const;
 };
 
 template <typename Scalar0, int n_attr>
 Field<Scalar0, n_attr> FVTransform::FaceToVertex(const Field<Scalar0, n_attr>& x,
-                                                 const attr::ScalarList<Scalar0>& weight) const {
+                                                 const types::ScalarList<Scalar0>& weight) const {
+  ACG_CHECK(x.cols() == triangle_list_.cols(), "sizeof x != #triangles");
+  ACG_CHECK(weight.cols() == triangle_list_.cols(), "sizeof weight != #triangles");
   Field<Scalar0, n_attr> retval(n_attr, n_vertices_);
-  attr::ScalarList<Scalar0> per_vertex_weight(1, n_vertices_);
+  types::ScalarList<Scalar0> per_vertex_weight(1, n_vertices_);
   retval.setZero();
   per_vertex_weight.setZero();
   Idx idx = 0;

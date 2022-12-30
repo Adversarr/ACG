@@ -84,6 +84,8 @@ protected:
   vk::CommandBuffer DrawUI();
 
   void ProcessInput();
+
+  virtual void ProcessInputImpl();
 private:
 
 

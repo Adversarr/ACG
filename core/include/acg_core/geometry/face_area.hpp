@@ -6,10 +6,10 @@ namespace acg {
 
 namespace geometry {
 template <typename Scalar, int dim = 3>
-attr::ScalarList<Scalar> face_area(const topology::TriangleList& triangles,
-                                   const attr::PositionList<Scalar, dim>& positions) {
+types::ScalarList<Scalar> face_area(const topology::TriangleList& triangles,
+                                   const types::PositionList<Scalar, dim>& positions) {
   static_assert(dim == 2 || dim == 3, "Face area computing requires dim = 2 or 3.");
-  attr::ScalarList<Scalar> areas;
+  types::ScalarList<Scalar> areas;
   areas.resize(1, triangles.cols());
   for (Idx i = 0; i < triangles.cols(); ++i) {
     int x = triangles(0, i);

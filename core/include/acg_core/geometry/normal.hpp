@@ -15,7 +15,7 @@ template <typename Scalar> class Normal {
 private:
   const topology::TriangleList& triangle_list_;
 
-  const attr::PositionList<Scalar, 3>& positions_;
+  const types::PositionList<Scalar, 3>& positions_;
 
 public:
   Field<Scalar, 3> PerVertex(NormalPerVertexMode mode = NormalPerVertexMode::kArea) const noexcept;
@@ -23,7 +23,7 @@ public:
   Field<Scalar, 3> PerFace() const noexcept;
 
   Normal(const topology::TriangleList& triangle_list,
-         const attr::PositionList<Scalar, 3>& vertices_position)
+         const types::PositionList<Scalar, 3>& vertices_position)
       : triangle_list_(triangle_list), positions_(vertices_position) {}
 };
 
@@ -42,12 +42,10 @@ template <typename Scalar> Field<Scalar, 3> Normal<Scalar>::PerFace() const noex
 template <typename Scalar>
 Field<Scalar, 3> Normal<Scalar>::PerVertex(NormalPerVertexMode mode) const noexcept {
   Field<Scalar, 3> face_normal = PerFace();
-  Field<Scalar, 3> vertex_normal;
-  vertex_normal.resizeLike(positions_);
-  attr::ScalarList<Scalar> weight;
+  types::ScalarList<Scalar> weight;
   switch (mode) {
     case NormalPerVertexMode::kUniform:
-      weight.resize(1, positions_.cols());
+      weight.resize(1, triangle_list_.cols());
       weight.setOnes();
       break;
 

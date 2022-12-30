@@ -19,6 +19,8 @@ public:
 
 protected:
 
+  void LocalStep(F64 dt);
+
   int RunPhysicsImpl(F64 dt) final;
 
   void RunUiImpl() final;
@@ -36,9 +38,12 @@ private:
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> velocity_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> acceleration_;
   Field<Idx, 2> edges_;
-  Mesh mesh_;
-  Mesh new_mesh_;
+  Field<F64, 1> original_length_;
 
+  // Slack Variable
+  Field<F64, 3> d_;
+
+  Mesh mesh_;
   float k_{10};
 };
 

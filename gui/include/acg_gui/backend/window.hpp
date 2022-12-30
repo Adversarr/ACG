@@ -6,6 +6,7 @@
 #include <string>
 #include <tuple>
 #include <vulkan/vulkan.hpp>
+#include <acg_core/math/common.hpp>
 
 namespace acg::gui::details {
 
@@ -37,9 +38,16 @@ public:
   bool IsKeyPressed(int glfw_key) const;
 
   void UpdateWindowSize();
-
+  
+  inline Vec2d GetMousePosition() const;
 private:
   static void WindowResizeCallback(GLFWwindow* window, int width, int height);
+
+  static void CursurCallback(GLFWwindow* window, double xpos, double ypos);
+
+
+  double mouse_x_position_;
+  double mouse_y_position_;
 
   GLFWwindow* window_{nullptr};
 
@@ -51,6 +59,10 @@ private:
 
   bool resized_{false};
 };
+
+inline Vec2d Window::GetMousePosition() const {
+  return {mouse_x_position_, mouse_y_position_};
+}
 
 inline bool Window::IsResized() const noexcept { return resized_; }
 

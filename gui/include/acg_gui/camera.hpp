@@ -31,14 +31,14 @@ public:
   Vec3f &GetUp();
 
   void Move(Vec3f direction, F64 dt);
-
-  // Set the position of the camera. Returns true, if readlly changed.
+  // Set the position of the camera.
   bool SetPosition(glm::vec3 position);
 
-  // Set the front direction of the camera. Returns true, if really changed.
+  // Set the front direction of the camera. 
   bool SetFront(glm::vec3 front);
 
   Camera& SetFov(F32 angle);
+  F32 GetFov() const;
 
   Camera& SetLeft(F32 left);
   Camera& SetRight(F32 right);
@@ -49,20 +49,31 @@ public:
 
   Camera& SetProjectionMode(bool is_perspective = true);
 
+  Camera& SetYaw(F32 yaw);
+  Camera& SetRoll(F32 roll);
+  Camera& SetPitch(F32 pitch);
+
+  F32 GetYaw() const;
+  F32 GetRoll() const;
+  F32 GetPitch() const;
+
 private:
+
+  bool is_perspective_{true};
   // Extra Rotation/transform applied to each model.
   Vec3f model_rotate_axis_{0.0f, 0.0f, 1.0f};
-
   float model_rotate_angle_{0.0f};
 
   Vec3f position_{3.0f, 0.0f, 1.0f};
-
   Vec3f front_{-3.0f, 0.0f, -1.0f};
-
   Vec3f up_{0.0f, 0.0f, 1.0f};
 
   float fov_{45.0};
   float near_{0.1f};
   float far_{100.0f};
+
+  float yaw_{0}, roll_{0}, pitch_{0};
+  float left_, right_, top_, bottom_;
+
 };
 }  // namespace acg::gui

@@ -84,6 +84,9 @@ std::pair<std::vector<Vertex>, std::vector<GuiIdx>> Scene::Build() const {
     const auto& n = normals_[i];
     Idx n_v = m.GetVertices().cols();
     Idx i_offset = vertices.size();
+    if (n.has_value()) {
+      ACG_CHECK(n.value().cols() == n_v, "#Normal {} != #Vertices {}", n.value().cols(), n_v);
+    }
     for (Idx j = 0; j < n_v; ++j) {
       Vec3f position = m.GetVertices().col(j);
       Vec3f color = (c.cols() == 1) ? c : c.col(j);
@@ -126,10 +129,18 @@ Scene& Scene::AddParticle(const geometry::Particle<F32>& particle, const Vec3f& 
 
 Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Field<F32, 3>> opt_normals,
                       Field<F32, 3> colors) {
-  meshes_.emplace_back(std::move(mesh));
   // normals_.emplace_back(acg::geometry::Normal<F32>{mesh.GetFaces(), mesh.GetVertices()}.PerVertex());
-  normals_.emplace_back(std::move(opt_normals));
+  if (! opt_normals.has_value()) {
+    const auto& face = mesh.GetFaces();
+    const auto& vert = mesh.GetVertices();
+    acg::geometry::Normal<F32> normal_compute(face, vert);
+    auto normal = normal_compute.PerVertex(geometry::NormalPerVertexMode::kArea);
+    normals_.push_back(normal);
+  } else {
+    normals_.emplace_back(opt_normals);
+  }
   mesh_colors_.emplace_back(std::move(colors));
+  meshes_.emplace_back(std::move(mesh));
   return *this;
 }
 

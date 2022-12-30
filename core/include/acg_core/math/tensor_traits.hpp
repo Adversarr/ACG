@@ -2,8 +2,8 @@
 
 #include "common.hpp"
 
-namespace acg::details {
-
+namespace acg {
+namespace details {
 template <typename T> struct TensorTrait {
   static constexpr int rows = T::RowsAtCompileTime;            // NOLINT
   static constexpr int cols = T::ColsAtCompileTime;            // NOLINT
@@ -43,5 +43,6 @@ template <> struct TensorTrait<acg::F64> {
   using type = acg::F64;
   using transpose = type;
 };
+}
 ///< Type Defines
 }  // namespace acg::details

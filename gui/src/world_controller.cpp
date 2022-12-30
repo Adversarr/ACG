@@ -51,6 +51,8 @@ void WorldCtrlUiOnly::ProcessInput() {
     is_running_ = false;
     return;
   }
+
+  ProcessInputImpl();
   for (const auto& [k, v] : keyboard_callbacks_) {
     // only process key press here.
     if (glfwGetKey(window_ptr, k) == GLFW_PRESS) {
@@ -58,6 +60,10 @@ void WorldCtrlUiOnly::ProcessInput() {
       ACG_CHECK(v(), "Callback failed.");
     }
   }
+}
+
+void WorldCtrlUiOnly::ProcessInputImpl() {
+  // DO NOTHING
 }
 
 vk::CommandBuffer WorldCtrlUiOnly::DrawUI() {

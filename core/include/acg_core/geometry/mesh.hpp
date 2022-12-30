@@ -105,6 +105,6 @@ SimpleMesh<T>::SimpleMesh(const VerticesType& vertices, const FacesType& indices
     : vertices_(vertices), faces_(indices) {}
 
 template <typename T> template <typename T2> SimpleMesh<T2> SimpleMesh<T>::Cast() const {
-  return {vertices_.template cast<T2>(), faces_};
+  return SimpleMesh<T2>{vertices_.template cast<T2>(), faces_};
 }
 }  // namespace acg::geometry

@@ -50,10 +50,58 @@ bool Camera::SetFront(glm::vec3 front) {
   }
   return changed;
 }
-
 void Camera::Move(Vec3f direction, F64 dt) { position_ = position_ + direction * dt; }
 
 const Vec3f& Camera::GetPosition() const { return position_; }
+
 const Vec3f& Camera::GetFront() const { return front_; }
+
+Camera& Camera::SetLookAt(Vec3f look_at) {
+  front_ = look_at - position_;
+  return *this;
+}
+
+Camera& Camera::SetTop(F32 top) {
+  top_ = top;
+  return *this;
+}
+
+Camera& Camera::SetBottom(F32 bottom) {
+  bottom_ = bottom;
+  return *this;
+}
+
+Camera& Camera::SetLeft(F32 left) {
+  left_ = left;
+  return *this;
+}
+
+Camera& Camera::SetRight(F32 right) {
+  right_ = right;
+  return *this;
+}
+
+Camera& Camera::SetProjectionMode(bool is_perspective) {
+  is_perspective_ = is_perspective;
+  return *this;
+}
+
+Camera& Camera::SetPitch(F32 pitch) {
+  pitch_ = pitch;
+  return *this;
+}
+
+Camera& Camera::SetRoll(F32 roll) {
+  roll_ = roll;
+  return *this;
+}
+
+Camera& Camera::SetYaw(F32 yaw) {
+  yaw_ = yaw;
+  return *this;
+}
+
+
+// TODO: compute everything using yrp.
 
 }  // namespace acg::gui

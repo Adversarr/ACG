@@ -1,6 +1,9 @@
-#include <acg_utils/log.hpp>
 #include "acg_gui/backend/window.hpp"
+
 #include <spdlog/spdlog.h>
+
+#include <acg_utils/log.hpp>
+
 #include "acg_gui/backend/avk.hpp"
 
 namespace acg::gui::details {
@@ -14,6 +17,7 @@ Window::Window(std::string_view title) noexcept : title_(title) {
   ACG_CHECK(window_ != nullptr, "Failed to create window.");
   glfwSetWindowUserPointer(window_, this);
   glfwSetFramebufferSizeCallback(window_, WindowResizeCallback);
+  glfwSetCursorPosCallback(window_, CursurCallback);
 }
 
 Window::~Window() noexcept {
@@ -30,12 +34,22 @@ vk::SurfaceKHR Window::CreateWindowSurface(vk::Instance& instance) {
 }
 
 void Window::WindowResizeCallback(GLFWwindow* window, int width, int height) {
-  auto *w = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+  auto* w = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   w->resized_ = true;
   w->height_ = height;
   w->width_ = width;
   ACG_DEBUG_LOG("Window resized. (w: {}, h: {})", width, height);
 }
+
+
+
+void Window::CursurCallback(GLFWwindow* window, double xpos, double ypos) {
+  auto* w = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+
+  w->mouse_x_position_ = xpos;
+  w->mouse_y_position_ = ypos;
+}
+
 
 void Window::UpdateWindowSize() {
   width_ = height_ = 0;
@@ -49,5 +63,4 @@ bool Window::IsKeyPressed(int glfw_key) const {
   return glfwGetKey(window_, glfw_key) == GLFW_PRESS;
 }
 
-
-}  // namespace acg::gui
+}  // namespace acg::gui::details
