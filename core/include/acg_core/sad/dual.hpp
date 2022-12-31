@@ -155,8 +155,8 @@ template <typename L, typename R, class = void> struct Mul;
 // Scalar * Scalar
 template <typename L, typename R>
 struct Mul<L, R,
-           std::enable_if_t<!std::is_same_v<L, R> && TensorTrait<typename L::type>::is_scalar
-                            && TensorTrait<typename R::type>::is_scalar>>
+           std::enable_if_t<!std::is_same_v<L, R> && Trait<typename L::type>::is_scalar
+                            && Trait<typename R::type>::is_scalar>>
     : public Expr<typename L::type, L, R> {
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
@@ -169,8 +169,8 @@ struct Mul<L, R,
 
 template <typename L> struct Mul<
     L, L,
-    std::enable_if_t<TensorTrait<typename L::type>::cols == TensorTrait<typename L::type>::rows
-                     && TensorTrait<typename L::type>::is_scalar>>
+    std::enable_if_t<Trait<typename L::type>::cols == Trait<typename L::type>::rows
+                     && Trait<typename L::type>::is_scalar>>
     : public Expr<typename L::type, L> {
   template <typename Li> inline decltype(auto) operator()(Li&& l) const noexcept { return l * l; }
   template <typename X, typename G> using Grad_t = Add<Mul<L, G>, Mul<G, L>>;
@@ -179,8 +179,8 @@ template <typename L> struct Mul<
 // Scalar * Matrix
 template <typename L, typename R>
 struct Mul<L, R,
-           std::enable_if_t<TensorTrait<typename L::type>::is_scalar
-                            && !(TensorTrait<typename R::type>::is_scalar)>>
+           std::enable_if_t<Trait<typename L::type>::is_scalar
+                            && !(Trait<typename R::type>::is_scalar)>>
     : public Expr<typename R::type, L, R> {
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
@@ -192,8 +192,8 @@ struct Mul<L, R,
 
 template <typename L, typename R>
 struct Mul<L, R,
-           std::enable_if_t<!TensorTrait<typename L::type>::is_scalar
-                            && TensorTrait<typename R::type>::is_scalar>>
+           std::enable_if_t<!Trait<typename L::type>::is_scalar
+                            && Trait<typename R::type>::is_scalar>>
     : public Expr<typename L::type, L, R> {
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
@@ -205,13 +205,13 @@ struct Mul<L, R,
 // Mat * Mat
 template <typename L, typename R>
 struct Mul<L, R,
-           std::enable_if_t<!std::is_same_v<L, R> && !(TensorTrait<typename L::type>::is_scalar)
-                            && !(TensorTrait<typename R::type>::is_scalar)>>
+           std::enable_if_t<!std::is_same_v<L, R> && !(Trait<typename L::type>::is_scalar)
+                            && !(Trait<typename R::type>::is_scalar)>>
     : public Expr<
-          Eigen::Matrix<typename TensorTrait<typename L::type>::Scalar,
-                        TensorTrait<typename L::type>::rows, TensorTrait<typename R::type>::cols>,
+          Eigen::Matrix<typename Trait<typename L::type>::Scalar,
+                        Trait<typename L::type>::rows, Trait<typename R::type>::cols>,
           L, R> {
-  static_assert(TensorTrait<typename L::type>::cols == TensorTrait<typename R::type>::rows,
+  static_assert(Trait<typename L::type>::cols == Trait<typename R::type>::rows,
                 "L.col != R.rows");
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
@@ -223,8 +223,8 @@ struct Mul<L, R,
 
 template <typename L> struct Mul<
     L, L,
-    std::enable_if_t<TensorTrait<typename L::type>::cols == TensorTrait<typename L::type>::rows
-                     && !TensorTrait<typename L::type>::is_scalar>>
+    std::enable_if_t<Trait<typename L::type>::cols == Trait<typename L::type>::rows
+                     && !Trait<typename L::type>::is_scalar>>
     : public Expr<typename L::type, L> {
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {

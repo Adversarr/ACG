@@ -85,6 +85,16 @@ using Mat3x3d = Mat3x3<F64>;
 using Mat4x4f = Mat4x4<F32>;
 using Mat4x4d = Mat4x4<F64>;
 
+
+// Sparse Matrix
+template<typename Scalar, int Options = 0>
+using SpMat = Eigen::SparseMatrix<Scalar, Options, acg::Idx>;
+
+// Sparse Vector
+template<typename Scalar, int Options = 0>
+using SpVec = Eigen::SparseVector<Scalar, Options, acg::Idx>;
+
+
 template <typename T, int n_attrib> using Field
     = Eigen::Matrix<T, n_attrib, Eigen::Dynamic,
                     Eigen::AutoAlign | (n_attrib == 1 ? Eigen::RowMajor : Eigen::ColMajor)>;

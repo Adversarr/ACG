@@ -5,8 +5,8 @@ namespace acg::sad {
 
 namespace details {
 
-template <typename T> constexpr bool IsScalar_v = TensorTrait<typename T::type>::is_scalar;
-template <typename T> using Scalar_t = typename TensorTrait<typename T::type>::Scalar;
+template <typename T> constexpr bool IsScalar_v = Trait<typename T::type>::is_scalar;
+template <typename T> using Scalar_t = typename Trait<typename T::type>::Scalar;
 
 ///> CwiseMul
 template <typename L, typename R> struct CwiseMul : public Expr<typename L::type, L, R> {

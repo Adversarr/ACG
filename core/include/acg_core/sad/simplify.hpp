@@ -84,13 +84,13 @@ template <typename X, typename Y> struct Simplify<Dot<X, Y>> {
   using type = Dot<Simplify_t<X>, Simplify_t<Y>>;
 };
 template <typename X, typename Z> struct Simplify<Dot<X, Zeros<Z>>> {
-  using type = Zeros<typename TensorTrait<Z>::Scalar>;
+  using type = Zeros<typename Trait<Z>::Scalar>;
 };
 template <typename X, typename Z> struct Simplify<Dot<Zeros<Z>, X>> {
-  using type = Zeros<typename TensorTrait<Z>::Scalar>;
+  using type = Zeros<typename Trait<Z>::Scalar>;
 };
 template <typename X, typename Z> struct Simplify<Dot<Zeros<Z>, Zeros<X>>> {
-  using type = Zeros<typename TensorTrait<Z>::Scalar>;
+  using type = Zeros<typename Trait<Z>::Scalar>;
 };
 ///> Dot
 

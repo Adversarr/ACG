@@ -15,9 +15,9 @@ template <typename X> struct Transpose : public Expr<typename X::transpose, X> {
 
 // For X Y, compute X^T Y:
 template <typename X, typename Y> struct Dot
-    : public Expr<typename TensorTrait<typename X::type>::Scalar, X, Y> {
-  static_assert(TensorTrait<typename X::type>::is_vector
-                    && TensorTrait<typename Y::type>::is_vector,
+    : public Expr<typename Trait<typename X::type>::Scalar, X, Y> {
+  static_assert(Trait<typename X::type>::is_vector
+                    && Trait<typename Y::type>::is_vector,
                 "only vector can dot.");
   template <typename XIn, typename YIn> decltype(auto) operator()(XIn&& in_x, YIn&& in_y) {
     return std::forward<XIn>(in_x).dot(std::forward<YIn>(in_y));
@@ -29,8 +29,8 @@ template <typename X, typename Y> struct Dot
 
 // For X X, compute X^T X:
 template <typename X> struct Dot<X, X>
-    : public Expr<typename TensorTrait<typename X::type>::Scalar, X> {
-  static_assert(TensorTrait<typename X::type>::is_vector, "only vector can dot.");
+    : public Expr<typename Trait<typename X::type>::Scalar, X> {
+  static_assert(Trait<typename X::type>::is_vector, "only vector can dot.");
   template <typename XIn> decltype(auto) operator()(XIn&& in_x) {
     return std::forward<XIn>(in_x).dot(std::forward<XIn>(in_x));
   }

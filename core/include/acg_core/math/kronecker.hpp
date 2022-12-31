@@ -13,10 +13,10 @@ namespace math {
 
 // Dense By Dense Kronecker Product Computing
 template <typename Lhs, typename Rhs> class KroneckerDenseByDense {
-  static constexpr int lhs_rows_ = details::TensorTrait<Lhs>::rows;
-  static constexpr int rhs_rows_ = details::TensorTrait<Rhs>::rows;
-  static constexpr int lhs_cols_ = details::TensorTrait<Lhs>::cols;
-  static constexpr int rhs_cols_ = details::TensorTrait<Rhs>::cols;
+  static constexpr int lhs_rows_ = details::Trait<Lhs>::rows;
+  static constexpr int rhs_rows_ = details::Trait<Rhs>::rows;
+  static constexpr int lhs_cols_ = details::Trait<Lhs>::cols;
+  static constexpr int rhs_cols_ = details::Trait<Rhs>::cols;
 
   static constexpr int out_rows_ = (lhs_rows_ == Eigen::Dynamic || rhs_rows_ == Eigen::Dynamic)
                                        ? Eigen::Dynamic
@@ -25,7 +25,7 @@ template <typename Lhs, typename Rhs> class KroneckerDenseByDense {
                                        ? Eigen::Dynamic
                                        : lhs_cols_ * rhs_cols_;
 
-  using Scalar = typename details::TensorTrait<Lhs>::Scalar;
+  using Scalar = typename details::Trait<Lhs>::Scalar;
   using OutType = Mat<Scalar, out_rows_, out_cols_>;
   const Lhs& lhs_;
   const Rhs& rhs_;
@@ -34,7 +34,7 @@ public:
   inline KroneckerDenseByDense(const Lhs& lhs, const Rhs& rhs) : lhs_(lhs), rhs_(rhs) {}
 
   inline OutType operator()() {
-    static_assert(std::is_same_v<Scalar, typename details::TensorTrait<Rhs>::Scalar>,
+    static_assert(std::is_same_v<Scalar, typename details::Trait<Rhs>::Scalar>,
                   "Lhs::Scalar and Rhs::Scalar does not match.");
     auto lhs_rows = lhs_.rows();
     auto lhs_cols = lhs_.cols();
@@ -53,6 +53,17 @@ public:
     }
     return output;
   }
+};
+
+template<typename Lhs, typename Rhs>
+class KroneckerSparseByDense {
+  const Lhs &lhs_;
+  const Rhs &rhs_;
+
+  static_assert(!Trait<Lhs>::is_dense, "Lhs Should be sparse");
+public:
+
+
 };
 
 }  // namespace math

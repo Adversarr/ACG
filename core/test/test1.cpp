@@ -17,10 +17,10 @@ TEST_CASE("test1") {
       {{1.0, 0.0, 3.0}, 2},
   };
   std::cout << particlesystem.to_string();
-  CHECK((acg::details::TensorTrait<Eigen::Vector<acg::F32, 4>>::is_col_major));
-  CHECK(!(acg::details::TensorTrait<Eigen::Vector<acg::F32, 4>>::is_row_major));
-  CHECK((acg::details::TensorTrait<Eigen::RowVector<acg::F32, 4>>::is_row_major));
-  CHECK((acg::details::TensorTrait<Eigen::RowVector<acg::F32, 4>>::rows == 1));
-  CHECK((acg::details::TensorTrait<Eigen::Vector<acg::F32, 4>>::rows == 4));
+  CHECK((acg::details::Trait<Eigen::Vector<acg::F32, 4>>::is_col_major));
+  CHECK(!(acg::details::Trait<Eigen::Vector<acg::F32, 4>>::is_row_major));
+  CHECK((acg::details::Trait<Eigen::RowVector<acg::F32, 4>>::is_row_major));
+  CHECK((acg::details::Trait<Eigen::RowVector<acg::F32, 4>>::rows == 1));
+  CHECK((acg::details::Trait<Eigen::Vector<acg::F32, 4>>::rows == 4));
 }
 
