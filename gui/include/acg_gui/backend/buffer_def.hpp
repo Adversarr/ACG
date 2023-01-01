@@ -39,6 +39,19 @@ struct Vertex {
   static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions();
 };
 
+
+struct Point {
+  glm::vec3 position;
+  glm::vec3 color;
+
+  inline Point(const glm::vec3& position, const glm::vec3& color):
+    position(position), color(color) {
+
+  }
+  static std::vector<vk::VertexInputBindingDescription> GetBindingDescriptions();
+
+  static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions();
+};
 /**
  * @brief Content of Uniform Buffer
  *
@@ -49,6 +62,8 @@ struct Ubo {
   alignas(16) glm::vec4 ambient_light_color{1.f, 1.f, 1.f, .01f};  // w is intensity
   alignas(16) glm::vec3 light_color{1.0, 1.0, 1.0};
   alignas(16) glm::vec3 light_position{2.0, 0.0, 1.0};
+
+  // Different Shader may use this option for different usage.
   alignas(16) int options[4] = {0, 0, 0, 0};
 };
 

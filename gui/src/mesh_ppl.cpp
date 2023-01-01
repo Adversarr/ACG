@@ -16,7 +16,6 @@ void MeshPipeline::Init(const GraphicsRenderPass &graphics_pass) {
   is_inited_ = true;
 }
 
-
 void MeshPipeline::CleanUp() {
   if (!is_inited_) {
     return;
@@ -27,9 +26,7 @@ void MeshPipeline::CleanUp() {
   is_inited_ = false;
 }
 
-MeshPipeline::~MeshPipeline() {
-  CleanUp();
-}
+MeshPipeline::~MeshPipeline() { CleanUp(); }
 
 void MeshPipeline::CreateUniformBuffers() {
   // TODO: Ubo is a place holder now
@@ -58,14 +55,16 @@ void MeshPipeline::CreateDescriptorSetLayout() {
   descriptor_set_layout_
       = get_vk_context().GetDevice().createDescriptorSetLayout(layout_create_info);
 }
+
+
 void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pass) {
   vk::ShaderModule vert_module, frag_module;
   {
-    auto code = acg::utils::io::read_binary_file(SPV_HOME "3d.vert.spv");
+    auto code = acg::utils::io::read_binary_file(SPV_HOME "mesh.vert.spv");
     vk::ShaderModuleCreateInfo info;
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     vert_module = get_vk_context().GetDevice().createShaderModule(info);
-    code = acg::utils::io::read_binary_file(SPV_HOME "3d.frag.spv");
+    code = acg::utils::io::read_binary_file(SPV_HOME "mesh.frag.spv");
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     frag_module = get_vk_context().GetDevice().createShaderModule(info);
   }
@@ -169,7 +168,6 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
   get_vk_context().GetDevice().destroy(frag_module);
 }
 
-
 void MeshPipeline::Recreate(const GraphicsRenderPass &graphics_pass) {
   vk::ShaderModule vert_module, frag_module;
   {
@@ -245,12 +243,11 @@ void MeshPipeline::Recreate(const GraphicsRenderPass &graphics_pass) {
   vk::PipelineDynamicStateCreateInfo dynamic_state_info;
   dynamic_state_info.setDynamicStates(dynamic_states);
 
-
   // Depth Testing.
   vk::PipelineDepthStencilStateCreateInfo depth_stencil;
   depth_stencil.setDepthTestEnable(VK_TRUE)
       .setDepthWriteEnable(VK_TRUE)
-      .setDepthCompareOp(vk::CompareOp::eLess)
+      .setDepthCompareOp(vk::CompareOp::eLessOrEqual)
       .setDepthBoundsTestEnable(VK_FALSE)
       .setStencilTestEnable(VK_FALSE);
 

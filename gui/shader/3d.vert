@@ -33,7 +33,7 @@ void main() {
   float diff = max(dot(nnormal, light_dir), 0.0);
   diffuse = diff * ubo.light_color;
 
-  float spec = pow(max(dot(nnormal, halfway_dir), 0.0), 4); // use shiness = 128
+  float spec = pow(max(dot(nnormal, halfway_dir), 0.0), 64); // use shiness = 128
   vec3 specular = ubo.light_color * spec;
   vec3 result = (ambient + diffuse + specular) * inColor;
   fragColor = vec4(result, 1.0);

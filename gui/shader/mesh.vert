@@ -4,7 +4,6 @@ layout(binding = 0) uniform UniformBufferObject {
   mat4 mvp;
   vec3 eye_position;
   vec4 ambient_light_color;
-  
   // Point Lights
   vec3 light_color;
   vec3 light_position;
@@ -36,7 +35,7 @@ void main() {
   float diff = max(dot(nnormal, light_dir), 0.0);
   diffuse = diff * ubo.light_color;
 
-  float spec = pow(max(dot(nnormal, halfway_dir), 0.0), 4); // use shiness = 128
+  float spec = pow(max(dot(nnormal, halfway_dir), 0.0), 64); // use shiness = 128
   vec3 specular = ubo.light_color * spec;
   vec3 result = (ambient + diffuse + specular) * inColor;
   fragColor = vec4(result, 1.0);

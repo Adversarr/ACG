@@ -3,48 +3,13 @@
 #include <acg_core/geometry/common_models.hpp>
 #include <acg_core/geometry/normal.hpp>
 #include <vector>
-#include "acg_gui/backend/avk.hpp"
+
 #include "acg_core/geometry/common_models.hpp"
+#include "acg_gui/backend/avk.hpp"
 #include "acg_gui/backend/buffer_def.hpp"
 #include "acg_gui/convent.hpp"
 
-namespace acg::gui::details {
-
-
-}
-
-
 namespace acg::gui {
-
-std::vector<vk::VertexInputBindingDescription> Vertex::GetBindingDescriptions() {
-  vk::VertexInputBindingDescription binding;
-  binding.setBinding(0);
-  binding.setStride(sizeof(Vertex));
-  binding.setInputRate(vk::VertexInputRate::eVertex);
-  return {binding};
-}
-
-std::vector<vk::VertexInputAttributeDescription> Vertex::GetAttributeDescriptions() {
-  vk::VertexInputAttributeDescription desc1;
-  desc1.binding = 0;
-  desc1.location = 0;
-  desc1.format = vk::Format::eR32G32B32Sfloat;
-  desc1.offset = offsetof(Vertex, position_);
-
-  vk::VertexInputAttributeDescription desc2;
-  desc2.binding = 0;
-  desc2.location = 1;
-  desc2.format = vk::Format::eR32G32B32Sfloat;
-  desc2.offset = offsetof(Vertex, color_);
-
-  vk::VertexInputAttributeDescription desc3;
-  desc3.binding = 0;
-  desc3.location = 2;
-  desc3.format = vk::Format::eR32G32B32Sfloat;
-  desc3.offset = offsetof(Vertex, normal_);
-
-  return {desc1, desc2, desc3};
-}
 
 vk::DeviceSize Scene::GetRequiredVertexBufferSize() const {
   vk::DeviceSize size = 0;
@@ -111,7 +76,7 @@ std::pair<std::vector<Vertex>, std::vector<GuiIdx>> Scene::Build() const {
       vertices.emplace_back(Vertex(to_glm(Vec3f(position + particles_[i].GetCenter())),
                                    to_glm(particles_colors_[i]), to_glm(position)));
     }
-    for (const auto &idx : m.GetFaces().colwise()) {
+    for (const auto& idx : m.GetFaces().colwise()) {
       indices.push_back(idx.x() + i_offset);
       indices.push_back(idx.y() + i_offset);
       indices.push_back(idx.z() + i_offset);
@@ -129,8 +94,9 @@ Scene& Scene::AddParticle(const geometry::Particle<F32>& particle, const Vec3f& 
 
 Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Field<F32, 3>> opt_normals,
                       Field<F32, 3> colors) {
-  // normals_.emplace_back(acg::geometry::Normal<F32>{mesh.GetFaces(), mesh.GetVertices()}.PerVertex());
-  if (! opt_normals.has_value()) {
+  // normals_.emplace_back(acg::geometry::Normal<F32>{mesh.GetFaces(),
+  // mesh.GetVertices()}.PerVertex());
+  if (!opt_normals.has_value()) {
     const auto& face = mesh.GetFaces();
     const auto& vert = mesh.GetVertices();
     acg::geometry::Normal<F32> normal_compute(face, vert);
@@ -143,6 +109,5 @@ Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Field<F32, 3
   meshes_.emplace_back(std::move(mesh));
   return *this;
 }
-
 
 }  // namespace acg::gui

@@ -3,7 +3,6 @@
 #include "../camera.hpp"
 #include "../point_light.hpp"
 #include "graphics_pass.hpp"
-
 namespace acg::gui {
 namespace details {
 
@@ -22,8 +21,6 @@ public:
   void CreateDescriptorSets(const GraphicsRenderPass& pass);
 
   void CreateUniformBuffers();
-
-  // TODO: Recreate Graphics Pipleine method should be supported.
 
   void CreateGraphicsPipeline(const GraphicsRenderPass& graphics_pass);
 
