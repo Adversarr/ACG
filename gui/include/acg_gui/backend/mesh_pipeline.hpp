@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../camera.hpp"
-#include "../point_light.hpp"
+#include "../light.hpp"
 #include "buffer_def.hpp"
 #include "vkcontext.hpp"
 

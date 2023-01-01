@@ -2,7 +2,7 @@
 #include "acg_gui/backend/avk.hpp"
 #include "acg_gui/backend/graphics_pass.hpp"
 #include "acg_gui/camera.hpp"
-#include "acg_gui/point_light.hpp"
+#include "acg_gui/light.hpp"
 
 namespace acg::gui::details {
 

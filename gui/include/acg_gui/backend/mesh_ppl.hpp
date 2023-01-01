@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../camera.hpp"
-#include "../point_light.hpp"
+#include "../light.hpp"
 #include "graphics_pass.hpp"
 namespace acg::gui {
 namespace details {

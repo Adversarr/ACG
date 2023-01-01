@@ -2,7 +2,7 @@
 
 #include <acg_core/geometry/particle.hpp>
 #include <acg_gui/mp_scene.hpp>
-#include <acg_gui/point_light.hpp>
+#include <acg_gui/light.hpp>
 #include <acg_gui/scene.hpp>
 #include <acg_gui/world_controller.hpp>
 using namespace acg;

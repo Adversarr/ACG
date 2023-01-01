@@ -9,7 +9,6 @@ namespace acg::geometry {
 
 /**
  * @brief Triangle Mesh Geometry.
- * TODO: Do not use this class any more!
  *
  * @tparam T the float point number in use. default = float (32-bit)
  */

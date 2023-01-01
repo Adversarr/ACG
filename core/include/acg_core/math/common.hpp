@@ -108,13 +108,13 @@ template <typename T> using TransposeType
 
 namespace types {
 template <typename Scalar, int dim = 3> using Position = Vec3<Scalar>;
-template <typename Scalar, int dim = 3> using PositionList = Field<Scalar, dim>;
+template <typename Scalar, int dim = 3> using PositionField = Field<Scalar, dim>;
 
 using Rgb = Vec3f;
-using RgbList = Field<F32, 3>;
+using RgbField = Field<F32, 3>;
 
 using Rgba = Vec4f;
-using RgbaList = Field<F32, 4>;
+using RgbaField = Field<F32, 4>;
 
 template <typename Scalar> using ScalarList = Field<Scalar, 1>;
 }  // namespace types

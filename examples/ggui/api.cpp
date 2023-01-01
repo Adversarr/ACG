@@ -83,7 +83,7 @@ std::vector<vk::CommandBuffer> Api::DrawScene() {
   cb.drawIndexed(indices.size(), 1, 0, 0, 0);
 
   wireframe_pipeline_->BeginPipeline(cb);
-  cb.setLineWidth(1.5);
+  cb.setLineWidth(1);
   cb.bindVertexBuffers(0, wireframe_vertex_buffer_->GetBuffer(), static_cast<vk::DeviceSize>(0));
   cb.bindIndexBuffer(wireframe_indice_buffer_->GetBuffer(), 0, vk::IndexType::eUint32);
   cb.drawIndexed(line_indices.size(), 1, 0, 0, 0);

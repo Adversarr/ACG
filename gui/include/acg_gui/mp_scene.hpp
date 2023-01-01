@@ -2,7 +2,7 @@
 
 #include <acg_core/geometry/particle.hpp>
 
-#include "point_light.hpp"
+#include "light.hpp"
 #include "scene.hpp"
 #include "world_controller.hpp"
 #include "backend/mesh_pipeline.hpp"

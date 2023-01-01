@@ -132,10 +132,10 @@ void GraphicsRenderPass::CreateDescriptorPool() {
   vk::DescriptorPoolSize pool_size;
   // TODO: size is not accurate.
   pool_size.setType(vk::DescriptorType::eUniformBuffer)
-      .setDescriptorCount(get_vk_context().GetSwapchainSize() * 3);
+      .setDescriptorCount(get_vk_context().GetSwapchainSize() * 3 * 3);
 
   vk::DescriptorPoolCreateInfo pool_create_info;
-  pool_create_info.setPoolSizes(pool_size).setMaxSets(get_vk_context().GetSwapchainSize());
+  pool_create_info.setPoolSizes(pool_size).setMaxSets(get_vk_context().GetSwapchainSize() * 3);
   descriptor_pool_ = get_vk_context().GetDevice().createDescriptorPool(pool_create_info);
 }
 

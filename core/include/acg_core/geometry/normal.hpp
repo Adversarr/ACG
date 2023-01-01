@@ -15,7 +15,7 @@ template <typename Scalar> class Normal {
 private:
   const topology::TriangleList& triangle_list_;
 
-  const types::PositionList<Scalar, 3>& positions_;
+  const types::PositionField<Scalar, 3>& positions_;
 
 public:
   Field<Scalar, 3> PerVertex(NormalPerVertexMode mode = NormalPerVertexMode::kArea) const noexcept;
@@ -23,7 +23,7 @@ public:
   Field<Scalar, 3> PerFace() const noexcept;
 
   Normal(const topology::TriangleList& triangle_list,
-         const types::PositionList<Scalar, 3>& vertices_position)
+         const types::PositionField<Scalar, 3>& vertices_position)
       : triangle_list_(triangle_list), positions_(vertices_position) {}
 };
 
