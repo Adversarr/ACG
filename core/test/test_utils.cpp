@@ -2,6 +2,7 @@
 
 #include <acg_utils/god/algorithms.hpp>
 #include <acg_utils/god/god.hpp>
+#include <acg_utils/result.hpp>
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -57,3 +58,22 @@ TEST_CASE("god") {
   }
 }
 
+acg::Result<int> check_is_zero(int x) {
+  if (x == 0) {
+    return acg::Result<int>::Emplace(1);
+  } else {
+    return acg::Status::kInvalidArgument;
+  }
+}
+
+TEST_CASE("Result") { 
+  auto has_result = check_is_zero(0);
+  CHECK(has_result.HasValue());
+  CHECK(static_cast<bool>(has_result));
+  CHECK(has_result.Value() == 1);
+
+  auto nohas_result = check_is_zero(1);
+  CHECK(!nohas_result.HasValue());
+  CHECK(!static_cast<bool>(nohas_result));
+  CHECK(nohas_result.Error() == acg::Status::kInvalidArgument);
+}
