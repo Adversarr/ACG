@@ -11,8 +11,6 @@ add_rules("mode.debug", "mode.release")
 set_optimize('faster')
 
 
--- add_moduledirs('xmake')
-
 
 
 includes(
