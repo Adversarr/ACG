@@ -1,7 +1,11 @@
 #include "acg_gui/backend/context.hpp"
 
+#include <acg_core/init.hpp>
 #include <acg_utils/common.hpp>
 #include <acg_utils/log.hpp>
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 #include "acg_gui/backend/window.hpp"
 
@@ -20,6 +24,17 @@ void VkContext2::Init(Config config) {
   details::context2_instance.reset(new VkContext2);
   instance_builder.set_engine_name(config.engine_name.c_str());
   instance_builder.set_app_name(config.app_name.c_str());
+  instance_builder.set_app_version(config.app_version);
+  instance_builder.set_engine_version(config.engine_version);
+  instance_builder.require_api_version(config.api_version);
+
+  // const char** glfw_extensions;
+  // uint32_t glfw_extension_count;
+  // glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+  if constexpr (acg::utils::get_platform_type() == utils::PlatformType::kApple) {
+    instance_builder.enable_extension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+  }
+
   auto& context = VkContext2::Instance();
 
   if (config.enable_validation) {
@@ -35,7 +50,8 @@ void VkContext2::Init(Config config) {
   }
 
   auto instance_result = instance_builder.build();
-  ACG_CHECK(instance_result.has_value(), "Vulkan Context Create Error");
+  ACG_CHECK(instance_result.has_value(), "Vulkan Context Create Error: {}",
+            vk::to_string(vk::Result(instance_result.full_error().vk_result)));
   auto instance = instance_result.value();
   context.instance_ = instance;
 
@@ -43,18 +59,23 @@ void VkContext2::Init(Config config) {
   auto physical_device_selector = vkb::PhysicalDeviceSelector{instance};
   if (!config.headless_mode) {
     vk::Instance ipp = instance.instance;
-    context.surface_ = details::Window::Instance().CreateWindowSurface(ipp);
+    context.surface_ = Window::Instance().CreateWindowSurface(ipp);
     physical_device_selector.set_surface(details::context2_instance->surface_);
+    ACG_INFO("Physical Device Create with surface.");
+  } else {
+    ACG_INFO("Physical device headless mode requrested.");
   }
 
   auto pd_result = physical_device_selector.select();
-  ACG_CHECK(pd_result.has_value(), "Cannot pick a suitable device.");
+  ACG_CHECK(pd_result, "Cannot pick a suitable device. {}",
+            vk::to_string(vk::Result(pd_result.full_error().vk_result)));
   auto physical_device = pd_result.value();
   context.physical_device_ = physical_device;
 
   // Create Logical Device
   auto ld_result = vkb::DeviceBuilder(physical_device).build();
-  ACG_CHECK(ld_result.has_value(), "Logical Device Create Error");
+  ACG_CHECK(ld_result.has_value(), "Logical Device Create Error:{}",
+            vk::to_string(vk::Result(ld_result.full_error().vk_result)));
   context.logical_device_ = ld_result.value();
 }
 
@@ -77,9 +98,13 @@ void VkContext2::Destroy() {
   vkb::destroy_instance(context.instance_);
 }
 
-
 void VkContext2::Config::Hook() {
-  VkContext2::Init(*this);
+  acg::details::InitHook hook;
+  hook.on_init = [this]() { VkContext2::Init(*this); };
+  hook.on_exit = []() { VkContext2::Destroy(); };
+  hook.name = "Vulkan Context2";
+  hook.priority = 10;
+  acg::details::add_hook(hook);
 }
 
 }  // namespace acg::gui

@@ -4,6 +4,14 @@
 
 #include "spdlog/logger.h"
 
+#ifndef ACG_IS_DEBUG
+#  ifdef NDEBUG
+#    define ACG_IS_DEBUG 1
+#  else
+#    define ACG_IS_DEBUG 0
+#  endif
+#endif
+
 #ifndef ACG_CHECK
 #  include <iostream>
 #  define ACG_CHECK(condition, ...)                                                  \
@@ -22,7 +30,7 @@
 #  if ACG_IS_DEBUG
 #    define ACG_DEBUG_CHECK(condition, ...) ACG_CHECK(condition, __VA_ARGS__)
 #  else
-#    define ACG_DEBUG_CHECK(condition, message, ...) ((void*) 0)
+#    define ACG_DEBUG_CHECK(condition, message, ...) ((void*)0)
 #  endif
 #endif
 
@@ -61,12 +69,12 @@ inline auto get_logger(const std::string& name) { return details::get_logger(nam
 
 #ifndef ACG_DEBUG_LOG
 // Logging methods which only takes effect in debug mode.
-#  if ACG_IS_DEBUG
+#  if NDEBUG
 #    define ACG_DEBUG_LOG(...)                                                                \
       ACG_LOG(spdlog::source_loc(__FILE__, __LINE__, static_cast<const char*>(__FUNCTION__)), \
               spdlog::level::level_enum::debug, __VA_ARGS__)
 #  else
-#    define ACG_DEBUG_LOG(...) ((void*) 0)
+#    define ACG_DEBUG_LOG(...) ((void*)0)
 #  endif
 #endif
 

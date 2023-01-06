@@ -2,11 +2,14 @@
 
 #include <spdlog/spdlog.h>
 
+#include <acg_core/init.hpp>
 #include <acg_utils/log.hpp>
 
 #include "acg_gui/backend/avk.hpp"
 
-namespace acg::gui::details {
+namespace acg::gui {
+
+std::unique_ptr<Window> window_instance;
 
 Window::Window(std::string_view title) noexcept : title_(title) {
   ACG_CHECK(glfwInit() == GLFW_TRUE, "Failed to init GLFW.");
@@ -58,6 +61,24 @@ void Window::UpdateWindowSize() {
 
 bool Window::IsKeyPressed(int glfw_key) const {
   return glfwGetKey(window_, glfw_key) == GLFW_PRESS;
+}
+
+Window& Window::Instance() noexcept { return *window_instance; }
+
+void Window::Init(const std::string& title) {
+  ACG_CHECK(window_instance.get() == nullptr, "Glfw Window Double Initialization");
+  window_instance = std::make_unique<Window>(title);
+}
+
+void Window::Destroy() { window_instance.reset(); }
+
+void Window::Hooker::Hook() const {
+  acg::details::InitHook hook;
+  hook.on_init = [this]() { Window::Init(name_); };
+  hook.on_exit = []() { Window::Destroy(); };
+  hook.name = "GLFW window";
+  hook.priority = 20;
+  acg::details::add_hook(hook);
 }
 
 }  // namespace acg::gui::details
