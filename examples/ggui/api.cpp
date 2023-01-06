@@ -65,11 +65,11 @@ std::vector<vk::CommandBuffer> Api::DrawScene() {
     line_indices.push_back(indices[i * 3 + 2]);
   }
 
-  spdlog::info("Wireframe Index Buffer size = {}", line_indices.size() * sizeof(uint32_t));
+  ACG_INFO("Wireframe Index Buffer size = {}", line_indices.size() * sizeof(uint32_t));
   for (const auto& vert : vertices) {
     line_vertices.push_back(Point(vert.position_, vert.color_));
   }
-  spdlog::info("Wireframe Vertex Buffer size = {}", line_vertices.size() * sizeof(Point));
+  ACG_INFO("Wireframe Vertex Buffer size = {}", line_vertices.size() * sizeof(Point));
 
   acg::gui::get_vk_context().CopyHostToBuffer(line_vertices.data(), *wireframe_vertex_buffer_,
                                               line_vertices.size() * sizeof(Point));
@@ -105,14 +105,14 @@ void Api::RefitBuffers() {
     new_vb = get_vk_context().CreateBuffer(
         vs, vk::BufferUsageFlagBits::eVertexBuffer,
         vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
-    spdlog::info("Created a new vertex buffer. size = {}", vs);
+    ACG_INFO("Created a new vertex buffer. size = {}", vs);
   }
   if (!indice_buffer_ || indice_buffer_->GetSize() < is) {
     is = acg::utils::align_up(is, buffer_minimum_size);
     new_ib = get_vk_context().CreateBuffer(
         is, vk::BufferUsageFlagBits::eIndexBuffer,
         vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
-    spdlog::info("Created a new index buffer. size = {}", is);
+    ACG_INFO("Created a new index buffer. size = {}", is);
   }
 
   if (new_vb || new_ib) {

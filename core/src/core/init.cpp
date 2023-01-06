@@ -1,8 +1,9 @@
 #include "acg_core/init.hpp"
+#include "acg_utils/common.hpp"
 
 #include <spdlog/spdlog.h>
 
-#include <spdlog/spdlog.h>
+#include <iostream>
 
 namespace acg::details {
 
@@ -14,36 +15,39 @@ static void sort() {
   std::sort(global_hooks.begin(), global_hooks.end(),
             [](const InitHook& l, const InitHook& r) { return l.priority > r.priority; });
 }
+
 void init() {
   sort();
-  for (const auto& cb : global_hooks) {
-    if (cb.on_init) {
-      if (cb.name) spdlog::info("Run initialize hook: {}", cb.name);
-      cb.on_init.value()();
+  for (const auto& hook : global_hooks) {
+    if (hook.on_init) {
+      if constexpr (acg::utils::is_debug_mode) {
+        if (hook.name)
+          std::cout << fmt::format("Execute initialize hook: {}", hook.name) << std::endl;
+      }
+      hook.on_init.value()();
     }
   }
 }
 
 void cleanup() {
-  for (const auto& cb : global_hooks) {
-    if (cb.on_exit) {
-      if (cb.name) spdlog::info("Run cleanup hook: {}", cb.name);
-      cb.on_exit.value()();
+  auto run_clean = [](const InitHook& hook) {
+    if (hook.on_exit) {
+      if (hook.name) std::cout << fmt::format("Execute cleanup hook: {}", hook.name) << std::endl;
+      hook.on_exit.value()();
     }
-  }
+  };
+  std::for_each(std::make_reverse_iterator(global_hooks.end()),
+                std::make_reverse_iterator(global_hooks.begin()), run_clean);
 }
-
 
 }  // namespace acg::details
 
 namespace acg {
 
-void init(int argc, char** argv) { 
-  details::init(); 
-}
+void init(int argc, char** argv) { details::init(); }
 
 /**
-  * @param
-  */
+ * @param
+ */
 void clean_up() { details::cleanup(); }
 }  // namespace acg

@@ -58,6 +58,9 @@ private:
   int height_{DEFAULT_HEIGHT_};
 
   bool resized_{false};
+
+public:
+  static Window& Instance() noexcept;
 };
 
 inline Vec2d Window::GetMousePosition() const {
@@ -75,5 +78,6 @@ inline std::pair<uint32_t, uint32_t> Window::GetWindowSize() const noexcept {
 inline GLFWwindow* Window::GetWindow() const noexcept { return window_; }
 
 inline bool Window::ShouldClose() const { return glfwWindowShouldClose(window_); }
+
 
 }  // namespace acg::gui::details

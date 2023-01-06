@@ -80,7 +80,7 @@ void FreeFall::PreRun() {
   mass_.setOnes();
 
   RegenerateScene();
-  spdlog::info("buffersize = {} + {}", scene_.GetRequiredVertexBufferSize(),
+  ACG_INFO("buffersize = {} + {}", scene_.GetRequiredVertexBufferSize(),
                scene_.GetRequiredIndexBufferSize());
   vertex_buffer_ = acg::gui::get_vk_context().CreateBuffer(
       scene_.GetRequiredVertexBufferSize(), vk::BufferUsageFlagBits::eVertexBuffer,

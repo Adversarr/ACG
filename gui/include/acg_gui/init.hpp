@@ -8,10 +8,8 @@ struct VkContextHooker {
 
   /**
   * @brief: Hook the vulkan backend context initializer and cleanuper
-  *
-  * TODO: use function to init instead of the struct
   */
-  static void Hook() noexcept;
+  void Hook() noexcept;
 };
 }
 

@@ -1,6 +1,6 @@
 #include <acg_core/init.hpp>
 #include <acg_utils/singleton.hpp>
-#include "acg_gui/hook.hpp"
+#include "acg_gui/init.hpp"
 #include "acg_gui/backend/vkcontext.hpp"
 
 namespace acg::gui::details {

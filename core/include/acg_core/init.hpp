@@ -24,7 +24,10 @@ namespace details {
 struct InitHook {
   std::optional<std::function<void()>> on_init;
   std::optional<std::function<void()>> on_exit;
+
+  // Higher priority is inited first.
   int priority;
+
   const char* name = nullptr;
 };
 

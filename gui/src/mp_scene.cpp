@@ -71,14 +71,14 @@ void MPWorldCtrl::RefitBuffers() {
     new_vb = get_vk_context().CreateBuffer(
         vs, vk::BufferUsageFlagBits::eVertexBuffer,
         vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
-    spdlog::info("Created a new vertex buffer. size = {}", vs);
+    ACG_INFO("Created a new vertex buffer. size = {}", vs);
   }
   if (!indice_buffer_ || indice_buffer_->GetSize() < is) {
     is = acg::utils::align_up(is, buffer_minimum_size_);
     new_ib = get_vk_context().CreateBuffer(
         is, vk::BufferUsageFlagBits::eIndexBuffer,
         vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
-    spdlog::info("Created a new index buffer. size = {}", is);
+    ACG_INFO("Created a new index buffer. size = {}", is);
   }
 
   if (new_vb || new_ib) {

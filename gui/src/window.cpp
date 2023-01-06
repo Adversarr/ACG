@@ -41,15 +41,12 @@ void Window::WindowResizeCallback(GLFWwindow* window, int width, int height) {
   ACG_DEBUG_LOG("Window resized. (w: {}, h: {})", width, height);
 }
 
-
-
 void Window::CursurCallback(GLFWwindow* window, double xpos, double ypos) {
   auto* w = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
 
   w->mouse_x_position_ = xpos;
   w->mouse_y_position_ = ypos;
 }
-
 
 void Window::UpdateWindowSize() {
   width_ = height_ = 0;
