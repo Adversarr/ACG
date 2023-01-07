@@ -194,6 +194,8 @@ public:
   Result(T&& data) : value_(std::move(data)), is_inited_(true) {}
 
   Result(const E& err) : error_(err), is_inited_(false) {}
+  Result(const E& err, std::string additional_message)
+      : error_(err), is_inited_(false), additional_message_(std::move(additional_message)) {}
   Result(const Result&) = delete;
   Result(Result&& another) : is_inited_(another.is_inited_) {
     if (is_inited_)
@@ -235,6 +237,8 @@ private:
     T value_;
     E error_;
   };
+
+  std::string additional_message_;
   bool is_inited_;
 };
 // NOLINTEND(google-explicit-constructor)

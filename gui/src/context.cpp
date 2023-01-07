@@ -335,7 +335,7 @@ void VkContext2::CreatePhysicalDevice() {
   ACG_INFO("Physical device picked. {}", system_info_.physical_device_info.properties.deviceName);
 }
 
-VkContext2::SystemInfo::PhysicalDeviceInfo VkContext2::GetDeviceInfo(vk::PhysicalDevice device) {
+VkContext2::SystemInfo::PhysicalDeviceInfo VkContext2::GetDeviceInfo(vk::PhysicalDevice device)  const {
   VkContext2::SystemInfo::PhysicalDeviceInfo info;
   info.properties = device.getProperties();
   info.extension_properties = device.enumerateDeviceExtensionProperties();
@@ -436,6 +436,86 @@ VkContext2::~VkContext2() {
     instance_.destroy(surface_);
   }
   instance_.destroy();
+}
+
+acg::Result<std::pair<vk::Image, vk::DeviceMemory>> VkContext2::CreateImage(
+    uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
+    vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties) const {
+  vk::ImageCreateInfo image_info{};
+  image_info.imageType = vk::ImageType::e2D;
+  image_info.extent.width = width;
+  image_info.extent.height = height;
+  image_info.extent.depth = 1;
+  image_info.mipLevels = 1;
+  image_info.arrayLayers = 1;
+  image_info.format = format;
+  image_info.tiling = tiling;
+  image_info.initialLayout = vk::ImageLayout::eUndefined;
+  image_info.usage = usage;
+  image_info.samples = vk::SampleCountFlagBits::e1;
+  image_info.sharingMode = vk::SharingMode::eExclusive;
+
+  auto image = device_.createImage(image_info);
+
+  auto mem_requirements = device_.getImageMemoryRequirements(image);
+
+  vk::MemoryAllocateInfo alloc_info{};
+  alloc_info.allocationSize = mem_requirements.size;
+  auto mt = FindMemoryType(mem_requirements.memoryTypeBits, properties);
+  if (mt.HasValue()) {
+    alloc_info.memoryTypeIndex = mt.Value();
+  } else {
+    return mt.Error();
+  }
+
+  auto mem = device_.allocateMemory(alloc_info);
+  device_.bindImageMemory(image, mem, 0);
+  return Result(std::pair{image, mem});
+}
+
+acg::Result<uint32_t> VkContext2::FindMemoryType(uint32_t type_filter,
+                                                 vk::MemoryPropertyFlags properties) const{
+  auto memory_properties = physical_device_.getMemoryProperties();
+  for (uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
+    if ((type_filter & (1 << i))
+        && (memory_properties.memoryTypes[i].propertyFlags & properties) == properties) {
+      return i;
+    }
+  }
+  return Result<uint32_t>(acg::Status::kNotFound);
+}
+
+BufferWithMemory VkContext2::CreateBufferWithMemory(vk::DeviceSize size, vk::BufferUsageFlags usage,
+                                                    vk::MemoryPropertyFlags properties) const {
+  vk::BufferCreateInfo buffer_info;
+  buffer_info.size = size;
+  buffer_info.usage = usage;
+  buffer_info.sharingMode = vk::SharingMode::eExclusive;
+  auto buf = device_.createBuffer(buffer_info);
+  auto mem_requirements = device_.getBufferMemoryRequirements(buf);
+  vk::MemoryAllocateInfo alloc_info(mem_requirements.size,
+                                    FindMemoryType(mem_requirements.memoryTypeBits, properties));
+  auto mem = device_.allocateMemory(alloc_info);
+  device_.bindBufferMemory(buf, mem, 0);
+  return BufferWithMemory(buf, mem, size);
+}
+
+void VkContext2::DestroyBufferWithMemory(BufferWithMemory &bufmem) const {
+  device_.destroy(bufmem.GetBuffer());
+  device_.free(bufmem.GetMemory());
+}
+void VkContext2::CopyHostToBuffer(const void *mem_data, BufferWithMemory &buffer_with_memory,
+                                  size_t size) const {
+  void *mapped = nullptr;
+  if (buffer_with_memory.IsMapped()) {
+    mapped = buffer_with_memory.GetMappedMemory();
+  } else {
+    mapped = device_.mapMemory(buffer_with_memory.GetMemory(), 0, buffer_with_memory.GetSize());
+  }
+  memcpy(mapped, mem_data, size);
+  if (!buffer_with_memory.IsMapped()) {
+    device_.unmapMemory(buffer_with_memory.GetMemory());
+  }
 }
 
 }  // namespace acg::gui

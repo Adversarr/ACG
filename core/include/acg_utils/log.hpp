@@ -38,10 +38,7 @@ inline auto get_logger(const std::string& name) { return details::get_logger(nam
 
 using LogLevel = spdlog::level::level_enum;
 
-inline void set_default_log_level(LogLevel lvl) {
-  get_default_logger()->set_level(lvl);
-}
-
+inline void set_default_log_level(LogLevel lvl) { get_default_logger()->set_level(lvl); }
 
 #ifndef ACG_LOG
 // Standard Logging methods.
@@ -70,21 +67,21 @@ inline void set_default_log_level(LogLevel lvl) {
 
 #ifndef ACG_CHECK
 #  include <iostream>
-#  define ACG_CHECK(condition, ...)                                              \
-    do {                                                                         \
-      bool retval = static_cast<bool>(condition);                                \
-      if (!retval) {                                                             \
-        auto msg = fmt::format(__VA_ARGS__);                                     \
-        if (acg::utils::is_logger_inited()) {                                    \
-          ACG_CRITICAL("Assertion({}) Failed: {}", #condition, msg);             \
-          ACG_CRITICAL("Occurs at {}:{}", __FILE__, __LINE__);                   \
-        } else {                                                                 \
-          std::cerr << "Assertion(" #condition ") Failed: " << msg << std::endl; \
-          std::cerr << "Occurs at " << __FILE__ << ":" << __LINE__ << std::endl; \
-          std::cerr.flush();                                                     \
-        }                                                                        \
-        std::exit(-1);                                                           \
-      }                                                                          \
+#  define ACG_CHECK(condition, ...)                                                               \
+    do {                                                                                          \
+      bool retval = static_cast<bool>(condition);                                                 \
+      if (!retval) {                                                                              \
+        auto msg = fmt::format(__VA_ARGS__);                                                      \
+        if (acg::utils::is_logger_inited()) {                                                     \
+          ACG_CRITICAL("Assertion({}) Failed: '{}', Occurs at: {}:{}", #condition, msg, __FILE__, \
+                       __LINE__);                                                                 \
+        } else {                                                                                  \
+          std::cerr << "Assertion(" #condition ") Failed: " << msg << std::endl;                  \
+          std::cerr << "Occurs at " << __FILE__ << ":" << __LINE__ << std::endl;                  \
+          std::cerr.flush();                                                                      \
+        }                                                                                         \
+        std::exit(-1);                                                                            \
+      }                                                                                           \
     } while (false)
 #endif
 

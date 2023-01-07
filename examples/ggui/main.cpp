@@ -1,9 +1,9 @@
 #include <spdlog/spdlog.h>
 
 #include <acg_core/init.hpp>
-#include <acg_gui/init.hpp>
 #include <acg_utils/init.hpp>
 #include <acg_gui/backend/context.hpp>
+#include <acg_gui/backend/graphics_context.hpp>
 
 #include "api.hpp"
 int main(int argc, char** argv) {
@@ -15,6 +15,7 @@ int main(int argc, char** argv) {
   vkctx_hooker.app_name = "Vulkan Viewer";
   vkctx_hooker.enable_validation = true;
   vkctx_hooker.Hook();
+  VkGraphicsContext::Hooker().Hook();
   acg::init(argc, argv);
   acg::clean_up();
   return 0;
