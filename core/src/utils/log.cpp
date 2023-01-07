@@ -11,6 +11,8 @@ namespace details {
 
 std::shared_ptr<spdlog::logger> default_logger;
 
+static bool is_initialized{false};
+
 std::shared_ptr<spdlog::logger>& get_default_logger(bool cached) {
   if (cached) {
     return default_logger;
@@ -44,13 +46,19 @@ void init_logger(spdlog::level::level_enum default_level, bool use_spdlog_defaul
   } else {
     ACG_INFO("Default Logger Initialized.");
   }
+  is_initialized = true;
 }
 
 void cleanup_logger() {
   // Release the default logger.
   default_logger.reset();
+  is_initialized = false;
 }
 
+
 }  // namespace details
+bool is_logger_inited() {
+  return details::is_initialized;
+}
 }  // namespace utils
 }  // namespace acg

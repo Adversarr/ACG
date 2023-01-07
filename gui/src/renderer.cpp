@@ -2,6 +2,7 @@
 #include <set>
 #include <vector>
 
+#include "acg_gui/backend/avk.hpp"
 #include "acg_gui/backend/vkcontext.hpp"
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -13,95 +14,95 @@
 #include <fstream>
 #include <vulkan/vulkan_handles.hpp>
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
-    VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-    const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pMessenger) {
-  auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-      vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
-  if (func != nullptr) {
-    return func(instance, pCreateInfo, pAllocator, pMessenger);
-  } else {
-    return VK_ERROR_EXTENSION_NOT_PRESENT;
-  }
-}
+// VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
+//     VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+//     const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pMessenger) {
+//   auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+//       vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+//   if (func != nullptr) {
+//     return func(instance, pCreateInfo, pAllocator, pMessenger);
+//   } else {
+//     return VK_ERROR_EXTENSION_NOT_PRESENT;
+//   }
+// }
 
-VKAPI_ATTR void VKAPI_CALL
-vkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger,
-                                VkAllocationCallbacks const *pAllocator) {
-  auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-      vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
-  if (func != nullptr) {
-    func(instance, messenger, pAllocator);
-  }
-}
-VKAPI_ATTR VkBool32 VKAPI_CALL debug_message_callback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-    VkDebugUtilsMessengerCallbackDataEXT const *pCallbackData, void * /*pUserData*/) {
-  auto cstr_to_string = [](const char *c) { return (c == nullptr) ? "Null" : std::string_view(c); };
+// VKAPI_ATTR void VKAPI_CALL
+// vkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger,
+//                                 VkAllocationCallbacks const *pAllocator) {
+//   auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+//       vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+//   if (func != nullptr) {
+//     func(instance, messenger, pAllocator);
+//   }
+// }
+// VKAPI_ATTR VkBool32 VKAPI_CALL debug_message_callback(
+//     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+//     VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+//     VkDebugUtilsMessengerCallbackDataEXT const *pCallbackData, void * /*pUserData*/) {
+//   auto cstr_to_string = [](const char *c) { return (c == nullptr) ? "Null" : std::string_view(c); };
 
-  fmt::memory_buffer buffer;
-  fmt::format_to(
-      std::back_inserter(buffer),
-      "{}: {}:\n"
-      "messageIDName   = <{}>\n"
-      "messageIdNumber = {}\n"
-      "message         = <{}>\n",
-      vk::to_string(static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(messageSeverity)),
-      vk::to_string(static_cast<vk::DebugUtilsMessageTypeFlagsEXT>(messageTypes)),
-      cstr_to_string(pCallbackData->pMessageIdName), pCallbackData->messageIdNumber,
-      cstr_to_string(pCallbackData->pMessage));
+//   fmt::memory_buffer buffer;
+//   fmt::format_to(
+//       std::back_inserter(buffer),
+//       "{}: {}:\n"
+//       "messageIDName   = <{}>\n"
+//       "messageIdNumber = {}\n"
+//       "message         = <{}>\n",
+//       vk::to_string(static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(messageSeverity)),
+//       vk::to_string(static_cast<vk::DebugUtilsMessageTypeFlagsEXT>(messageTypes)),
+//       cstr_to_string(pCallbackData->pMessageIdName), pCallbackData->messageIdNumber,
+//       cstr_to_string(pCallbackData->pMessage));
 
-  if (0 < pCallbackData->queueLabelCount) {
-    fmt::format_to(std::back_inserter(buffer), "\tQueue Labels:\n");
-    for (uint32_t i = 0; i < pCallbackData->queueLabelCount; i++) {
-      fmt::format_to(std::back_inserter(buffer), "\t\tlabelName = <{}>\n",
-                     cstr_to_string(pCallbackData->pQueueLabels[i].pLabelName));
-    }
-  }
-  if (0 < pCallbackData->cmdBufLabelCount) {
-    fmt::format_to(std::back_inserter(buffer), "\tCommandBuffer Labels:\n");
-    for (uint32_t i = 0; i < pCallbackData->cmdBufLabelCount; i++) {
-      fmt::format_to(std::back_inserter(buffer), "\t\tlabelName = <{}>\n",
-                     cstr_to_string(pCallbackData->pCmdBufLabels[i].pLabelName));
-    }
-  }
-  if (0 < pCallbackData->objectCount) {
-    fmt::format_to(std::back_inserter(buffer), "\tObjects:\n");
-    for (uint32_t i = 0; i < pCallbackData->objectCount; i++) {
-      fmt::format_to(
-          std::back_inserter(buffer),
-          "\t\tObject {}\n"
-          "\t\t\tobjectType   = {}\n"
-          "\t\t\tobjectHandle = {}\n"
-          "\t\t\tobjectName   = <{}>\n",
-          i, vk::to_string(static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType)),
-          pCallbackData->pObjects[i].objectHandle,
-          cstr_to_string(pCallbackData->pObjects[i].pObjectName));
-    }
-  }
-  auto s = fmt::to_string(buffer);
+//   if (0 < pCallbackData->queueLabelCount) {
+//     fmt::format_to(std::back_inserter(buffer), "\tQueue Labels:\n");
+//     for (uint32_t i = 0; i < pCallbackData->queueLabelCount; i++) {
+//       fmt::format_to(std::back_inserter(buffer), "\t\tlabelName = <{}>\n",
+//                      cstr_to_string(pCallbackData->pQueueLabels[i].pLabelName));
+//     }
+//   }
+//   if (0 < pCallbackData->cmdBufLabelCount) {
+//     fmt::format_to(std::back_inserter(buffer), "\tCommandBuffer Labels:\n");
+//     for (uint32_t i = 0; i < pCallbackData->cmdBufLabelCount; i++) {
+//       fmt::format_to(std::back_inserter(buffer), "\t\tlabelName = <{}>\n",
+//                      cstr_to_string(pCallbackData->pCmdBufLabels[i].pLabelName));
+//     }
+//   }
+//   if (0 < pCallbackData->objectCount) {
+//     fmt::format_to(std::back_inserter(buffer), "\tObjects:\n");
+//     for (uint32_t i = 0; i < pCallbackData->objectCount; i++) {
+//       fmt::format_to(
+//           std::back_inserter(buffer),
+//           "\t\tObject {}\n"
+//           "\t\t\tobjectType   = {}\n"
+//           "\t\t\tobjectHandle = {}\n"
+//           "\t\t\tobjectName   = <{}>\n",
+//           i, vk::to_string(static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType)),
+//           pCallbackData->pObjects[i].objectHandle,
+//           cstr_to_string(pCallbackData->pObjects[i].pObjectName));
+//     }
+//   }
+//   auto s = fmt::to_string(buffer);
 
-  switch (messageSeverity) {
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-      spdlog::error("{}", s);
-      break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-      spdlog::warn("{}", s);
-      break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-      spdlog::info("{}", s);
-      break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-      spdlog::debug("{}", s);
-      break;
-    default:
-      // Not valid bit.
-      break;
-  };
+//   switch (messageSeverity) {
+//     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+//       spdlog::error("{}", s);
+//       break;
+//     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+//       spdlog::warn("{}", s);
+//       break;
+//     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+//       spdlog::info("{}", s);
+//       break;
+//     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+//       spdlog::debug("{}", s);
+//       break;
+//     default:
+//       // Not valid bit.
+//       break;
+//   };
 
-  return false;
-}
+//   return false;
+// }
 
 namespace acg::gui {
 
