@@ -92,6 +92,10 @@ private:
   MeshUniform ubo_;
 
 public:
+  inline vk::PipelineLayout GetPipelineLayout() const {
+    return pipeline_layout_;
+  }
+
   inline MeshPipeline& SetPolygonMode(vk::PolygonMode polygon_mode) noexcept {
     config_.polygon_mode_ = polygon_mode;
     return *this;

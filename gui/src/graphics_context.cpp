@@ -172,7 +172,7 @@ void VkGraphicsContext::CreateSyncObjects() {
 
 void VkGraphicsContext::CleanupSwapchain() {
   auto &device = VkContext2::Instance().device_;
-  for (const auto &view : swapchain_image_views_) {
+  for (auto &view : swapchain_image_views_) {
     device.destroy(view);
   }
   swapchain_image_views_.clear();
@@ -294,8 +294,7 @@ void VkGraphicsContext::Hooker::Hook() {
   acg::details::add_hook(hook);
 }
 
-VkGraphicsContext::VkGraphicsContext(Hooker config):
-  config_(config) {
+VkGraphicsContext::VkGraphicsContext(Hooker config) : config_(config) {
   CreateCommandPool();
   CreateSwapchain();
   CreateImageViews();
@@ -303,8 +302,9 @@ VkGraphicsContext::VkGraphicsContext(Hooker config):
 }
 
 VkGraphicsContext::~VkGraphicsContext() {
-  CleanupSwapchain();
   auto device = VkContext2::Instance().device_;
+  device.waitIdle();
+  CleanupSwapchain();
   for (auto &sync : syncs_) {
     device.destroy(sync.image_available);
     device.destroy(sync.render_finished);
@@ -323,21 +323,22 @@ bool VkGraphicsContext::EndDraw(std::vector<vk::CommandBuffer> command_buffers) 
       .setPWaitDstStageMask(&wait_stages)
       .setCommandBuffers(command_buffers)
       .setSignalSemaphores(signal_sem);
-  VkContext2::Instance().graphics_queue_.submit(submit_info, syncs_[current_frame_].in_flight_fence);
+  VkContext2::Instance().graphics_queue_.submit(submit_info,
+                                                syncs_[current_frame_].in_flight_fence);
 
   vk::PresentInfoKHR present_info;
   present_info.setWaitSemaphores(signal_sem)
       .setSwapchains(swapchain_)
       .setPImageIndices(&current_image_index_);
 
-  auto& window = Window::Instance();
+  auto &window = Window::Instance();
   auto result = VkContext2::Instance().present_queue_.presentKHR(&present_info);
-  bool need_recreate_swapchain{false};
+  bool need_recreate_swapchain = false;
   if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR
       || window.IsResized()) {
+    ACG_DEBUG_LOG("Set Recreate Swapchain. result is {}", vk::to_string(result));
     window.ResetResizeFlag();
     need_recreate_swapchain = true;
-    ACG_DEBUG_LOG("Set Recreate Swapchain.");
   } else {
     ACG_CHECK(result == vk::Result::eSuccess, "Failed to present swapchain image");
   }

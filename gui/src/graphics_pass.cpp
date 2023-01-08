@@ -122,8 +122,8 @@ void GraphicsRenderPass::CreateDescriptorPool() {
 }
 
 void GraphicsRenderPass::Destroy() {
-  DestroySwapchain();
   auto device = VkContext2::Instance().device_;
+  DestroySwapchain();
   device.destroy(ub_descriptor_pool_);
   device.destroy(render_pass_);
 }

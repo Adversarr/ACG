@@ -177,9 +177,12 @@ void VkContext2::CreateInstance() {
     vk::DebugUtilsMessengerCreateInfoEXT info;
     info.messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
                            | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
+    // | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo
+    // | vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose;
     info.messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
                        | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
-                       | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
+                       | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
+                       | vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding;
     info.pfnUserCallback = debug_message_callback;
     info.pUserData = nullptr;  // Optional
     auto result = instance_.createDebugUtilsMessengerEXT(&info, nullptr, &debug_messenger_);
@@ -343,13 +346,13 @@ VkContext2::SystemInfo::PhysicalDeviceInfo VkContext2::GetDeviceInfo(
   int i = 0;
   for (const auto &family : device.getQueueFamilyProperties()) {
     if (family.queueCount > 0) {
-      if (family.queueFlags & vk::QueueFlagBits::eGraphics) {
+      if (!(info.graphics_family) && family.queueFlags & vk::QueueFlagBits::eGraphics) {
         info.graphics_family = i;
       }
-      if (family.queueFlags & vk::QueueFlagBits::eCompute) {
+      if (!(info.compute_family) && family.queueFlags & vk::QueueFlagBits::eCompute) {
         info.compute_family = i;
       }
-      if (family.queueFlags & vk::QueueFlagBits::eTransfer) {
+      if (!(info.transfer_family) && family.queueFlags & vk::QueueFlagBits::eTransfer) {
         info.transfer_family = i;
       }
     }
@@ -357,7 +360,9 @@ VkContext2::SystemInfo::PhysicalDeviceInfo VkContext2::GetDeviceInfo(
     if (surface_) {
       bool has_surface_support = device.getSurfaceSupportKHR(i, surface_);
       if (has_surface_support) {
-        info.present_family = i;
+        if (!info.present_family) {
+          info.present_family = i;
+        }
       }
 
       info.surface_capabilities = device.getSurfaceCapabilitiesKHR(surface_);
@@ -494,8 +499,9 @@ BufferWithMemory VkContext2::CreateBufferWithMemory(vk::DeviceSize size, vk::Buf
   buffer_info.sharingMode = vk::SharingMode::eExclusive;
   auto buf = device_.createBuffer(buffer_info);
   auto mem_requirements = device_.getBufferMemoryRequirements(buf);
-  vk::MemoryAllocateInfo alloc_info(mem_requirements.size,
-                                    FindMemoryType(mem_requirements.memoryTypeBits, properties));
+  auto mem_type = FindMemoryType(mem_requirements.memoryTypeBits, properties);
+  ACG_CHECK(mem_type.HasValue(), "Failed to find a memory type.");
+  vk::MemoryAllocateInfo alloc_info(mem_requirements.size, mem_type.Value());
   auto mem = device_.allocateMemory(alloc_info);
   device_.bindBufferMemory(buf, mem, 0);
   return BufferWithMemory(buf, mem, size);
@@ -508,6 +514,8 @@ void VkContext2::DestroyBufferWithMemory(BufferWithMemory &bufmem) const {
 void VkContext2::CopyHostToBuffer(const void *mem_data, BufferWithMemory &buffer_with_memory,
                                   size_t size) const {
   void *mapped = nullptr;
+  ACG_CHECK(buffer_with_memory.GetSize() >= size, "Buffer size is less than required. {} < {}",
+            buffer_with_memory.GetSize(), size);
   if (buffer_with_memory.IsMapped()) {
     mapped = buffer_with_memory.GetMappedMemory();
   } else {
@@ -534,6 +542,5 @@ acg::Result<vk::Format> VkContext2::FindSupportedFormat(const std::vector<vk::Fo
   }
   return {acg::Status::kNotFound};
 }
-
 
 }  // namespace acg::gui

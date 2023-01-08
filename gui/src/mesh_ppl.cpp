@@ -41,8 +41,9 @@ std::vector<vk::VertexInputAttributeDescription> MeshVertex::GetAttributeDescrip
   return {desc1, desc2, desc3, desc4};
 }
 
-MeshPipeline::MeshPipeline(const GraphicsRenderPass &pass, Config config):
-  config_(config) { Init(pass); }
+MeshPipeline::MeshPipeline(const GraphicsRenderPass &pass, Config config) : config_(config) {
+  Init(pass);
+}
 
 MeshPipeline::~MeshPipeline() { Destroy(); }
 
@@ -54,7 +55,7 @@ void MeshPipeline::Init(const GraphicsRenderPass &graphics_pass) {
 }
 
 void MeshPipeline::Destroy() {
-  for (auto ub: uniform_buffers_) {
+  for (auto ub : uniform_buffers_) {
     VkContext2::Instance().DestroyBufferWithMemory(ub);
   }
   uniform_buffers_.clear();
@@ -180,8 +181,7 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
   push_constant.size = sizeof(MeshPushConstants);
   // this push constant range is accessible only in the vertex shader
   push_constant.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
-  pipeline_layout_info.setPPushConstantRanges(&push_constant)
-    .setPushConstantRangeCount(1);
+  pipeline_layout_info.setPPushConstantRanges(&push_constant).setPushConstantRangeCount(1);
 
   pipeline_layout_ = VkContext2::Instance().device_.createPipelineLayout(pipeline_layout_info);
   vk::GraphicsPipelineCreateInfo info;
@@ -248,6 +248,7 @@ void MeshPipeline::Recreate(const GraphicsRenderPass &graphics_pass) {
   // Setup Rasterization
   vk::PipelineRasterizationStateCreateInfo rasterizer_info;
   rasterizer_info.setDepthBiasEnable(VK_FALSE)
+      .setLineWidth(1.0)
       .setRasterizerDiscardEnable(VK_FALSE)
       .setPolygonMode(config_.polygon_mode_)
       .setCullMode(config_.cull_mode_)
