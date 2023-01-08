@@ -70,7 +70,7 @@ void MeshPipeline::CreateUniformBuffers() {
     auto buffer = VkContext2::Instance().CreateBufferWithMemory(
         buffer_size, vk::BufferUsageFlagBits::eUniformBuffer,
         vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-    uniform_buffers_.emplace_back(buffer);
+    uniform_buffers_.push_back(buffer);
   }
 }
 
@@ -355,7 +355,7 @@ void MeshPipeline::UpdateUbo(bool fast) {
     VkContext2::Instance().device_.waitIdle();
   }
 
-  for (auto &ub : uniform_buffers_) {
+  for (auto ub : uniform_buffers_) {
     VkContext2::Instance().CopyHostToBuffer(&ubo_, ub, sizeof(ubo_));
   }
 }

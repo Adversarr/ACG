@@ -404,17 +404,17 @@ void VkContext2::CreateDevice() {
   ACG_CHECK(result == vk::Result::eSuccess, "Failed to create vulkan logical device: {}",
             vk::to_string(result));
   // setup queue:
-  if (system_info_.physical_device_info.graphics_family) {
+  if (system_info_.physical_device_info.graphics_family && init_config_.require_graphics_queue) {
     graphics_queue_
         = device_.getQueue(system_info_.physical_device_info.graphics_family.value(), 0);
   }
-  if (system_info_.physical_device_info.present_family) {
+  if (system_info_.physical_device_info.present_family && init_config_.require_present_queue) {
     present_queue_ = device_.getQueue(system_info_.physical_device_info.present_family.value(), 0);
   }
-  if (system_info_.physical_device_info.compute_family) {
+  if (system_info_.physical_device_info.compute_family && init_config_.require_compute_queue) {
     compute_queue_ = device_.getQueue(system_info_.physical_device_info.compute_family.value(), 0);
   }
-  if (system_info_.physical_device_info.transfer_family) {
+  if (system_info_.physical_device_info.transfer_family && init_config_.require_transfer_queue) {
     transfer_queue_
         = device_.getQueue(system_info_.physical_device_info.transfer_family.value(), 0);
   }
@@ -511,7 +511,7 @@ void VkContext2::CopyHostToBuffer(const void *mem_data, BufferWithMemory &buffer
   if (buffer_with_memory.IsMapped()) {
     mapped = buffer_with_memory.GetMappedMemory();
   } else {
-    mapped = device_.mapMemory(buffer_with_memory.GetMemory(), 0, buffer_with_memory.GetSize());
+    mapped = device_.mapMemory(buffer_with_memory.GetMemory(), 0, VK_WHOLE_SIZE);
   }
   memcpy(mapped, mem_data, size);
   if (!buffer_with_memory.IsMapped()) {

@@ -233,6 +233,7 @@ void VkGraphicsContext::EndSingleTimeCommand(vk::CommandBuffer buffer) const {
   VkContext2::Instance().graphics_queue_.waitIdle();
   VkContext2::Instance().device_.freeCommandBuffers(graphics_command_pool_, buffer);
 }
+
 void VkGraphicsContext::TransitionImageLayout(vk::Image image, vk::Format /*format*/,
                                               vk::ImageLayout oldLayout,
                                               vk::ImageLayout newLayout) const {
