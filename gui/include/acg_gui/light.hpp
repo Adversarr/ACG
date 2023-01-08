@@ -8,5 +8,9 @@ struct Light {
   Vec3f light_color_{0.9, 0.9, 0.9};
   Vec3f ambient_light_color_{0.2, 0.2, 0.2};
   F32 ambient_light_density_{.01};
+
+  // Parallel Lighting:
+  Vec3f parallel_light_color_{0, 0, 0};
+  Vec3f parallel_light_dir_{0, 0, 0};
 };
-}
+}  // namespace acg::gui

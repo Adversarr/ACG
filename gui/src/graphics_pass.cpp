@@ -2,38 +2,30 @@
 
 #include <fstream>
 
+#include "acg_gui/backend/context.hpp"
+#include "acg_gui/backend/graphics_context.hpp"
 #include "acg_gui/convent.hpp"
 
 namespace acg::gui::details {
 
-GraphicsRenderPass::GraphicsRenderPass() { Init(); }
+GraphicsRenderPass::GraphicsRenderPass(GraphicsRenderPass::InitConfig config)
+    : init_config_(config) {
+  Init();
+}
 
-GraphicsRenderPass::~GraphicsRenderPass() { Cleanup(); }
+GraphicsRenderPass::~GraphicsRenderPass() { Destroy(); }
 
 void GraphicsRenderPass::Init() {
-  if (is_inited_) {
-    return;
-  }
-  CreateCommandPool();
   CreateRenderPass();
-  CreateDescriptorSetLayout();
   CreateDepthResources();
   CreateFramebuffers();
   CreateCommandBuffers();
   CreateDescriptorPool();
-  is_inited_ = true;
-}
-
-void GraphicsRenderPass::CreateCommandPool() {
-  vk::CommandPoolCreateInfo pool_info;
-  pool_info.setQueueFamilyIndex(get_vk_context().GetGraphicsFamily())
-      .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-  command_pool_ = get_vk_context().GetDevice().createCommandPool(pool_info);
 }
 
 void GraphicsRenderPass::CreateRenderPass() {
   vk::AttachmentDescription color_attachment;
-  color_attachment.setFormat(get_vk_context().GetSwapchainImageFormat())
+  color_attachment.setFormat(VkGraphicsContext::Instance().swapchain_image_format_)
       .setSamples(vk::SampleCountFlagBits::e1)
       .setLoadOp(vk::AttachmentLoadOp::eClear)
       .setStoreOp(vk::AttachmentStoreOp::eStore)
@@ -41,7 +33,11 @@ void GraphicsRenderPass::CreateRenderPass() {
       .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
       .setInitialLayout(vk::ImageLayout::eUndefined)
       .setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
-
+  if (init_config_.is_present) {
+    color_attachment.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+  } else {
+    color_attachment.setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
+  }
   vk::AttachmentReference color_attachment_ref;
   color_attachment_ref.setAttachment(0).setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
@@ -78,81 +74,62 @@ void GraphicsRenderPass::CreateRenderPass() {
   vk::RenderPassCreateInfo info;
   auto attachments = std::array{color_attachment, depth_attachment};
   info.setAttachments(attachments).setSubpasses(subpass).setDependencies(dependency);
-  render_pass_ = get_vk_context().GetDevice().createRenderPass(info);
-}
-
-void GraphicsRenderPass::CreateDescriptorSetLayout() {
-  vk::DescriptorSetLayoutBinding ubo_layout_binding;
-  ubo_layout_binding.setBinding(0)
-      .setDescriptorCount(1)
-      .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-      .setPImmutableSamplers(nullptr)
-      .setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
-
-  vk::DescriptorSetLayoutCreateInfo layout_create_info;
-  layout_create_info.setBindings(ubo_layout_binding);
-  descriptor_set_layout_
-      = get_vk_context().GetDevice().createDescriptorSetLayout(layout_create_info);
+  auto result = VkContext2::Instance().device_.createRenderPass(&info, nullptr, &render_pass_);
+  ACG_CHECK(result == vk::Result::eSuccess, "Failed to create graphics render pass: {}",
+            vk::to_string(result));
 }
 
 void GraphicsRenderPass::CreateDepthResources() {
   auto depth_format = FindDepthFormat();
+  auto extent = VkGraphicsContext::Instance().swapchain_extent_;
   ACG_DEBUG_LOG("Depth format = {}", vk::to_string(depth_format));
-  std::tie(depth_image_, depth_image_memory_) = get_vk_context().CreateImage(
-      get_vk_context().GetSwapchainExtent().width, get_vk_context().GetSwapchainExtent().height,
-      depth_format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment,
-      vk::MemoryPropertyFlagBits::eDeviceLocal);
-  depth_image_view_ = get_vk_context().CreateImageView(depth_image_, depth_format,
-                                                       vk::ImageAspectFlagBits::eDepth);
+  auto result = VkContext2::Instance().CreateImage(
+      extent.width, extent.height, depth_format, vk::ImageTiling::eOptimal,
+      vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal);
+  ACG_CHECK(result, "Failed to create depth image");
+  std::tie(depth_image_, depth_image_memory_) = result.Value();
+  depth_image_view_ = VkGraphicsContext::Instance().CreateImageView(
+      depth_image_, depth_format, vk::ImageAspectFlagBits::eDepth);
 }
 
 void GraphicsRenderPass::CreateFramebuffers() {
-  for (auto imageview : get_vk_context().GetSwapchainImageviews()) {
+  auto extent = VkGraphicsContext::Instance().swapchain_extent_;
+  for (auto imageview : VkGraphicsContext::Instance().swapchain_image_views_) {
     auto attachments = std::array{imageview, depth_image_view_};
-
     vk::FramebufferCreateInfo info;
     info.setRenderPass(render_pass_)
         .setAttachments(attachments)
-        .setWidth(get_vk_context().GetSwapchainExtent().width)
-        .setHeight(get_vk_context().GetSwapchainExtent().height)
+        .setWidth(extent.width)
+        .setHeight(extent.height)
         .setLayers(1);
-    framebuffers_.emplace_back(get_vk_context().GetDevice().createFramebuffer(info));
+    framebuffers_.emplace_back(VkContext2::Instance().device_.createFramebuffer(info));
   }
 }
 
 void GraphicsRenderPass::CreateCommandBuffers() {
   vk::CommandBufferAllocateInfo info;
-  info.setCommandPool(command_pool_)
-      .setCommandBufferCount(get_vk_context().GetSwapchainSize())
+  info.setCommandPool(VkGraphicsContext::Instance().graphics_command_pool_)
+      .setCommandBufferCount(VkGraphicsContext::Instance().swapchain_size_)
       .setLevel(vk::CommandBufferLevel::ePrimary);
-  command_buffers_ = get_vk_context().GetDevice().allocateCommandBuffers(info);
+  command_buffers_ = VkContext2::Instance().device_.allocateCommandBuffers(info);
 }
 
 void GraphicsRenderPass::CreateDescriptorPool() {
-  vk::DescriptorPoolSize pool_size;
-  // TODO: size is not accurate.
-  pool_size.setType(vk::DescriptorType::eUniformBuffer)
-      .setDescriptorCount(get_vk_context().GetSwapchainSize() * 3 * 3);
-
   vk::DescriptorPoolCreateInfo pool_create_info;
-  pool_create_info.setPoolSizes(pool_size).setMaxSets(get_vk_context().GetSwapchainSize() * 3);
-  descriptor_pool_ = get_vk_context().GetDevice().createDescriptorPool(pool_create_info);
+  pool_create_info.setPoolSizes(init_config_.required_descriptor_sizes)
+      .setMaxSets(init_config_.max_descriptor_set_count);
+  ub_descriptor_pool_ = VkContext2::Instance().device_.createDescriptorPool(pool_create_info);
 }
 
-void GraphicsRenderPass::Cleanup() {
-  if (!is_inited_) {
-    return;
-  }
-  CleanupSwapchain();
-  auto device = get_vk_context().GetDevice();
-  device.destroy(descriptor_set_layout_);
-  device.destroy(descriptor_pool_);
+void GraphicsRenderPass::Destroy() {
+  DestroySwapchain();
+  auto device = VkContext2::Instance().device_;
+  device.destroy(ub_descriptor_pool_);
   device.destroy(render_pass_);
-  device.destroy(command_pool_);
 }
 
-void GraphicsRenderPass::CleanupSwapchain() {
-  auto device = get_vk_context().GetDevice();
+void GraphicsRenderPass::DestroySwapchain() {
+  auto device = VkContext2::Instance().device_;
   // Depth Resources
   device.destroy(depth_image_);
   device.destroy(depth_image_view_);
@@ -165,15 +142,15 @@ void GraphicsRenderPass::CleanupSwapchain() {
 }
 
 void GraphicsRenderPass::RecreateSwapchain() {
-  CleanupSwapchain();
+  DestroySwapchain();
   CreateDepthResources();
   CreateFramebuffers();
 }
 
 vk::CommandBuffer &GraphicsRenderPass::BeginRender() {
-  ACG_CHECK(!is_render_pass_begin_, "Render pass has begin.");
-  auto extent = get_vk_context().GetSwapchainExtent();
-  auto current_index = get_vk_context().GetCurrentIndex();
+  ACG_CHECK(!is_begin_, "Render pass has begin.");
+  auto extent = VkGraphicsContext::Instance().swapchain_extent_;
+  auto current_index = VkGraphicsContext::Instance().current_frame_;
   auto &current_command_buffer = command_buffers_[current_index];
   auto clear_value = std::array<vk::ClearValue, 2>{background_color_, depth_stencil_value_};
 
@@ -184,30 +161,35 @@ vk::CommandBuffer &GraphicsRenderPass::BeginRender() {
   // Begin Render Pass
   vk::RenderPassBeginInfo render_pass_info;
   render_pass_info.renderPass = render_pass_;
-  render_pass_info.framebuffer = framebuffers_[get_vk_context().GetAcquiredImageIndex()];
+  render_pass_info.framebuffer = framebuffers_[VkGraphicsContext::Instance().current_image_index_];
   render_pass_info.renderArea.extent = extent;
   render_pass_info.renderArea.offset.setX(0);
   render_pass_info.renderArea.offset.setY(0);
   render_pass_info.setClearValues(clear_value);
   current_command_buffer.beginRenderPass(render_pass_info, vk::SubpassContents::eInline);
-  is_render_pass_begin_ = true;
+  is_begin_ = true;
   return current_command_buffer;
 }
 
 vk::CommandBuffer &GraphicsRenderPass::EndRender() {
-  ACG_CHECK(is_render_pass_begin_, "Render pass has not begin.");
-  auto &current_command_buffer = command_buffers_[get_vk_context().GetCurrentIndex()];
+  ACG_CHECK(is_begin_, "Render pass has not begin.");
+  auto &current_command_buffer = command_buffers_[VkGraphicsContext::Instance().current_frame_];
   current_command_buffer.endRenderPass();
   current_command_buffer.end();
-  is_render_pass_begin_ = false;
+  is_begin_ = false;
   return current_command_buffer;
 }
 
-vk::Format GraphicsRenderPass::FindDepthFormat() const {
-  vk::Format depth_format = get_vk_context().FindSupportedFormat(
+vk::CommandBuffer &GraphicsRenderPass::GetCurrentFrameCommandBuffer() {
+  return command_buffers_[VkGraphicsContext::Instance().current_frame_];
+}
+
+vk::Format GraphicsRenderPass::FindDepthFormat() {
+  acg::Result<vk::Format> depth_format = VkContext2::Instance().FindSupportedFormat(
       {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
       vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits::eDepthStencilAttachment);
-  return depth_format;
+  ACG_CHECK(depth_format.HasValue(), "Failed to find depth format.");
+  return depth_format.Value();
 }
 
 }  // namespace acg::gui::details

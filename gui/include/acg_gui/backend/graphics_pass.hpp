@@ -11,11 +11,13 @@ namespace details {
 
 class GraphicsRenderPass {
 public:
-  class Builder;
+  struct InitConfig {
+    std::vector<vk::DescriptorPoolSize> required_descriptor_sizes;
+    uint32_t max_descriptor_set_count;
+    bool is_present{true};
+  };
 
   ~GraphicsRenderPass();
-
-  void RecreateSwapchain();
 
   /**
    * @brief Begin render pass, and return the command buffer in use.
@@ -35,26 +37,29 @@ public:
 
   void SetDepthStencilValue(F32 depth);
 
-private:
-  explicit GraphicsRenderPass();
+  explicit GraphicsRenderPass(InitConfig config);
 
+  vk::CommandBuffer & GetCurrentFrameCommandBuffer();
+
+  void RecreateSwapchain();
+
+private:
   void Init();
-  void Cleanup();
-  void CreateCommandPool();
+  void Destroy();
   void CreateRenderPass();
-  void CreateDescriptorSetLayout();
   void CreateDepthResources();
   void CreateFramebuffers();
   void CreateCommandBuffers();
   void CreateDescriptorPool();
-  void CleanupSwapchain();
+  void DestroySwapchain();
 
   // Private Helpers:
-  vk::Format FindDepthFormat() const;
+  static vk::Format FindDepthFormat();
 
+  // Initialize config
+  const InitConfig init_config_;
   // Render pass and Pipeline
-  bool is_inited_{false};
-  bool is_render_pass_begin_{false};
+  bool is_begin_{false};
 
   vk::ClearColorValue background_color_{std::array{0.0f, 0.0f, 0.0f, 1.0f}};
   vk::ClearDepthStencilValue depth_stencil_value_{{1.0f, 0}};
@@ -66,29 +71,17 @@ private:
 
   vk::RenderPass render_pass_;
 
-  vk::DescriptorPool descriptor_pool_;
   // UBO Descriptor pool
-  vk::DescriptorSetLayout descriptor_set_layout_;
-  std::vector<vk::DescriptorSet> descriptor_sets_;
-
-  vk::CommandPool command_pool_;
+  vk::DescriptorPool ub_descriptor_pool_;
+  
+  // Command buffers
   std::vector<vk::CommandBuffer> command_buffers_;
 
 public:
   inline vk::RenderPass GetRenderPass() const { return render_pass_; }
 
-  inline vk::DescriptorPool GetDescriptorPool() const { return descriptor_pool_; }
+  inline vk::DescriptorPool GetDescriptorPool() const { return ub_descriptor_pool_; }
 };
-
-class GraphicsRenderPass::Builder {
-public:
-  inline static std::unique_ptr<GraphicsRenderPass> Build() {
-    auto retval = std::unique_ptr<GraphicsRenderPass>(new GraphicsRenderPass);
-    retval->Init();
-    return retval;
-  }
-};
-
 
 inline void GraphicsRenderPass::SetBackgroundColor(acg::types::Rgba color) {
   background_color_.setFloat32(std::array<F32, 4>{color.x(), color.y(), color.z(), color.w()});

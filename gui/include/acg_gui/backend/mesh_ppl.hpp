@@ -2,19 +2,58 @@
 
 #include "../camera.hpp"
 #include "../light.hpp"
+#include "graphics_context.hpp"
 #include "graphics_pass.hpp"
+
 namespace acg::gui {
 namespace details {
 
+struct MeshVertex {
+  glm::vec3 position_;
+  glm::vec3 color_;
+  glm::vec3 normal_;
+  glm::vec2 uv_;
+
+  static std::vector<vk::VertexInputBindingDescription> GetBindingDescriptions();
+  static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions();
+};
+
+// Vulkan states that, Push constant support at least 128 bytes.
+struct MeshPushConstants {
+  // 64B
+  glm::mat4 model;
+  // 4 * 4B
+  // Options[0] => use double side lighting
+  // Options[1] => specular shineness
+  int options[4];
+};
+
+// Vulkan states that, Uniform buffer support at least 16384 bytes.
+struct MeshUniform {
+  alignas(16) glm::mat4 view;
+  alignas(16) glm::mat4 projection;
+  alignas(16) glm::vec3 eye_position;
+  alignas(16) glm::vec3 point_light_pos;
+  alignas(16) glm::vec4 point_light_color;
+  alignas(16) glm::vec3 parallel_light_dir;
+  alignas(16) glm::vec4 parallel_light_color;
+  alignas(16) glm::vec4 ambient_light_color;
+};
+
 class MeshPipeline {
 public:
-  class Builder;
+  struct Config {
+    vk::PolygonMode polygon_mode_{vk::PolygonMode::eFill};
+    vk::CullModeFlags cull_mode_{vk::CullModeFlagBits::eNone};
+    vk::FrontFace front_face_{vk::FrontFace::eCounterClockwise};
+    bool use_push_constants{true};
+  };
 
   void SetCamera(const Camera& cam);
 
   void SetLight(const Light& light);
 
-  void CleanUp();
+  void Destroy();
 
   void CreateDescriptorSetLayout();
 
@@ -34,49 +73,39 @@ public:
 
   ~MeshPipeline();
 
+  explicit MeshPipeline(const GraphicsRenderPass& graphics_pass, Config config);
+
 private:
-  MeshPipeline() = default;
   void Init(const GraphicsRenderPass& graphics_pass);
-  bool is_inited_{false};
 
   std::vector<vk::DescriptorSet> ubo_descriptor_sets_;
-
   vk::DescriptorSetLayout descriptor_set_layout_;
   vk::PipelineLayout pipeline_layout_;
   vk::Pipeline pipeline_;
 
-  vk::PolygonMode polygon_mode_{vk::PolygonMode::eFill};
-  vk::CullModeFlags cull_mode_{vk::CullModeFlagBits::eNone};
-  vk::FrontFace front_face_{vk::FrontFace::eCounterClockwise};
+  Config config_;
+  std::vector<BufferWithMemory> uniform_buffers_;
+  std::vector<BufferWithMemory> vertex_buffers_;
+  std::vector<BufferWithMemory> index_buffers_;
+  std::vector<MeshPushConstants> push_constants_;
 
-  std::vector<std::unique_ptr<VkContext::BufMem>> uniform_buffers_;
-  Ubo ubo_;
+  MeshUniform ubo_;
 
 public:
   inline MeshPipeline& SetPolygonMode(vk::PolygonMode polygon_mode) noexcept {
-    polygon_mode_ = polygon_mode;
+    config_.polygon_mode_ = polygon_mode;
     return *this;
   }
 
   inline MeshPipeline& SetCullMode(vk::CullModeFlags cull_mode) noexcept {
-    cull_mode_ = cull_mode;
+    config_.cull_mode_ = cull_mode;
     return *this;
   }
 
   inline MeshPipeline& SetFrontFace(vk::FrontFace front) noexcept {
-    front_face_ = front;
+    config_.front_face_ = front;
     return *this;
   }
 };
-
-class MeshPipeline::Builder {
-public:
-  inline std::unique_ptr<MeshPipeline> Build(const GraphicsRenderPass& r) const {
-    auto retval = std::unique_ptr<MeshPipeline>(new MeshPipeline);
-    retval->Init(r);
-    return retval;
-  }
-};
-
 }  // namespace details
 }  // namespace acg::gui

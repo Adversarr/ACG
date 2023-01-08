@@ -5,7 +5,7 @@
 #include "spdlog/logger.h"
 
 #ifndef ACG_IS_DEBUG
-#  ifdef NDEBUG
+#  ifndef NDEBUG
 #    define ACG_IS_DEBUG 1
 #  else
 #    define ACG_IS_DEBUG 0

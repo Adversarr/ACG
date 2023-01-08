@@ -4,7 +4,6 @@
 #include <acg_utils/result.hpp>
 #include <optional>
 #include <vulkan/vulkan.hpp>
-
 namespace acg::gui {
 
 class BufferWithMemory {
@@ -12,7 +11,7 @@ public:
   BufferWithMemory(vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize size)
       : buffer_(buffer), memory_(memory), size_(size) {}
 
-  inline bool IsMapped() const { return mapped_memory_ == nullptr; }
+  inline bool IsMapped() const { return mapped_memory_ != nullptr; }
 
   inline void SetMappedMemory(void* memory) { mapped_memory_ = memory; }
 
@@ -78,19 +77,25 @@ public:
   VkContext2(VkContext2&&) = delete;
   VkContext2(VkContext2 const&) = delete;
 
+  acg::Result<vk::Format> FindSupportedFormat(const std::vector<vk::Format>& candidates,
+                                              vk::ImageTiling tiling,
+                                              vk::FormatFeatureFlags features) const;
+
   acg::Result<std::pair<vk::Image, vk::DeviceMemory>> CreateImage(
       uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
       vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties) const;
 
-  acg::Result<uint32_t> FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties) const;
+  acg::Result<uint32_t> FindMemoryType(uint32_t type_filter,
+                                       vk::MemoryPropertyFlags properties) const;
 
   BufferWithMemory CreateBufferWithMemory(vk::DeviceSize size, vk::BufferUsageFlags usage,
                                           vk::MemoryPropertyFlags properties) const;
 
   void DestroyBufferWithMemory(BufferWithMemory& bufmem) const;
 
-  void CopyHostToBuffer(const void* mem_data, BufferWithMemory& buffer_with_memory, size_t size) const;
-  
+  void CopyHostToBuffer(const void* mem_data, BufferWithMemory& buffer_with_memory,
+                        size_t size) const;
+
   ~VkContext2();
 
   static VkContext2& Instance();

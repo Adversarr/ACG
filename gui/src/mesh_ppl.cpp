@@ -5,68 +5,98 @@
 #include "acg_gui/convent.hpp"
 namespace acg::gui::details {
 
+std::vector<vk::VertexInputBindingDescription> MeshVertex::GetBindingDescriptions() {
+  vk::VertexInputBindingDescription binding;
+  binding.setBinding(0);
+  binding.setStride(sizeof(MeshVertex));
+  binding.setInputRate(vk::VertexInputRate::eVertex);
+  return {binding};
+}
+
+std::vector<vk::VertexInputAttributeDescription> MeshVertex::GetAttributeDescriptions() {
+  vk::VertexInputAttributeDescription desc1;
+  desc1.binding = 0;
+  desc1.location = 0;
+  desc1.format = vk::Format::eR32G32B32Sfloat;
+  desc1.offset = offsetof(MeshVertex, position_);
+
+  vk::VertexInputAttributeDescription desc2;
+  desc2.binding = 0;
+  desc2.location = 1;
+  desc2.format = vk::Format::eR32G32B32Sfloat;
+  desc2.offset = offsetof(MeshVertex, color_);
+
+  vk::VertexInputAttributeDescription desc3;
+  desc3.binding = 0;
+  desc3.location = 2;
+  desc3.format = vk::Format::eR32G32B32Sfloat;
+  desc3.offset = offsetof(MeshVertex, normal_);
+
+  vk::VertexInputAttributeDescription desc4;
+  desc4.binding = 0;
+  desc4.location = 3;
+  desc4.format = vk::Format::eR32G32Sfloat;
+  desc4.offset = offsetof(MeshVertex, uv_);
+
+  return {desc1, desc2, desc3, desc4};
+}
+
+MeshPipeline::MeshPipeline(const GraphicsRenderPass &pass, Config config):
+  config_(config) { Init(pass); }
+
+MeshPipeline::~MeshPipeline() { Destroy(); }
+
 void MeshPipeline::Init(const GraphicsRenderPass &graphics_pass) {
-  if (is_inited_) {
-    return;
-  }
   CreateUniformBuffers();
   CreateDescriptorSetLayout();
   CreateDescriptorSets(graphics_pass);
   CreateGraphicsPipeline(graphics_pass);
-  is_inited_ = true;
 }
 
-void MeshPipeline::CleanUp() {
-  if (!is_inited_) {
-    return;
+void MeshPipeline::Destroy() {
+  for (auto ub: uniform_buffers_) {
+    VkContext2::Instance().DestroyBufferWithMemory(ub);
   }
-  get_vk_context().GetDevice().destroy(pipeline_layout_);
-  get_vk_context().GetDevice().destroy(pipeline_);
-  get_vk_context().GetDevice().destroy(descriptor_set_layout_);
-  is_inited_ = false;
+  uniform_buffers_.clear();
+  VkContext2::Instance().device_.destroy(pipeline_layout_);
+  VkContext2::Instance().device_.destroy(pipeline_);
+  VkContext2::Instance().device_.destroy(descriptor_set_layout_);
 }
-
-MeshPipeline::~MeshPipeline() { CleanUp(); }
 
 void MeshPipeline::CreateUniformBuffers() {
-  // TODO: Ubo is a place holder now
-  auto buffer_size = static_cast<vk::DeviceSize>(sizeof(Ubo));
+  auto buffer_size = static_cast<vk::DeviceSize>(sizeof(MeshUniform));
   uniform_buffers_.clear();
-  for (size_t i = 0; i < get_vk_context().GetSwapchainSize(); ++i) {
-    auto buffer = get_vk_context().CreateBuffer(
+  for (size_t i = 0; i < VkGraphicsContext::Instance().swapchain_size_; ++i) {
+    auto buffer = VkContext2::Instance().CreateBufferWithMemory(
         buffer_size, vk::BufferUsageFlagBits::eUniformBuffer,
         vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-
-    uniform_buffers_.emplace_back(std::move(buffer));
+    uniform_buffers_.emplace_back(buffer);
   }
 }
 
 void MeshPipeline::CreateDescriptorSetLayout() {
-  // TODO: Ubo is a place holder now
   vk::DescriptorSetLayoutBinding ubo_layout_binding;
   ubo_layout_binding.setBinding(0)
       .setDescriptorCount(1)
       .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-      .setPImmutableSamplers(nullptr)
       .setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
   vk::DescriptorSetLayoutCreateInfo layout_create_info;
   layout_create_info.setBindings(ubo_layout_binding);
   descriptor_set_layout_
-      = get_vk_context().GetDevice().createDescriptorSetLayout(layout_create_info);
+      = VkContext2::Instance().device_.createDescriptorSetLayout(layout_create_info);
 }
-
 
 void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pass) {
   vk::ShaderModule vert_module, frag_module;
   {
-    auto code = acg::utils::io::read_binary_file(SPV_HOME "mesh.vert.spv");
+    auto code = acg::utils::io::read_binary_file(SPV_HOME "mesh_pc.vert.spv");
     vk::ShaderModuleCreateInfo info;
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
-    vert_module = get_vk_context().GetDevice().createShaderModule(info);
-    code = acg::utils::io::read_binary_file(SPV_HOME "mesh.frag.spv");
+    vert_module = VkContext2::Instance().device_.createShaderModule(info);
+    code = acg::utils::io::read_binary_file(SPV_HOME "mesh_pc.frag.spv");
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
-    frag_module = get_vk_context().GetDevice().createShaderModule(info);
+    frag_module = VkContext2::Instance().device_.createShaderModule(info);
   }
 
   vk::PipelineShaderStageCreateInfo vert_stage_info;
@@ -78,11 +108,10 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
       .setModule(frag_module)
       .setPName("main");
   auto shader_stages = std::array{vert_stage_info, frag_stage_info};
-
   // Setup Vertex input
   vk::PipelineVertexInputStateCreateInfo vertex_input_create_info;
-  auto vertex_binding_desc = Vertex::GetBindingDescriptions();
-  auto vertex_attr_desc = Vertex::GetAttributeDescriptions();
+  auto vertex_binding_desc = MeshVertex::GetBindingDescriptions();
+  auto vertex_attr_desc = MeshVertex::GetAttributeDescriptions();
   vertex_input_create_info.setVertexBindingDescriptions(vertex_binding_desc)
       .setVertexAttributeDescriptions(vertex_attr_desc);
 
@@ -99,9 +128,9 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
   rasterizer_info.setDepthBiasEnable(VK_FALSE)
       .setRasterizerDiscardEnable(VK_FALSE)
       .setLineWidth(1.0f)
-      .setPolygonMode(polygon_mode_)
-      .setCullMode(cull_mode_)
-      .setFrontFace(front_face_)
+      .setPolygonMode(config_.polygon_mode_)
+      .setCullMode(config_.cull_mode_)
+      .setFrontFace(config_.front_face_)
       .setDepthBiasEnable(VK_FALSE);
 
   // Setup Multi sampling: No multisampling for better performance.
@@ -143,7 +172,18 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
       .setDepthBoundsTestEnable(VK_FALSE)
       .setStencilTestEnable(VK_FALSE);
 
-  pipeline_layout_ = get_vk_context().GetDevice().createPipelineLayout(pipeline_layout_info);
+  // setup push constants
+  vk::PushConstantRange push_constant;
+  // this push constant range starts at the beginning
+  push_constant.offset = 0;
+  // this push constant range takes up the size of a MeshPushConstants struct
+  push_constant.size = sizeof(MeshPushConstants);
+  // this push constant range is accessible only in the vertex shader
+  push_constant.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+  pipeline_layout_info.setPPushConstantRanges(&push_constant)
+    .setPushConstantRangeCount(1);
+
+  pipeline_layout_ = VkContext2::Instance().device_.createPipelineLayout(pipeline_layout_info);
   vk::GraphicsPipelineCreateInfo info;
   info.setStages(shader_stages)
       .setPVertexInputState(&vertex_input_create_info)
@@ -160,12 +200,12 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
       .setBasePipelineHandle(VK_NULL_HANDLE)
       .setBasePipelineIndex(-1);
 
-  auto rv = get_vk_context().GetDevice().createGraphicsPipeline(VK_NULL_HANDLE, info);
+  auto rv = VkContext2::Instance().device_.createGraphicsPipeline(VK_NULL_HANDLE, info);
   ACG_CHECK(rv.result == vk::Result::eSuccess, "Failed to create graphics pipeline");
   pipeline_ = rv.value;
 
-  get_vk_context().GetDevice().destroy(vert_module);
-  get_vk_context().GetDevice().destroy(frag_module);
+  VkContext2::Instance().device_.destroy(vert_module);
+  VkContext2::Instance().device_.destroy(frag_module);
 }
 
 void MeshPipeline::Recreate(const GraphicsRenderPass &graphics_pass) {
@@ -174,10 +214,10 @@ void MeshPipeline::Recreate(const GraphicsRenderPass &graphics_pass) {
     auto code = acg::utils::io::read_binary_file(SPV_HOME "3d.vert.spv");
     vk::ShaderModuleCreateInfo info;
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
-    vert_module = get_vk_context().GetDevice().createShaderModule(info);
+    vert_module = VkContext2::Instance().device_.createShaderModule(info);
     code = acg::utils::io::read_binary_file(SPV_HOME "3d.frag.spv");
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
-    frag_module = get_vk_context().GetDevice().createShaderModule(info);
+    frag_module = VkContext2::Instance().device_.createShaderModule(info);
   }
 
   vk::PipelineShaderStageCreateInfo vert_stage_info;
@@ -209,10 +249,9 @@ void MeshPipeline::Recreate(const GraphicsRenderPass &graphics_pass) {
   vk::PipelineRasterizationStateCreateInfo rasterizer_info;
   rasterizer_info.setDepthBiasEnable(VK_FALSE)
       .setRasterizerDiscardEnable(VK_FALSE)
-      .setLineWidth(1.0f)
-      .setPolygonMode(polygon_mode_)
-      .setCullMode(cull_mode_)
-      .setFrontFace(front_face_)
+      .setPolygonMode(config_.polygon_mode_)
+      .setCullMode(config_.cull_mode_)
+      .setFrontFace(config_.front_face_)
       .setDepthBiasEnable(VK_FALSE);
 
   // Setup Multi sampling: No multisampling for better performance.
@@ -267,18 +306,18 @@ void MeshPipeline::Recreate(const GraphicsRenderPass &graphics_pass) {
       .setBasePipelineHandle(VK_NULL_HANDLE)
       .setBasePipelineIndex(-1);
 
-  auto rv = get_vk_context().GetDevice().createGraphicsPipeline(VK_NULL_HANDLE, info);
+  auto rv = VkContext2::Instance().device_.createGraphicsPipeline(VK_NULL_HANDLE, info);
   ACG_CHECK(rv.result == vk::Result::eSuccess, "Failed to create graphics pipeline");
-  get_vk_context().GetDevice().destroy(pipeline_);
+  VkContext2::Instance().device_.destroy(pipeline_);
   pipeline_ = rv.value;
 
-  get_vk_context().GetDevice().destroy(vert_module);
-  get_vk_context().GetDevice().destroy(frag_module);
+  VkContext2::Instance().device_.destroy(vert_module);
+  VkContext2::Instance().device_.destroy(frag_module);
 }
 
 void MeshPipeline::BeginPipeline(vk::CommandBuffer &current_command_buffer) {
   // Bind Pipeline
-  auto extent = get_vk_context().GetSwapchainExtent();
+  auto extent = VkGraphicsContext::Instance().swapchain_extent_;
   current_command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_);
   // Setup Viewport and scissor.
   vk::Viewport viewport(0.0, 0.0, extent.width, extent.height, 0.0, 1.0);
@@ -289,7 +328,7 @@ void MeshPipeline::BeginPipeline(vk::CommandBuffer &current_command_buffer) {
   // Bind UBO inline.
   current_command_buffer.bindDescriptorSets(
       vk::PipelineBindPoint::eGraphics, pipeline_layout_, 0,
-      ubo_descriptor_sets_[get_vk_context().GetCurrentIndex()], {});
+      ubo_descriptor_sets_[VkGraphicsContext::Instance().current_frame_], {});
 }
 
 void MeshPipeline::EndPipeline(vk::CommandBuffer & /* current_command_buffer */) {
@@ -297,41 +336,44 @@ void MeshPipeline::EndPipeline(vk::CommandBuffer & /* current_command_buffer */)
 }
 
 void MeshPipeline::SetCamera(const Camera &cam) {
-  auto extent = get_vk_context().GetSwapchainExtent();
-  ubo_.mvp = cam.GetProjection(extent.width, extent.height) * cam.GetView() * cam.GetModel();
+  auto extent = VkGraphicsContext::Instance().swapchain_extent_;
+  ubo_.projection = cam.GetProjection(extent.width, extent.height);
+  ubo_.view = cam.GetView() * cam.GetModel();
   ubo_.eye_position = to_glm(cam.GetPosition());
 }
 
 void MeshPipeline::SetLight(const Light &light) {
-  ubo_.ambient_light_color
-      = glm::vec4(to_glm(light.ambient_light_color_), light.ambient_light_density_);
-  ubo_.light_color = to_glm(light.light_color_);
-  ubo_.light_position = to_glm(light.light_position_);
-  ubo_.options[0] = 1;
+  ubo_.ambient_light_color = glm::vec4(to_glm(light.ambient_light_color_), 1.0f);
+  ubo_.point_light_color = glm::vec4(to_glm(light.light_color_), 1.0f);
+  ubo_.point_light_pos = to_glm(light.light_position_);
+  ubo_.parallel_light_color = glm::vec4(to_glm(light.parallel_light_color_), 1.0f);
+  ubo_.parallel_light_dir = to_glm(light.parallel_light_dir_);
 }
 
 void MeshPipeline::UpdateUbo(bool fast) {
   if (!fast) {
-    get_vk_context().GetDevice().waitIdle();
+    VkContext2::Instance().device_.waitIdle();
   }
 
   for (auto &ub : uniform_buffers_) {
-    get_vk_context().CopyHostToBuffer(&ubo_, *ub, sizeof(ubo_));
+    VkContext2::Instance().CopyHostToBuffer(&ubo_, ub, sizeof(ubo_));
   }
 }
 
 void MeshPipeline::CreateDescriptorSets(const GraphicsRenderPass &pass) {
-  std::vector<vk::DescriptorSetLayout> layouts(get_vk_context().GetSwapchainSize(),
-                                               descriptor_set_layout_);
+  auto swapchain_size = VkGraphicsContext::Instance().swapchain_size_;
+  std::vector<vk::DescriptorSetLayout> layouts(swapchain_size, descriptor_set_layout_);
   vk::DescriptorSetAllocateInfo alloc_info;
   alloc_info.setDescriptorPool(pass.GetDescriptorPool())
       .setSetLayouts(layouts)
-      .setDescriptorSetCount(get_vk_context().GetSwapchainSize());
-  ubo_descriptor_sets_ = get_vk_context().GetDevice().allocateDescriptorSets(alloc_info);
+      .setDescriptorSetCount(swapchain_size);
+  ubo_descriptor_sets_ = VkContext2::Instance().device_.allocateDescriptorSets(alloc_info);
 
-  for (size_t i = 0; i < get_vk_context().GetSwapchainSize(); ++i) {
+  for (size_t i = 0; i < swapchain_size; ++i) {
     vk::DescriptorBufferInfo buffer_info;
-    buffer_info.setBuffer(uniform_buffers_[i]->GetBuffer()).setOffset(0).setRange(sizeof(Ubo));
+    buffer_info.setBuffer(uniform_buffers_[i].GetBuffer())
+        .setOffset(0)
+        .setRange(sizeof(MeshUniform));
     vk::WriteDescriptorSet desc_write;
     desc_write.setDstSet(ubo_descriptor_sets_[i])
         .setDstBinding(0)
@@ -339,7 +381,7 @@ void MeshPipeline::CreateDescriptorSets(const GraphicsRenderPass &pass) {
         .setDescriptorCount(1)
         .setDescriptorType(vk::DescriptorType::eUniformBuffer)
         .setPBufferInfo(&buffer_info);
-    get_vk_context().GetDevice().updateDescriptorSets(desc_write, {});
+    VkContext2::Instance().device_.updateDescriptorSets(desc_write, {});
   }
 }
 

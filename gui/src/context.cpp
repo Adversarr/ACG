@@ -335,7 +335,8 @@ void VkContext2::CreatePhysicalDevice() {
   ACG_INFO("Physical device picked. {}", system_info_.physical_device_info.properties.deviceName);
 }
 
-VkContext2::SystemInfo::PhysicalDeviceInfo VkContext2::GetDeviceInfo(vk::PhysicalDevice device)  const {
+VkContext2::SystemInfo::PhysicalDeviceInfo VkContext2::GetDeviceInfo(
+    vk::PhysicalDevice device) const {
   VkContext2::SystemInfo::PhysicalDeviceInfo info;
   info.properties = device.getProperties();
   info.extension_properties = device.enumerateDeviceExtensionProperties();
@@ -474,7 +475,7 @@ acg::Result<std::pair<vk::Image, vk::DeviceMemory>> VkContext2::CreateImage(
 }
 
 acg::Result<uint32_t> VkContext2::FindMemoryType(uint32_t type_filter,
-                                                 vk::MemoryPropertyFlags properties) const{
+                                                 vk::MemoryPropertyFlags properties) const {
   auto memory_properties = physical_device_.getMemoryProperties();
   for (uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
     if ((type_filter & (1 << i))
@@ -517,5 +518,22 @@ void VkContext2::CopyHostToBuffer(const void *mem_data, BufferWithMemory &buffer
     device_.unmapMemory(buffer_with_memory.GetMemory());
   }
 }
+
+acg::Result<vk::Format> VkContext2::FindSupportedFormat(const std::vector<vk::Format> &candidates,
+                                                        vk::ImageTiling tiling,
+                                                        vk::FormatFeatureFlags features) const {
+  for (const auto &format : candidates) {
+    auto props = physical_device_.getFormatProperties(format);
+
+    if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
+      return format;
+    } else if (tiling == vk::ImageTiling::eOptimal
+               && (props.optimalTilingFeatures & features) == features) {
+      return format;
+    }
+  }
+  return {acg::Status::kNotFound};
+}
+
 
 }  // namespace acg::gui

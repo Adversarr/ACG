@@ -10,7 +10,15 @@
 namespace acg::gui {
 
 class VkGraphicsContext {
-  VkGraphicsContext();
+public:
+  struct Hooker {
+    bool is_present{false};
+
+    void Hook();
+  };
+
+private:
+  explicit VkGraphicsContext(Hooker config);
 
   static vk::SurfaceFormatKHR ChooseSwapSurfaceFormat(
       const std::vector<vk::SurfaceFormatKHR>& formats);
@@ -27,13 +35,8 @@ class VkGraphicsContext {
   void CleanupSwapchain();
 
 public:
-  struct Hooker {
-    static void Hook();
-  };
-
   static vk::ImageView CreateImageView(vk::Image image, vk::Format format,
                                        vk::ImageAspectFlags aspectFlags);
-
   void RecreateSwapchain(bool verbose = false);
   ~VkGraphicsContext();
   VkGraphicsContext(const VkGraphicsContext&) = delete;
@@ -44,6 +47,8 @@ public:
     vk::Semaphore render_finished;
     vk::Fence in_flight_fence;
   };
+  
+  Hooker config_;
 
   // Swapchain
   vk::SwapchainKHR swapchain_;
@@ -63,13 +68,18 @@ public:
   static VkGraphicsContext& Instance();
 
   bool BeginDraw();
-  void EndDraw();
+
+  bool EndDraw(std::vector<vk::CommandBuffer> command_buffers);
 
   vk::CommandBuffer BeginSingleTimeCommand() const;
+  
   void EndSingleTimeCommand(vk::CommandBuffer buffer) const;
+  
   void TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout,
                              vk::ImageLayout newLayout) const;
+  
   void CopyBufferToBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) const;
+
   void CopyHostToBuffer(const void* mem_data, BufferWithMemory& buffer_with_memory,
                         size_t size) const;
 };

@@ -8,6 +8,12 @@ namespace acg::gui {
 
 std::unique_ptr<VkGraphicsContext> graphics_context_instance;
 
+VkGraphicsContext &VkGraphicsContext::Instance() {
+  ACG_DEBUG_CHECK(graphics_context_instance.get() != nullptr,
+                  "Access to invalid singleton graphics_context_instance.");
+  return *graphics_context_instance;
+}
+
 void VkGraphicsContext::CreateSwapchain(bool verbose) {
   auto &support = VkContext2::Instance().system_info_.physical_device_info;
   auto format = ChooseSwapSurfaceFormat(support.surface_formats);
@@ -280,14 +286,15 @@ void VkGraphicsContext::CopyBufferToBuffer(vk::Buffer src, vk::Buffer dst,
 
 void VkGraphicsContext::Hooker::Hook() {
   acg::details::InitHook hook;
-  hook.on_init = []() { graphics_context_instance.reset(new VkGraphicsContext); };
+  hook.on_init = [this]() { graphics_context_instance.reset(new VkGraphicsContext(*this)); };
   hook.on_exit = []() { graphics_context_instance.reset(); };
   hook.name = "Vk Graphics Context Init";
   hook.priority = 8;
   acg::details::add_hook(hook);
 }
 
-VkGraphicsContext::VkGraphicsContext() {
+VkGraphicsContext::VkGraphicsContext(Hooker config):
+  config_(config) {
   CreateCommandPool();
   CreateSwapchain();
   CreateImageViews();
@@ -304,6 +311,38 @@ VkGraphicsContext::~VkGraphicsContext() {
   }
   syncs_.clear();
   device.destroyCommandPool(graphics_command_pool_);
+}
+
+bool VkGraphicsContext::EndDraw(std::vector<vk::CommandBuffer> command_buffers) {
+  vk::SubmitInfo submit_info{};
+  auto wait_sem = std::array{syncs_[current_frame_].image_available};
+  auto signal_sem = std::array{syncs_[current_frame_].render_finished};
+  vk::PipelineStageFlags wait_stages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+  submit_info.setWaitSemaphores(wait_sem)
+      .setPWaitDstStageMask(&wait_stages)
+      .setCommandBuffers(command_buffers)
+      .setSignalSemaphores(signal_sem);
+  VkContext2::Instance().graphics_queue_.submit(submit_info, syncs_[current_frame_].in_flight_fence);
+
+  vk::PresentInfoKHR present_info;
+  present_info.setWaitSemaphores(signal_sem)
+      .setSwapchains(swapchain_)
+      .setPImageIndices(&current_image_index_);
+
+  auto& window = Window::Instance();
+  auto result = VkContext2::Instance().present_queue_.presentKHR(&present_info);
+  bool need_recreate_swapchain{false};
+  if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR
+      || window.IsResized()) {
+    window.ResetResizeFlag();
+    need_recreate_swapchain = true;
+    ACG_DEBUG_LOG("Set Recreate Swapchain.");
+  } else {
+    ACG_CHECK(result == vk::Result::eSuccess, "Failed to present swapchain image");
+  }
+  current_frame_ = (current_frame_ + 1) % swapchain_size_;
+  draw_started_ = false;
+  return need_recreate_swapchain;
 }
 
 }  // namespace acg::gui
