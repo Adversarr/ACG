@@ -181,8 +181,7 @@ void VkContext2::CreateInstance() {
     // | vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose;
     info.messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
                        | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
-                       | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
-                       | vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding;
+                       | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
     info.pfnUserCallback = debug_message_callback;
     info.pUserData = nullptr;  // Optional
     auto result = instance_.createDebugUtilsMessengerEXT(&info, nullptr, &debug_messenger_);

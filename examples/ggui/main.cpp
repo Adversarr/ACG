@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
         ppl.EndPipeline(cbuf);
         render_pass.EndRender();
         auto result2 = acg::gui::VkGraphicsContext::Instance().EndDraw({cbuf});
-        if (!result2) {
+        if (result2) {
           acg::gui::VkGraphicsContext::Instance().RecreateSwapchain(true);
           render_pass.RecreateSwapchain();
         }
