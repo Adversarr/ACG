@@ -364,7 +364,6 @@ VkContext2::SystemInfo::PhysicalDeviceInfo VkContext2::GetDeviceInfo(
         }
       }
 
-      info.surface_capabilities = device.getSurfaceCapabilitiesKHR(surface_);
       info.surface_formats = device.getSurfaceFormatsKHR(surface_);
       info.surface_present_modes = device.getSurfacePresentModesKHR(surface_);
     }
@@ -540,6 +539,28 @@ acg::Result<vk::Format> VkContext2::FindSupportedFormat(const std::vector<vk::Fo
     }
   }
   return {acg::Status::kNotFound};
+}
+
+vk::CommandBuffer VkContext2::BeginSingleTimeCommand(vk::CommandPool command_pool) const {
+  vk::CommandBufferAllocateInfo alloc_info{};
+  alloc_info.level = vk::CommandBufferLevel::ePrimary;
+  alloc_info.commandPool = command_pool;
+  alloc_info.commandBufferCount = 1;
+  auto buf = device_.allocateCommandBuffers(alloc_info).front();
+  vk::CommandBufferBeginInfo begin_info{};
+  begin_info.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+  buf.begin(begin_info);
+  return buf;
+}
+
+void VkContext2::EndSingleTimeCommand(vk::CommandBuffer buffer, vk::CommandPool pool,
+                                      vk::Queue queue) const {
+  buffer.end();
+  vk::SubmitInfo submit_info;
+  submit_info.setCommandBuffers(buffer);
+  queue.submit(submit_info);
+  queue.waitIdle();
+  device_.freeCommandBuffers(pool, buffer);
 }
 
 }  // namespace acg::gui

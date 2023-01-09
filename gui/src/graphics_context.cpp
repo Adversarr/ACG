@@ -16,9 +16,13 @@ VkGraphicsContext &VkGraphicsContext::Instance() {
 
 void VkGraphicsContext::CreateSwapchain(bool verbose) {
   auto &support = VkContext2::Instance().system_info_.physical_device_info;
+  vk::SurfaceCapabilitiesKHR surface_capabilities = VkContext2::Instance().physical_device_.getSurfaceCapabilitiesKHR(
+    VkContext2::Instance().surface_
+  );
+
   auto format = ChooseSwapSurfaceFormat(support.surface_formats);
   auto present_mode = ChooseSwapPresentMode(support.surface_present_modes, verbose);
-  auto extent = ChooseSwapExtent(support.surface_capabilities);
+  auto extent = ChooseSwapExtent(surface_capabilities);
   if (verbose) {
     ACG_INFO("Extent: {}x{}", extent.width, extent.height);
     ACG_INFO("Present mode: {}", vk::to_string(present_mode));
@@ -26,7 +30,7 @@ void VkGraphicsContext::CreateSwapchain(bool verbose) {
              vk::to_string(format.colorSpace));
   }
 
-  auto max_sc_size = support.surface_capabilities.maxImageCount;
+  auto max_sc_size = surface_capabilities.maxImageCount;
   if (swapchain_size_ > max_sc_size && max_sc_size != 0) {
     ACG_WARN("Required Swapchain size is greater than max supported, {} > {}", swapchain_size_,
              max_sc_size);
@@ -51,7 +55,7 @@ void VkGraphicsContext::CreateSwapchain(bool verbose) {
   }
 
   // TODO: old swapchain available here.
-  info.setPreTransform(support.surface_capabilities.currentTransform)
+  info.setPreTransform(surface_capabilities.currentTransform)
       .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
       .setPresentMode(present_mode)
       .setClipped(VK_TRUE)
@@ -214,24 +218,11 @@ bool VkGraphicsContext::BeginDraw() {
 }
 
 vk::CommandBuffer VkGraphicsContext::BeginSingleTimeCommand() const {
-  vk::CommandBufferAllocateInfo alloc_info{};
-  alloc_info.level = vk::CommandBufferLevel::ePrimary;
-  alloc_info.commandPool = graphics_command_pool_;
-  alloc_info.commandBufferCount = 1;
-  auto buf = VkContext2::Instance().device_.allocateCommandBuffers(alloc_info).front();
-  vk::CommandBufferBeginInfo begin_info{};
-  begin_info.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-  buf.begin(begin_info);
-  return buf;
+  return VkContext2::Instance().BeginSingleTimeCommand(graphics_command_pool_);
 }
 
 void VkGraphicsContext::EndSingleTimeCommand(vk::CommandBuffer buffer) const {
-  buffer.end();
-  vk::SubmitInfo submit_info;
-  submit_info.setCommandBuffers(buffer);
-  VkContext2::Instance().graphics_queue_.submit(submit_info);
-  VkContext2::Instance().graphics_queue_.waitIdle();
-  VkContext2::Instance().device_.freeCommandBuffers(graphics_command_pool_, buffer);
+  VkContext2::Instance().EndSingleTimeCommand(buffer, graphics_command_pool_, VkContext2::Instance().graphics_queue_);
 }
 
 void VkGraphicsContext::TransitionImageLayout(vk::Image image, vk::Format /*format*/,
@@ -296,7 +287,7 @@ void VkGraphicsContext::Hooker::Hook() {
 
 VkGraphicsContext::VkGraphicsContext(Hooker config) : config_(config) {
   CreateCommandPool();
-  CreateSwapchain();
+  CreateSwapchain(true);
   CreateImageViews();
   CreateSyncObjects();
 }

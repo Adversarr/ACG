@@ -39,6 +39,7 @@ public:
 
   Camera& SetFov(F32 angle);
   F32 GetFov() const;
+  Camera& SetUp(Vec3f up);
 
   Camera& SetLeft(F32 left);
   Camera& SetRight(F32 right);

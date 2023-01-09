@@ -101,6 +101,11 @@ Camera& Camera::SetYaw(F32 yaw) {
   return *this;
 }
 
+Camera& Camera::SetUp(Vec3f up) {
+  up_ = up;
+  return *this;
+}
+
 
 // TODO: compute everything using yrp.
 

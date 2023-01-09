@@ -2,8 +2,8 @@
 
 // Vertex Input, see mesh_ppl.hpp
 layout (location = 0) in vec3 inPosition;
-layout (location = 1) in vec3 inNormal;
-layout (location = 2) in vec3 inColor;
+layout (location = 1) in vec3 inColor;
+layout (location = 2) in vec3 inNormal;
 layout (location = 3) in vec2 inUV;
 
 layout(binding = 0) uniform Ubo{
@@ -21,6 +21,7 @@ layout(binding = 0) uniform Ubo{
 layout( push_constant ) uniform constants
 {
 	mat4 model;
+  int options[4];
 } pc;
 
 layout (location = 0) out vec3 outNormal;
@@ -29,11 +30,12 @@ layout (location = 2) out vec2 outUV;
 layout (location = 3) out vec3 outWorldPosiion;
 
 void main() {
-  vec4 world_pos = vec4(inPosition.xyz, 1.0);
-  gl_Position = ubo.projection * ubo.view * pc.model * world_pos;
-  vec4 normal_rotated = pc.model * vec4(inNormal.xyz, 1.0);
-  outNormal = inNormal.xyz;
+  vec4 world_pos = pc.model * vec4(inPosition.xyz, 1.0);
+  gl_Position =  (ubo.projection * ubo.view * world_pos);
+  vec4 normal_rotated = pc.model * vec4(inNormal.xyz, 0.0);
+  outNormal = normal_rotated.xyz;
   outColor = inColor;
   outUV = inUV;
+  outWorldPosiion = world_pos.xyz;
   return;
 }

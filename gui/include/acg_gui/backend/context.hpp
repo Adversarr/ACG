@@ -67,7 +67,6 @@ public:
       std::optional<uint32_t> compute_family;
       std::optional<uint32_t> transfer_family;
 
-      vk::SurfaceCapabilitiesKHR surface_capabilities;
       std::vector<vk::SurfaceFormatKHR> surface_formats;
       std::vector<vk::PresentModeKHR> surface_present_modes;
     } physical_device_info;
@@ -95,6 +94,10 @@ public:
 
   void CopyHostToBuffer(const void* mem_data, BufferWithMemory& buffer_with_memory,
                         size_t size) const;
+
+  vk::CommandBuffer BeginSingleTimeCommand(vk::CommandPool command_pool) const;
+
+  void EndSingleTimeCommand(vk::CommandBuffer buffer, vk::CommandPool pool, vk::Queue queue) const;
 
   ~VkContext2();
 

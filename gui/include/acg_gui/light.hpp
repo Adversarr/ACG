@@ -6,11 +6,13 @@ namespace acg::gui {
 struct Light {
   Vec3f light_position_{3.0, 3.0, 3.0};
   Vec3f light_color_{0.9, 0.9, 0.9};
+  F32 light_density_{0.0f};
   Vec3f ambient_light_color_{0.2, 0.2, 0.2};
-  F32 ambient_light_density_{.01};
+  F32 ambient_light_density_{.05f};
 
   // Parallel Lighting:
   Vec3f parallel_light_color_{0, 0, 0};
   Vec3f parallel_light_dir_{0, 0, 0};
+  F32 parallel_light_density_{0.0f};
 };
 }  // namespace acg::gui

@@ -1,14 +1,28 @@
 #pragma once
 #include "acg_gui/backend/avk.hpp"
+#include "acg_gui/backend/context.hpp"
 #include "acg_gui/backend/graphics_pass.hpp"
 #include "acg_gui/camera.hpp"
 #include "acg_gui/light.hpp"
-
 namespace acg::gui::details {
+
+struct WireframePoint {
+  glm::vec3 position;
+  glm::vec3 color;
+
+  inline WireframePoint(const glm::vec3& position, const glm::vec3& color)
+      : position(position), color(color) {}
+  
+  inline WireframePoint() = default;
+
+  static std::vector<vk::VertexInputBindingDescription> GetBindingDescriptions();
+
+  static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions();
+};
 
 class WireframePipeline {
 public:
-  class Builder;
+  struct Config {};
 
   void SetCamera(const Camera& cam);
 
@@ -28,26 +42,16 @@ public:
 
   void UpdateUbo(bool fast = false);
 
-  void Recreate(const GraphicsRenderPass& graphics_pass);
-
   ~WireframePipeline();
 
-private:
-  WireframePipeline() = default;
-  void Init(const GraphicsRenderPass& graphics_pass);
-  bool is_inited_{false};
-  std::vector<vk::DescriptorSet> ubo_descriptor_sets_;
+  explicit WireframePipeline(const GraphicsRenderPass& render_pass, Config config);
 
+private:
+  std::vector<vk::DescriptorSet> ubo_descriptor_sets_;
   vk::DescriptorSetLayout descriptor_set_layout_;
   vk::PipelineLayout pipeline_layout_;
   vk::Pipeline pipeline_;
-  std::vector<std::unique_ptr<VkContext::BufMem>> uniform_buffers_;
+  std::vector<BufferWithMemory> uniform_buffers_;
   Ubo ubo_;
 };
-
-class WireframePipeline::Builder {
-public:
-  std::unique_ptr<WireframePipeline> Build(const GraphicsRenderPass& render_pass) const;
-};
-
 }  // namespace acg::gui::details

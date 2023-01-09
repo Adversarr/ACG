@@ -36,14 +36,16 @@ vec3 get_point_light_color() {
   if (pc.options[0] != 0) {
     diffuse_density = abs(diffuse_density);
   } else {
-    diffuse_density = max(diffuse_density, ubo.point_light_color.w);
+    diffuse_density = max(diffuse_density, 0.0);
   }
-  vec3 diffuse = diffuse_density * ubo.point_light_color.xyz;
+  vec3 plc = ubo.point_light_color.xyz * inColor.xyz;
+  vec3 diffuse = diffuse_density * plc.xyz;
 
   // 2. ambient
-  vec3 ambient = ubo.ambient_light_color.xyz;
+  vec3 ambient = ubo.ambient_light_color.xyz * inColor.xyz;
   
   // 3. specular
+  vec3 view = normalize(ubo.eye_position - inWorldPosiion);
   vec3 halfwayDir = normalize(L + view);
   float specular_density = dot(normal, halfwayDir);
   if (pc.options[0] != 0) {
@@ -51,27 +53,29 @@ vec3 get_point_light_color() {
   } else {
     specular_density = max(specular_density, 0.0);
   }
-  vec3 specular = pow(specular_density, float(pc.options[1])) * ubo.point_light_color.xyz;
+  vec3 specular = pow(specular_density, float(pc.options[1])) * plc.xyz;
 
-  return diffuse + ambient + specular;
+  return (diffuse + ambient + specular) * ubo.point_light_color.w;
 }
 
 vec3 get_parallel_light_color() {
-  float density = dot(ubo.parallel_light_dir, normal);
+  float density = dot(-ubo.parallel_light_dir, normal);
   if (pc.options[0] != 0) {
     density = abs(density);
   } else {
     density = max(density, 0.0);
   }
 
-  return density * ubo.parallel_light_color.xyz * ubo.parallel_light_color.w;
+  return density * ubo.parallel_light_color.xyz * inColor.xyz * ubo.parallel_light_color.w;
 }
 
 void main() {
   normal = normalize(inNormal);
-  // outColor = vec4(
-  //     get_point_light_color() + get_parallel_light_color(),
-  //     1.0
-  // );
-  outColor = vec4(1.0, 1.0, 1.0, 1.0);
+  outColor = vec4(
+      // inWorldPosiion.xyz
+      get_point_light_color()
+      + get_parallel_light_color()
+      ,
+      1.0
+  );
 }

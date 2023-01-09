@@ -21,7 +21,6 @@ void MPWorldCtrl::InitCallback() {
   camera_.SetFront({1, 0, 0});
   light_.light_position_ = Vec3f(3, 0, 0);
   light_.ambient_light_color_ = Vec3f(1, 1, 1);
-  light_.ambient_light_density_ = 0.5;
   light_.light_color_ = Vec3f(0.7, .7, .7);
   mesh_ppl_->SetUbo(&camera_, &light_, true);
 }

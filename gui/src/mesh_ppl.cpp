@@ -339,15 +339,15 @@ void MeshPipeline::EndPipeline(vk::CommandBuffer & /* current_command_buffer */)
 void MeshPipeline::SetCamera(const Camera &cam) {
   auto extent = VkGraphicsContext::Instance().swapchain_extent_;
   ubo_.projection = cam.GetProjection(extent.width, extent.height);
-  ubo_.view = cam.GetView() * cam.GetModel();
+  ubo_.view = cam.GetView();
   ubo_.eye_position = to_glm(cam.GetPosition());
 }
 
 void MeshPipeline::SetLight(const Light &light) {
-  ubo_.ambient_light_color = glm::vec4(to_glm(light.ambient_light_color_), 1.0f);
-  ubo_.point_light_color = glm::vec4(to_glm(light.light_color_), 1.0f);
+  ubo_.ambient_light_color = glm::vec4(to_glm(light.ambient_light_color_), light.light_density_);
+  ubo_.point_light_color = glm::vec4(to_glm(light.light_color_), light.light_density_);
   ubo_.point_light_pos = to_glm(light.light_position_);
-  ubo_.parallel_light_color = glm::vec4(to_glm(light.parallel_light_color_), 1.0f);
+  ubo_.parallel_light_color = glm::vec4(to_glm(light.parallel_light_color_), light.parallel_light_density_);
   ubo_.parallel_light_dir = to_glm(light.parallel_light_dir_);
 }
 

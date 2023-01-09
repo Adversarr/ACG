@@ -308,6 +308,7 @@ public:
 
   void RecreateSwapchain();
 
+
 private:
   /**
    * @brief DO NOT CALL This INITIALIZER DIRECTLY! Construct a new Renderer object

@@ -61,7 +61,7 @@ private:
   // Render pass and Pipeline
   bool is_begin_{false};
 
-  vk::ClearColorValue background_color_{std::array{0.0f, 0.0f, 0.0f, 1.0f}};
+  vk::ClearColorValue background_color_{std::array{0.05f, 0.05f, 0.05f, 1.0f}};
   vk::ClearDepthStencilValue depth_stencil_value_{{1.0f, 0}};
 
   std::vector<vk::Framebuffer> framebuffers_;
