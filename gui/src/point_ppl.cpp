@@ -1,60 +1,48 @@
-#include "acg_gui/backend/mesh_ppl.hpp"
+#include "acg_gui/backend/point_ppl.hpp"
 
 #include <acg_utils/raw_fileio.hpp>
 
 #include "acg_gui/convent.hpp"
+
 namespace acg::gui::details {
 
-std::vector<vk::VertexInputBindingDescription> MeshVertex::GetBindingDescriptions() {
+std::vector<vk::VertexInputBindingDescription> PointVertex::GetBindingDescriptions() {
   vk::VertexInputBindingDescription binding;
   binding.setBinding(0);
-  binding.setStride(sizeof(MeshVertex));
+  binding.setStride(sizeof(PointVertex));
   binding.setInputRate(vk::VertexInputRate::eVertex);
   return {binding};
 }
 
-std::vector<vk::VertexInputAttributeDescription> MeshVertex::GetAttributeDescriptions() {
+std::vector<vk::VertexInputAttributeDescription> PointVertex::GetAttributeDescriptions() {
   vk::VertexInputAttributeDescription desc1;
   desc1.binding = 0;
   desc1.location = 0;
   desc1.format = vk::Format::eR32G32B32Sfloat;
-  desc1.offset = offsetof(MeshVertex, position_);
+  desc1.offset = offsetof(PointVertex, position);
 
   vk::VertexInputAttributeDescription desc2;
   desc2.binding = 0;
   desc2.location = 1;
   desc2.format = vk::Format::eR32G32B32Sfloat;
-  desc2.offset = offsetof(MeshVertex, color_);
-
-  vk::VertexInputAttributeDescription desc3;
-  desc3.binding = 0;
-  desc3.location = 2;
-  desc3.format = vk::Format::eR32G32B32Sfloat;
-  desc3.offset = offsetof(MeshVertex, normal_);
-
-  vk::VertexInputAttributeDescription desc4;
-  desc4.binding = 0;
-  desc4.location = 3;
-  desc4.format = vk::Format::eR32G32Sfloat;
-  desc4.offset = offsetof(MeshVertex, uv_);
-
-  return {desc1, desc2, desc3, desc4};
+  desc2.offset = offsetof(PointVertex, color);
+  return {desc1, desc2};
 }
 
-MeshPipeline::MeshPipeline(const GraphicsRenderPass &pass, Config config) : config_(config) {
+PointPipeline::PointPipeline(const GraphicsRenderPass &pass, Config config) : config_(config) {
   Init(pass);
 }
 
-MeshPipeline::~MeshPipeline() { Destroy(); }
+PointPipeline::~PointPipeline() { Destroy(); }
 
-void MeshPipeline::Init(const GraphicsRenderPass &graphics_pass) {
+void PointPipeline::Init(const GraphicsRenderPass &graphics_pass) {
   CreateUniformBuffers();
   CreateDescriptorSetLayout();
   CreateDescriptorSets(graphics_pass);
   CreateGraphicsPipeline(graphics_pass);
 }
 
-void MeshPipeline::Destroy() {
+void PointPipeline::Destroy() {
   for (auto ub : uniform_buffers_) {
     VkContext2::Instance().DestroyBufferWithMemory(ub);
   }
@@ -64,8 +52,8 @@ void MeshPipeline::Destroy() {
   VkContext2::Instance().device_.destroy(descriptor_set_layout_);
 }
 
-void MeshPipeline::CreateUniformBuffers() {
-  auto buffer_size = static_cast<vk::DeviceSize>(sizeof(MeshUniform));
+void PointPipeline::CreateUniformBuffers() {
+  auto buffer_size = static_cast<vk::DeviceSize>(sizeof(PointUniform));
   uniform_buffers_.clear();
   for (size_t i = 0; i < VkGraphicsContext::Instance().swapchain_size_; ++i) {
     auto buffer = VkContext2::Instance().CreateBufferWithMemory(
@@ -75,7 +63,7 @@ void MeshPipeline::CreateUniformBuffers() {
   }
 }
 
-void MeshPipeline::CreateDescriptorSetLayout() {
+void PointPipeline::CreateDescriptorSetLayout() {
   vk::DescriptorSetLayoutBinding ubo_layout_binding;
   ubo_layout_binding.setBinding(0)
       .setDescriptorCount(1)
@@ -88,14 +76,14 @@ void MeshPipeline::CreateDescriptorSetLayout() {
       = VkContext2::Instance().device_.createDescriptorSetLayout(layout_create_info);
 }
 
-void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pass) {
+void PointPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pass) {
   vk::ShaderModule vert_module, frag_module;
   {
-    auto code = acg::utils::io::read_binary_file(SPV_HOME "mesh_pc.vert.spv");
+    auto code = acg::utils::io::read_binary_file(SPV_HOME "point.vert.spv");
     vk::ShaderModuleCreateInfo info;
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     vert_module = VkContext2::Instance().device_.createShaderModule(info);
-    code = acg::utils::io::read_binary_file(SPV_HOME "mesh_pc.frag.spv");
+    code = acg::utils::io::read_binary_file(SPV_HOME "point.frag.spv");
     info.setPCode(reinterpret_cast<uint32_t *>(code.data())).setCodeSize(code.size());
     frag_module = VkContext2::Instance().device_.createShaderModule(info);
   }
@@ -111,13 +99,13 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
   auto shader_stages = std::array{vert_stage_info, frag_stage_info};
   // Setup Vertex input
   vk::PipelineVertexInputStateCreateInfo vertex_input_create_info;
-  auto vertex_binding_desc = MeshVertex::GetBindingDescriptions();
-  auto vertex_attr_desc = MeshVertex::GetAttributeDescriptions();
+  auto vertex_binding_desc = PointVertex::GetBindingDescriptions();
+  auto vertex_attr_desc = PointVertex::GetAttributeDescriptions();
   vertex_input_create_info.setVertexBindingDescriptions(vertex_binding_desc)
       .setVertexAttributeDescriptions(vertex_attr_desc);
 
   vk::PipelineInputAssemblyStateCreateInfo input_assembly_info;
-  input_assembly_info.setTopology(vk::PrimitiveTopology::eTriangleList)
+  input_assembly_info.setTopology(vk::PrimitiveTopology::ePointList)
       .setPrimitiveRestartEnable(VK_FALSE);
 
   // Setup Viewport
@@ -130,8 +118,7 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
       .setRasterizerDiscardEnable(VK_FALSE)
       .setLineWidth(1.0f)
       .setPolygonMode(vk::PolygonMode::eFill)
-      .setCullMode(config_.cull_mode_)
-      .setFrontFace(config_.front_face_)
+      .setCullMode(vk::CullModeFlagBits::eNone)
       .setDepthBiasEnable(VK_FALSE);
 
   // Setup Multi sampling: No multisampling for better performance.
@@ -177,8 +164,8 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
   vk::PushConstantRange push_constant;
   // this push constant range starts at the beginning
   push_constant.offset = 0;
-  // this push constant range takes up the size of a MeshPushConstants struct
-  push_constant.size = sizeof(MeshPushConstants);
+  // this push constant range takes up the size of a PointPushConstants struct
+  push_constant.size = sizeof(PointPushConstants);
   // this push constant range is accessible only in the vertex shader
   push_constant.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
   pipeline_layout_info.setPPushConstantRanges(&push_constant).setPushConstantRangeCount(1);
@@ -208,7 +195,7 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
   VkContext2::Instance().device_.destroy(frag_module);
 }
 
-void MeshPipeline::BeginPipeline(vk::CommandBuffer &current_command_buffer) {
+void PointPipeline::BeginPipeline(vk::CommandBuffer &current_command_buffer) {
   // Bind Pipeline
   auto extent = VkGraphicsContext::Instance().swapchain_extent_;
   current_command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_);
@@ -224,27 +211,18 @@ void MeshPipeline::BeginPipeline(vk::CommandBuffer &current_command_buffer) {
       ubo_descriptor_sets_[VkGraphicsContext::Instance().current_frame_], {});
 }
 
-void MeshPipeline::EndPipeline(vk::CommandBuffer & /* current_command_buffer */) {
+void PointPipeline::EndPipeline(vk::CommandBuffer & /* current_command_buffer */) {
   // Nothing todo.
 }
 
-void MeshPipeline::SetCamera(const Camera &cam) {
+void PointPipeline::SetCamera(const Camera &cam) {
   auto extent = VkGraphicsContext::Instance().swapchain_extent_;
   ubo_.projection = cam.GetProjection(extent.width, extent.height);
   ubo_.view = cam.GetView();
   ubo_.eye_position = to_glm(cam.GetPosition());
 }
 
-void MeshPipeline::SetLight(const Light &light) {
-  ubo_.ambient_light_color = glm::vec4(to_glm(light.ambient_light_color_), light.light_density_);
-  ubo_.point_light_color = glm::vec4(to_glm(light.light_color_), light.light_density_);
-  ubo_.point_light_pos = to_glm(light.light_position_);
-  ubo_.parallel_light_color
-      = glm::vec4(to_glm(light.parallel_light_color_), light.parallel_light_density_);
-  ubo_.parallel_light_dir = to_glm(light.parallel_light_dir_);
-}
-
-void MeshPipeline::UpdateUbo(bool fast) {
+void PointPipeline::UpdateUbo(bool fast) {
   if (!fast) {
     VkContext2::Instance().device_.waitIdle();
   }
@@ -254,7 +232,7 @@ void MeshPipeline::UpdateUbo(bool fast) {
   }
 }
 
-void MeshPipeline::CreateDescriptorSets(const GraphicsRenderPass &pass) {
+void PointPipeline::CreateDescriptorSets(const GraphicsRenderPass &pass) {
   auto swapchain_size = VkGraphicsContext::Instance().swapchain_size_;
   std::vector<vk::DescriptorSetLayout> layouts(swapchain_size, descriptor_set_layout_);
   vk::DescriptorSetAllocateInfo alloc_info;
@@ -267,7 +245,7 @@ void MeshPipeline::CreateDescriptorSets(const GraphicsRenderPass &pass) {
     vk::DescriptorBufferInfo buffer_info;
     buffer_info.setBuffer(uniform_buffers_[i].GetBuffer())
         .setOffset(0)
-        .setRange(sizeof(MeshUniform));
+        .setRange(sizeof(PointUniform));
     vk::WriteDescriptorSet desc_write;
     desc_write.setDstSet(ubo_descriptor_sets_[i])
         .setDstBinding(0)
