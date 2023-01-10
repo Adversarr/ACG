@@ -30,14 +30,16 @@ struct PointUniform {
 
 struct PointPushConstants {
   float size;
-  glm::vec3 color;
+  glm::vec4 color;
   // Option[0] => opt[0] = 1: use pc color instead of in color.
   int options[4] = {0, 0, 0, 0};
 };
 
 class PointPipeline {
 public:
-  struct Config {};
+  struct Config {
+    bool enable_color_blending = false;
+  };
 
   void SetCamera(const Camera& cam);
 
@@ -61,7 +63,7 @@ public:
 
   ~PointPipeline();
 
-  explicit PointPipeline(const GraphicsRenderPass& graphics_pass, Config config = {});
+  explicit PointPipeline(const GraphicsRenderPass& graphics_pass, Config config);
 
 private:
   void Init(const GraphicsRenderPass& graphics_pass);

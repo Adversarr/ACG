@@ -1,6 +1,6 @@
 #version 450
 
-layout(location = 0) in vec3 inColor;
+layout(location = 0) in vec4 inColor;
 
 
 layout(binding = 0) uniform Ubo{
@@ -20,12 +20,11 @@ layout(push_constant) uniform constants {
   int options[4];
 } pc;
 
-
-
 layout(location = 0) out vec4 outColor;
 const float PI = 3.14159265359;
 void main() {
   vec2 off = gl_PointCoord - vec2(0.5, 0.5);
   float density = clamp(length(off), 0, 0.5) * PI;
-  outColor = vec4(inColor * cos(density), 1.0);
+  density = cos(density);
+  outColor = vec4(inColor.xyz, density * inColor.w);
 }

@@ -23,7 +23,7 @@ std::vector<vk::VertexInputAttributeDescription> MeshVertex::GetAttributeDescrip
   vk::VertexInputAttributeDescription desc2;
   desc2.binding = 0;
   desc2.location = 1;
-  desc2.format = vk::Format::eR32G32B32Sfloat;
+  desc2.format = vk::Format::eR32G32B32A32Sfloat;
   desc2.offset = offsetof(MeshVertex, color_);
 
   vk::VertexInputAttributeDescription desc3;
@@ -39,6 +39,30 @@ std::vector<vk::VertexInputAttributeDescription> MeshVertex::GetAttributeDescrip
   desc4.offset = offsetof(MeshVertex, uv_);
 
   return {desc1, desc2, desc3, desc4};
+}
+
+std::vector<vk::VertexInputBindingDescription> MeshInstance::GetBindingDescriptions() {
+  vk::VertexInputBindingDescription binding;
+  binding.setBinding(1);
+  binding.setStride(sizeof(MeshInstance));
+  binding.setInputRate(vk::VertexInputRate::eInstance);
+  return {binding};
+}
+
+std::vector<vk::VertexInputAttributeDescription> MeshInstance::GetAttributeDescriptions() {
+  vk::VertexInputAttributeDescription desc1;
+  desc1.binding = 1;
+  desc1.location = 4;
+  desc1.format = vk::Format::eR32G32B32Sfloat;
+  desc1.offset = offsetof(MeshInstance, position);
+
+  vk::VertexInputAttributeDescription desc2;
+  desc2.binding = 1;
+  desc2.location = 5;
+  desc2.format = vk::Format::eR32G32B32A32Sfloat;
+  desc2.offset = offsetof(MeshInstance, rotation);
+
+  return {desc1, desc2};
 }
 
 MeshPipeline::MeshPipeline(const GraphicsRenderPass &pass, Config config) : config_(config) {
@@ -113,6 +137,10 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
   vk::PipelineVertexInputStateCreateInfo vertex_input_create_info;
   auto vertex_binding_desc = MeshVertex::GetBindingDescriptions();
   auto vertex_attr_desc = MeshVertex::GetAttributeDescriptions();
+  auto instance_binding_desc = MeshInstance::GetBindingDescriptions();
+  auto instance_attr_desc = MeshInstance::GetAttributeDescriptions();
+  std::move(instance_binding_desc.begin(), instance_binding_desc.end(), std::back_inserter(vertex_binding_desc));
+  std::move(instance_attr_desc.begin(), instance_attr_desc.end(), std::back_inserter(vertex_attr_desc));
   vertex_input_create_info.setVertexBindingDescriptions(vertex_binding_desc)
       .setVertexAttributeDescriptions(vertex_attr_desc);
 
@@ -144,13 +172,17 @@ void MeshPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pas
   color_blend_attachment
       .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG
                          | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
-      .setBlendEnable(VK_FALSE)  // todo: add alpha blending support
       .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
       .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
       .setColorBlendOp(vk::BlendOp::eAdd)
       .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
       .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
       .setAlphaBlendOp(vk::BlendOp::eAdd);
+  if (config_.enable_color_blending) {
+    color_blend_attachment.setBlendEnable(VK_TRUE);
+  } else {
+    color_blend_attachment.setBlendEnable(VK_FALSE);
+  }
 
   vk::PipelineColorBlendStateCreateInfo color_blend_info;
   color_blend_info.setLogicOpEnable(VK_FALSE)

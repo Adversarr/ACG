@@ -131,13 +131,17 @@ void PointPipeline::CreateGraphicsPipeline(const GraphicsRenderPass &graphics_pa
   color_blend_attachment
       .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG
                          | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
-      .setBlendEnable(VK_FALSE)  // todo: add alpha blending support
       .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
       .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
       .setColorBlendOp(vk::BlendOp::eAdd)
       .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
       .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
       .setAlphaBlendOp(vk::BlendOp::eAdd);
+  if (config_.enable_color_blending) {
+    color_blend_attachment.setBlendEnable(VK_TRUE);
+  } else {
+    color_blend_attachment.setBlendEnable(VK_FALSE);
+  }
 
   vk::PipelineColorBlendStateCreateInfo color_blend_info;
   color_blend_info.setLogicOpEnable(VK_FALSE)

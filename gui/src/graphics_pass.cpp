@@ -8,7 +8,7 @@
 
 namespace acg::gui::details {
 
-GraphicsRenderPass::GraphicsRenderPass(GraphicsRenderPass::InitConfig config)
+GraphicsRenderPass::GraphicsRenderPass(GraphicsRenderPass::Config config)
     : init_config_(config) {
   Init();
 }

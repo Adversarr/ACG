@@ -11,7 +11,7 @@ namespace details {
 
 class GraphicsRenderPass {
 public:
-  struct InitConfig {
+  struct Config {
     std::vector<vk::DescriptorPoolSize> required_descriptor_sizes;
     uint32_t max_descriptor_set_count;
     bool is_present{true};
@@ -37,7 +37,7 @@ public:
 
   void SetDepthStencilValue(F32 depth);
 
-  explicit GraphicsRenderPass(InitConfig config);
+  explicit GraphicsRenderPass(Config config);
 
   vk::CommandBuffer & GetCurrentFrameCommandBuffer();
 
@@ -57,7 +57,7 @@ private:
   static vk::Format FindDepthFormat();
 
   // Initialize config
-  const InitConfig init_config_;
+  const Config init_config_;
   // Render pass and Pipeline
   bool is_begin_{false};
 

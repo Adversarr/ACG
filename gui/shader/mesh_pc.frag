@@ -1,7 +1,7 @@
 #version 450
 
 layout (location = 0) in vec3 inNormal;
-layout (location = 1) in vec3 inColor;
+layout (location = 1) in vec4 inColor;
 layout (location = 2) in vec2 inUV;
 layout (location = 3) in vec3 inWorldPosiion;
 
@@ -76,6 +76,6 @@ void main() {
       get_point_light_color()
       + get_parallel_light_color()
       ,
-      1.0
+      inColor.w
   );
 }

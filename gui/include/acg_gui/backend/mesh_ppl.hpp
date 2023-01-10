@@ -10,10 +10,17 @@ namespace details {
 
 struct MeshVertex {
   glm::vec3 position_;
-  glm::vec3 color_;
+  glm::vec4 color_;
   glm::vec3 normal_;
   glm::vec2 uv_;
 
+  static std::vector<vk::VertexInputBindingDescription> GetBindingDescriptions();
+  static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions();
+};
+
+struct MeshInstance {
+  glm::vec3 position;
+  glm::vec4 rotation;
   static std::vector<vk::VertexInputBindingDescription> GetBindingDescriptions();
   static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions();
 };
@@ -45,6 +52,7 @@ public:
   struct Config {
     vk::CullModeFlags cull_mode_{vk::CullModeFlagBits::eNone};
     vk::FrontFace front_face_{vk::FrontFace::eCounterClockwise};
+    bool enable_color_blending{false};
     bool use_push_constants{true};
   };
 
