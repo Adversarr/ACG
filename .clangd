@@ -4,11 +4,3 @@ Index:
 Completion:
   AllScopes: No
 
-Diagnostics:
-  UnusedIncludes: None
-
-Hover:
-  ShowAKA: Yes
-
-InlayHints:
-  Enabled: No

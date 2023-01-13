@@ -103,7 +103,6 @@ protected:
 
   int frame_count_;
 
-  // TODO: Support async physics run.
   bool is_async_{false};
 
   // Indicate the world is still running.

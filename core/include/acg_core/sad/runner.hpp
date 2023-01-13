@@ -3,6 +3,7 @@
 
 #include "dual.hpp"
 #include "simplify.hpp"
+#include "acg_core/math/tensor_traits.hpp"
 namespace acg::sad {
 namespace details {
 
@@ -57,8 +58,12 @@ template <typename T> struct Runner {
   template <typename Exp, typename IL> struct Task;
   template <typename Exp, typename... I> struct Task<Exp, List<I...>> {
     inline void operator()(typename T::data_container& data) const noexcept {
-      if constexpr (!Exp::is_input)
+      if constexpr (!Exp::is_input) {
+        if constexpr (acg::Trait<GetInnerType_t<Exp>>::is_scalar)
         std::get<T::template index<Exp>>(data) = Exp{}(std::get<T::template index<I>>(data)...);
+        else
+        std::get<T::template index<Exp>>(data).noalias() = Exp{}(std::get<T::template index<I>>(data)...);
+      }
     }
   };
   template <typename Ts> struct RunnerImpl;
