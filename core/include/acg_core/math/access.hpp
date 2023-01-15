@@ -5,6 +5,47 @@
 
 namespace acg {
 
+template <typename Scalar, int dim> class FieldCAccess {
+  using RawType = Field<Scalar, dim>;
+  const RawType& field_ref_;
+
+public:
+  inline explicit FieldCAccess(const Field<Scalar, dim>& field_ref) noexcept
+      : field_ref_(field_ref) {}
+
+  struct Iterator {
+    using iterator_category = std::random_access_iterator_tag;
+    using difference_type = typename RawType::Index;
+    using value_type = decltype(std::declval<RawType>().col(0));
+
+    Idx index;
+    const RawType& raw_data;
+
+    Iterator(difference_type index, RawType& raw_data) : index(index), raw_data(raw_data) {}
+
+    value_type operator*() const { return raw_data.col(index); }
+
+    Iterator& operator++() {
+      index++;
+      return *this;
+    }
+
+    bool operator==(const Iterator& rhs) const { return index == rhs.index; }
+
+    bool operator!=(const Iterator& rhs) const { return index != rhs.index; }
+  };
+
+  inline auto operator[](Idx i) const noexcept { return field_ref_.col(i); }
+
+  inline auto operator()(Idx i) const noexcept { return field_ref_.col(i); }
+
+  inline Idx Size() const noexcept { return field_ref_.cols(); }
+
+  inline auto Xwise() const noexcept { return field_ref_.colwise(); }
+
+  inline auto Array() const noexcept { return field_ref_.array(); }
+};
+
 template <typename Scalar, int dim> class FieldAccess {
   using RawType = Field<Scalar, dim>;
   RawType& field_ref_;
@@ -38,7 +79,7 @@ public:
 
   inline auto operator()(Idx i) noexcept { return field_ref_.col(i); }
 
-  inline Idx Size() noexcept { return field_ref_.cols(); }
+  inline Idx Size() const noexcept { return field_ref_.cols(); }
 
   inline auto Xwise() noexcept { return field_ref_.colwise(); }
 

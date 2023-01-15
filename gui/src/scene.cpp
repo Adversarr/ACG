@@ -1,7 +1,11 @@
 #include "acg_gui/scene.hpp"
-
+// libs
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <acg_core/geometry/common_models.hpp>
 #include <acg_core/geometry/normal.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <vector>
 
 #include "acg_core/geometry/common_models.hpp"
@@ -109,5 +113,6 @@ Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Field<F32, 3
   meshes_.emplace_back(std::move(mesh));
   return *this;
 }
+
 
 }  // namespace acg::gui

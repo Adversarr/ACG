@@ -11,7 +11,7 @@ namespace details {
 
 struct PointVertex {
   glm::vec3 position;
-  glm::vec3 color;
+  glm::vec4 color;
   static std::vector<vk::VertexInputBindingDescription> GetBindingDescriptions();
   static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions();
 };

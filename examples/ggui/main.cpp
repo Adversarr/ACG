@@ -55,8 +55,8 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
 
   std::atomic_bool exit_child{false};
-  std::thread child {[&exit_child](){
-    while(!exit_child.load()) {
+  std::thread child{[&exit_child]() {
+    while (!exit_child.load()) {
       acg::utils::SleepSec(1);
       ACG_INFO("Hello~");
     }
@@ -83,7 +83,6 @@ int main(int argc, char** argv) {
     light.parallel_light_dir_ = acg::Vec3f(0, -1, -1);
     light.parallel_light_density_ = 0.5f;
     {
-
       ACG_INFO("Pipeline created");
       auto vb = acg::gui::VkContext2::Instance().CreateBufferWithMemory(
           10240, vk::BufferUsageFlagBits::eVertexBuffer,
@@ -146,8 +145,8 @@ int main(int argc, char** argv) {
                                                         sizeof(vert.front()) * vert.size());
       acg::gui::VkContext2::Instance().CopyHostToBuffer(index.data(), ib,
                                                         sizeof(uint32_t) * index.size());
-      acg::gui::VkContext2::Instance().CopyHostToBuffer(instances.data(), inst_b,
-                                                        sizeof(instances.front()) * instances.size());
+      acg::gui::VkContext2::Instance().CopyHostToBuffer(
+          instances.data(), inst_b, sizeof(instances.front()) * instances.size());
       ppl.SetCamera(cam);
       ppl.SetLight(light);
       ppl.UpdateUbo();
@@ -158,9 +157,9 @@ int main(int argc, char** argv) {
       p_ppl.SetCamera(cam);
       p_ppl.UpdateUbo(true);
       std::vector<acg::gui::details::PointVertex> vert3;
-      vert3.push_back({glm::vec3(0.3, 0.3, 0.3), glm::vec3(1, 0, 0)});
-      vert3.push_back({glm::vec3(-0.3, 0.3, 0.3), glm::vec3(0, 1, 0)});
-      vert3.push_back({glm::vec3(0.3, -0.3, 0.3), glm::vec3(0, 0, 1)});
+      vert3.push_back({glm::vec3(0.3, 0.3, 0.3), glm::vec4(1, 0, 0, 1)});
+      vert3.push_back({glm::vec3(-0.3, 0.3, 0.3), glm::vec4(0, 1, 0, 1)});
+      vert3.push_back({glm::vec3(0.3, -0.3, 0.3), glm::vec4(0, 0, 1, 1)});
       acg::gui::details::PointPushConstants point_pc;
       point_pc.color = glm::vec4(0.7, 0.7, 0.7, 1.0);
       point_pc.size = 16;
@@ -172,8 +171,6 @@ int main(int argc, char** argv) {
       acg::gui::details::UiPass::Config ui_pass_config;
       ui_pass_config.is_ui_only = false;
       acg::gui::details::UiPass ui_pass(ui_pass_config);
-
-
 
       float value[3]{1, 1, 1};
       acg::gui::details::MeshPushConstants pc;
@@ -220,8 +217,8 @@ int main(int argc, char** argv) {
 
         // Point draw.
         p_ppl.BeginPipeline(cbuf);
-        cbuf.pushConstants(p_ppl.GetPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 
-                           0,
+        cbuf.pushConstants(p_ppl.GetPipelineLayout(),
+                           vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                            sizeof(point_pc), &point_pc);
         cbuf.bindVertexBuffers(0, vb3.GetBuffer(), static_cast<vk::DeviceSize>(0));
         cbuf.draw(3, 1, 0, 0);

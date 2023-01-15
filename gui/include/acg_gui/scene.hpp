@@ -1,22 +1,17 @@
 #pragma once
-
+#include <acg_utils/result.hpp>
+#include <acg_core/geometry/common.hpp>
 #include <acg_core/geometry/mesh.hpp>
 #include <acg_core/geometry/particlesystem.hpp>
+#include <acg_core/math/access.hpp>
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include "acg_core/math/common.hpp"
+#include "backend/buffer_def.hpp"
 #include "camera.hpp"
 #include "light.hpp"
-
-// libs
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
-
-#include "backend/avk.hpp"
-#include "backend/buffer_def.hpp"
 
 namespace acg::gui {
 
@@ -78,51 +73,158 @@ class Scene2 {
 public:
   Scene2() = default;
 
+  struct Mesh {
+    int id;
+    // mesh data.
+    geometry::topology::TriangleList faces;
+    types::PositionField<float, 3> vertices;
+    types::RgbaField color;
+    Field<float, 3> normals;
+    // Reserve for future use.
+    Field<float, 2> uv;
+
+    bool enable_wireframe;
+    bool use_uniform_color;
+    bool use_double_side_lighting;
+    int specular_shiness;
+
+    // Push constants:
+    Mat4x4f model;
+    // Instancing
+    Ui32 instance_count;
+    Field<float, 3> instance_position;
+    Field<float, 4> instance_rotation;
+
+    Mesh(const geometry::topology::TriangleList& face_indices,
+         const types::PositionField<float, 3>& vertices);
+
+    Mesh& SetEnableWireframe(bool enable = true) {
+      enable_wireframe = enable;
+      return *this;
+    }
+
+    inline Mesh& SetDoubleSideLighting(bool val = true) {
+      use_double_side_lighting = val;
+      return *this;
+    }
+
+    inline Mesh& SetSpecularShiness(int shineness) {
+      specular_shiness = shineness;
+      return *this;
+    }
+
+    inline Mesh& SetColor(types::RgbaField const& val) {
+      use_uniform_color = false;
+      color = val;
+      return *this;
+    }
+
+    inline Mesh& SetUniformColor(types::Rgba const& val) {
+      use_uniform_color = true;
+      color = val;
+      return *this;
+    }
+
+    inline Mesh& SetNormals(const Field<float, 3>& val) {
+      normals = val;
+      return *this;
+    }
+
+    inline Mesh& SetUV(const Field<float, 2>& val) {
+      uv = val;
+      return *this;
+    }
+
+    inline Mesh& SetModel(const Mat4x4f& val) {
+      model = val;
+      return *this;
+    }
+
+    inline Mesh& SetInstanceCount(Ui32 count) {
+      instance_count = count;
+      return *this;
+    }
+
+    inline Mesh& SetInstancePositions(const Field<float, 3>& positions) {
+      instance_position = positions;
+      return *this;
+    }
+
+    inline Mesh& SetInstanceRotations(const Field<float, 4>& rotations) {
+      instance_rotation = rotations;
+      return *this;
+    }
+  };
+
+  struct Particles {
+    types::PositionField<float, 3> positions;
+    types::RgbaField colors;
+    bool use_uniform_color;
+    F32 radius;
+
+    inline Particles& SetColor(acg::types::RgbaField const& color) {
+      use_uniform_color = false;
+      colors = color;
+      return *this;
+    }
+
+    inline Particles& SetUniformColor(types::Rgba color) {
+      use_uniform_color = true;
+      colors = color;
+      return *this;
+    }
+
+    inline Particles& SetRadius(F32 r) {
+      radius = r;
+      return *this;
+    }
+  };
+
+  struct Wireframe {
+    geometry::topology::LineList indices;
+    types::PositionField<float, 3> positions;
+    types::RgbField colors;
+  };
+
 private:
-  Light light_;
+  std::optional<Light> light_;
 
-  Camera camera_;
+  std::optional<Camera> camera_;
 
-  // For Mesh: Vertex, Index, normal, and color.
-  std::vector<geometry::SimpleMesh<F32>> meshes_;
-  std::vector<types::RgbField> mesh_colors_;
-  std::vector<Field<F32, 3>> normals_;
-
-  // For particles: Color, position, radius
-  std::vector<types::Position<F32, 3>> particle_positions_;
-  std::vector<F32> particle_radiuses_;
-  std::vector<types::Rgb> particle_colors_;
-
-  // For wireframes: Color, verteces.
-  std::vector<types::PositionField<F32, 3>> wireframe_vertex_lists_;
-  std::vector<Field<Idx, 2>> wireframe_index_lists_;
-  std::vector<types::RgbField> wireframe_colors_;
+  std::vector<Mesh> meshes_;
+  std::vector<Particles> particles_;
+  std::vector<Wireframe> wireframe_;
 
   // TODO: Arrows
 public:
-  Scene2 SetCamera(const Camera& camera);
-  Scene2 SetLight(const Light& light);
+  /**
+   * @brief: add a single and simple mesh to the scene, will automatically compute the nomral for
+   * the mesh.
+   *
+   * @return: Reference to the internal object
+   */
+  Mesh& AddMesh(const geometry::topology::TriangleList& indices,
+                const types::PositionField<float, 3>& positions,
+                std::optional<Field<float, 3>> opt_normals = std::nullopt);
 
-  void AddMesh(const geometry::SimpleMesh<F32>& mesh, std::optional<Field<F32, 3>> normals,
-               const Field<F32, 3>& colors);
+  /**
+   * @brief: Add a mesh-based particle using instancing rendering.
+   */
+  Mesh& AddMeshParticles(const types::PositionField<float, 3>& positions, F32 radius = 1.0f);
 
-  void AddLines(const types::PositionField<F32, 3>& vertices, const Field<Idx, 2>& indices,
-                const types::RgbField& colors);
+  Result<Mesh&> GetMesh(int id);
 
-  void AddParticles(const types::PositionField<F32, 3>& positions, const Field<F32, 1>& radiuses,
-                    const types::RgbField& colors);
+  Particles& AddParticles(const types::PositionField<float, 3>& positions, F32 radius = 1.0f);
 
-  void AddParticle(const types::Position<F32, 3>& position, const F32& radius,
-                   const types::Rgb& color);
-};
+  Result<Particles&> GetParticles(Idx id);
 
-class Canvas {
-private:
-  std::unique_ptr<Scene2> scene_;
+  Wireframe& AddWireframe(const geometry::topology::LineList& indices,
+                          types::PositionField<float, 3> positions, const types::RgbField& colors);
 
-  std::vector<types::Position<F32, 3>> circle_positions_;
-  std::vector<F32> circle_radiuses_;
-  std::vector<types::Rgb> circle_colors_;
+  /**
+   * @brief: remove all the objects.
+   */
+  void Clear();
 };
 
 }  // namespace acg::gui

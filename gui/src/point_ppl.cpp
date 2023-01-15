@@ -24,7 +24,7 @@ std::vector<vk::VertexInputAttributeDescription> PointVertex::GetAttributeDescri
   vk::VertexInputAttributeDescription desc2;
   desc2.binding = 0;
   desc2.location = 1;
-  desc2.format = vk::Format::eR32G32B32Sfloat;
+  desc2.format = vk::Format::eR32G32B32A32Sfloat;
   desc2.offset = offsetof(PointVertex, color);
   return {desc1, desc2};
 }

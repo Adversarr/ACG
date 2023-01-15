@@ -10,9 +10,6 @@ add_rules("mode.debug", "mode.release")
 
 set_optimize('faster')
 
-
-
-
 includes(
   '3rdparty',
   'core',

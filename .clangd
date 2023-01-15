@@ -4,3 +4,5 @@ Index:
 Completion:
   AllScopes: No
 
+Diagnostics:
+  UnusedIncludes: Strict

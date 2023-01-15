@@ -60,11 +60,17 @@ TEST_CASE("god") {
 
 acg::Result<int> check_is_zero(int x) {
   if (x == 0) {
-    return acg::Result<int>::Emplace(1);
+    return acg::make_result<int>(1);
   } else {
-    return acg::Status::kInvalidArgument;
+    return acg::make_error(acg::Status::kInvalidArgument);
   }
 }
+
+struct NoCopy{
+  NoCopy() = default;
+  NoCopy(const NoCopy &) = delete;
+  NoCopy(NoCopy&& ) = default;
+};
 
 TEST_CASE("Result") { 
   auto has_result = check_is_zero(0);
@@ -76,4 +82,12 @@ TEST_CASE("Result") {
   CHECK(!nohas_result.HasValue());
   CHECK(!static_cast<bool>(nohas_result));
   CHECK(nohas_result.Error() == acg::Status::kInvalidArgument);
+
+  acg::Result<void> err = acg::make_error(acg::Status::kInvalidArgument);
+  acg::Result<int> err_cvt = err;
+  CHECK(! err.HasValue());
+  CHECK(! err_cvt.HasValue());
+  CHECK(err_cvt.Error() == acg::Status::kInvalidArgument);
+
+  auto nocopy_result = acg::make_result<NoCopy>();
 }
