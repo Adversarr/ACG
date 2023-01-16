@@ -53,6 +53,23 @@ static void lazy(benchmark::State& state) {
     benchmark::DoNotOptimize(result.Get<Dx0>());
   }
 }
+static void lazy2(benchmark::State& state) {
+  // Perform setup here
+  using namespace acg::sad;
+  LazyContext<acg::utils::god::List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2>> context;
+  context.Set<X>(acg::Vec3f{1, 2, 3});
+  context.Set<Y>(acg::Vec3f{1, 2, 3});
+
+  for (auto _ : state) {
+    auto result = LazyResult2(context);
+    benchmark::DoNotOptimize(result.Get<Dy1>());
+    benchmark::DoNotOptimize(result.Get<Dy2>());
+    benchmark::DoNotOptimize(result.Get<Dy0>());
+    benchmark::DoNotOptimize(result.Get<Dx1>());
+    benchmark::DoNotOptimize(result.Get<Dx2>());
+    benchmark::DoNotOptimize(result.Get<Dx0>());
+  }
+}
 
 using namespace autodiff;
 
@@ -79,6 +96,7 @@ static void ghad(benchmark::State& state) {
 // Register the function as a benchmark
 BENCHMARK(non_lazy);
 BENCHMARK(lazy);
+BENCHMARK(lazy2);
 BENCHMARK(ghad);
 
 // Run the benchmark

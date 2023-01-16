@@ -1,9 +1,9 @@
 #pragma once
-#include <acg_utils/result.hpp>
 #include <acg_core/geometry/common.hpp>
 #include <acg_core/geometry/mesh.hpp>
 #include <acg_core/geometry/particlesystem.hpp>
 #include <acg_core/math/access.hpp>
+#include <acg_utils/result.hpp>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -74,7 +74,7 @@ public:
   Scene2() = default;
 
   struct Mesh {
-    int id;
+    const int id;
     // mesh data.
     geometry::topology::TriangleList faces;
     types::PositionField<float, 3> vertices;
@@ -94,9 +94,17 @@ public:
     Ui32 instance_count;
     Field<float, 3> instance_position;
     Field<float, 4> instance_rotation;
+    explicit Mesh(int id) : id(id) {}
 
-    Mesh(const geometry::topology::TriangleList& face_indices,
-         const types::PositionField<float, 3>& vertices);
+    Mesh& SetIndices(const geometry::topology::TriangleList& val) {
+      faces = val;
+      return *this;
+    }
+
+    Mesh& SetVertices(const types::PositionField<float, 3>& val) {
+      vertices = val;
+      return *this;
+    }
 
     Mesh& SetEnableWireframe(bool enable = true) {
       enable_wireframe = enable;
@@ -157,10 +165,18 @@ public:
   };
 
   struct Particles {
+    const int id;
     types::PositionField<float, 3> positions;
     types::RgbaField colors;
     bool use_uniform_color;
     F32 radius;
+
+    explicit Particles(int id): id(id) {}
+
+    inline Particles& SetPositions(const types::PositionField<float, 3>& val) {
+      positions = val;
+      return *this;
+    }
 
     inline Particles& SetColor(acg::types::RgbaField const& color) {
       use_uniform_color = false;
@@ -181,9 +197,27 @@ public:
   };
 
   struct Wireframe {
+    const int id;
     geometry::topology::LineList indices;
     types::PositionField<float, 3> positions;
     types::RgbField colors;
+
+    explicit Wireframe(int id): id(id) {}
+
+    inline Wireframe& SetIndices(const geometry::topology::LineList& ind) {
+      indices = ind;
+      return *this;
+    }
+
+    inline Wireframe& SetPositions(const types::PositionField<float, 3>& pos) {
+      positions = pos;
+      return *this;
+    }
+
+    inline Wireframe& SetColors(const types::RgbField& color) {
+      colors = color;
+      return *this;
+    }
   };
 
 private:
@@ -197,6 +231,8 @@ private:
 
   // TODO: Arrows
 public:
+  // MESH API:
+
   /**
    * @brief: add a single and simple mesh to the scene, will automatically compute the nomral for
    * the mesh.
@@ -207,19 +243,41 @@ public:
                 const types::PositionField<float, 3>& positions,
                 std::optional<Field<float, 3>> opt_normals = std::nullopt);
 
+  Mesh& AddMesh();
   /**
    * @brief: Add a mesh-based particle using instancing rendering.
    */
   Mesh& AddMeshParticles(const types::PositionField<float, 3>& positions, F32 radius = 1.0f);
 
-  Result<Mesh&> GetMesh(int id);
+  Result<Mesh&> GetMesh(size_t id);
 
+  size_t GetMeshCount() const { return meshes_.size(); }
+
+  const std::vector<Mesh>& GetMesh() const { return meshes_; }
+
+  // PARTICLE API
+
+  /**
+   * @brief add a group of particles into scene.
+   */
   Particles& AddParticles(const types::PositionField<float, 3>& positions, F32 radius = 1.0f);
 
-  Result<Particles&> GetParticles(Idx id);
+  Result<Particles&> GetParticles(size_t id);
+
+  size_t GetParticlesCount() const { return particles_.size(); }
+
+  const std::vector<Particles>& GetParticles() const { return particles_; }
+
+  // WIREFRAME API
 
   Wireframe& AddWireframe(const geometry::topology::LineList& indices,
                           types::PositionField<float, 3> positions, const types::RgbField& colors);
+
+  Result<Wireframe&> GetWireframe(size_t id);
+
+  const std::vector<Wireframe>& GetWireframe() const { return wireframe_; }
+
+  size_t GetWireframeCount() const { return wireframe_.size(); }
 
   /**
    * @brief: remove all the objects.

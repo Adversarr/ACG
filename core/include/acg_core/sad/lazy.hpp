@@ -1,3 +1,4 @@
+#pragma once
 #include <acg_utils/log.hpp>
 #include <iostream>
 
@@ -9,17 +10,14 @@ namespace acg::sad {
 namespace details {
 
 template <typename L> struct DetermineLazyDataType;
-template <> struct DetermineLazyDataType<List<>> {
-  using type = List<>;
-};
+template <> struct DetermineLazyDataType<List<>> { using type = List<>; };
 template <typename T> struct DetermineLazyDataType<List<T>> {
   using type = List<Pair<T, typename T::type>>;
 };
+
 template <typename E, typename L> struct LazyEval;
 template <typename I, typename L> struct GetInputLazy;
-template <typename L> struct GetInputLazy<List<>, L> {
-  using type = List<>;
-};
+template <typename L> struct GetInputLazy<List<>, L> { using type = List<>; };
 template <typename L, typename H, typename... I> struct GetInputLazy<List<H, I...>, L> {
   using hv = GetKeyValue_t<H, L>;
   using iv = typename GetInputLazy<List<I...>, L>::type;
@@ -134,13 +132,88 @@ template <typename C> struct LazyResultImpl2<C, List<>> {
   explicit LazyResultImpl2(C& context) : context_(context) {}
 };
 
+template <typename C, typename LayersToCompute> struct LazyResultImpl;
+
+template <typename L> struct NotContianOperator {
+  template <typename R> struct Tester {
+    static constexpr bool value = Count_v<L, typename R::SubNodes, ExprHasSameValue> == 1;
+  };
+};
+
+template <typename C, typename... Rest, typename... E>
+struct LazyResultImpl<C, List<List<E...>, Rest...>> : private LazyResultImpl<C, List<Rest...>> {
+  using layer_output = List<E...>;
+  using layer_last = List<Rest...>;
+  using future_exprs = Reduce_t<Concat, List<List<>, Rest...>>;
+  template <typename T> using Tester = All<NotContianOperator<T>::template Tester, future_exprs>;
+  using base_type = LazyResultImpl<C, layer_last>;
+  template <typename T> static constexpr size_t index
+      = Find<T, layer_output, ExprHasSameValue>::value;
+
+  template <bool use_lazy, typename Exp, typename L> struct Task;
+  template <typename Exp, typename... I> struct Task<true, Exp, List<I...>> {
+    forceinline decltype(auto) operator()(base_type& impl) {
+      return Exp{}(impl.template Get<I>()...);
+    }
+  };
+  template <typename Exp, typename... I> struct Task<false, Exp, List<I...>> {
+    forceinline decltype(auto) operator()(base_type& impl) {
+      return typename Exp::type(Exp{}(impl.template Get<I>()...));
+    }
+
+    forceinline decltype(auto) lazy_eval(base_type& impl) {
+      return Exp{}(impl.template Get<I>() ...);
+    }
+
+    forceinline decltype(auto) eval(base_type& impl) {
+      return Exp{}(impl.template Get<I>() ...).eval();
+    }
+  };
+  using output_type = decltype(std::make_tuple(
+      Task<Tester<E>::value, E, typename E::InputExpr>{}(std::declval<base_type&>())...));
+  decltype(std::make_tuple(
+      Task<Tester<E>::value, E, typename E::InputExpr>{}(std::declval<base_type&>())...)) data_;
+
+  template <typename T, std::enable_if_t<Has_v<T, layer_output, ExprHasSameValue>, int> = 0>
+  forceinline decltype(auto) Get() {
+    return std::get<index<T>>(data_);
+  }
+  template <typename T, std::enable_if_t<!Has_v<T, layer_output, ExprHasSameValue>, int> = 0>
+  forceinline decltype(auto) Get() {
+    return static_cast<base_type&>(*this).template Get<T>();
+  }
+  forceinline explicit LazyResultImpl(C& context)
+      : base_type(context),
+        data_(
+            Task<Tester<E>::value, E, typename E::InputExpr>{}(static_cast<base_type&>(*this))...) {
+  }
+};
+
+template <typename C> struct LazyResultImpl<C, List<>> {
+  C& context_;
+  template <typename T> forceinline decltype(auto) Get() { return (context_.template Get<T>()); }
+  explicit LazyResultImpl(C& context) : context_(context) {}
+};
+
 }  // namespace details
 
 template <typename L> using LazyContext = details::LazyContext<L>;
 
+template <typename C> struct LazyResult2
+    : private details::LazyResultImpl<C, typename C::lazy_layers> {
+  using impl_type = details::LazyResultImpl<C, typename C::lazy_layers>;
+
+  inline explicit LazyResult2(C& c) : impl_type(c) {}
+
+  template <typename T> inline decltype(auto) Get() {
+    return static_cast<impl_type&>(*this).template Get<T>();
+  }
+};
+
 template <typename C> struct LazyResult
     : private details::LazyResultImpl2<C, typename C::lazy_layers> {
   using impl_type = details::LazyResultImpl2<C, typename C::lazy_layers>;
+
   inline explicit LazyResult(C& c) : impl_type(c) {}
 
   template <typename T> inline decltype(auto) Get() {

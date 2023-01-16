@@ -132,14 +132,18 @@ struct IsElem;
 template <typename T, template <typename, typename> typename Eq>
 struct IsElem<T, List<>, Eq> {
   static constexpr bool value = false;  // NOLINT
+  static constexpr int count = 0;
 };
 template <typename T, template <typename, typename> typename Eq, typename H, typename... LT> struct IsElem<T, List<H, LT...>, Eq> {
   static constexpr bool value  // NOLINT
       = Eq<H, T>::value ? true : IsElem<T, List<LT...>, Eq>::value;
+  static constexpr int count = Eq<H, T>::value ? 
+    IsElem<T, List<LT...>, Eq>::value : (1 + IsElem<T, List<LT...>, Eq>::value);
 };
 
 template <typename T, typename H, template <typename, typename> typename Eq> struct IsElem<T, List<H>, Eq> {
   static constexpr bool value = Eq<H, T>::value;  // NOLINT
+  static constexpr bool count = Eq<H, T>::value ? 1 : 0;  // NOLINT
 };
 
 template <typename K, typename V> struct Pair {
@@ -202,6 +206,10 @@ template <typename T, typename L, template<typename, typename> typename Eq=std::
 using Has = details::IsElem<T, L, Eq>;
 template <typename T, typename L, template<typename, typename> typename Eq=std::is_same> 
  static constexpr bool Has_v = Has<T, L, Eq>::value;
+template <typename T, typename L, template<typename, typename> typename Eq=std::is_same> 
+using Count = details::IsElem<T, L, Eq>;
+template <typename T, typename L, template<typename, typename> typename Eq=std::is_same> 
+ static constexpr bool Count_v = Count<T, L, Eq>::count;
 
 template <typename K, typename V> using Pair = details::Pair<K, V>;
 template <typename T> using GetKey = details::GetKey<T>;

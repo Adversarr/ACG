@@ -114,5 +114,26 @@ Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Field<F32, 3
   return *this;
 }
 
+Scene2::Mesh& Scene2::AddMesh() {
+  meshes_.emplace_back(meshes_.size());
+  return meshes_.back();
+}
+
+Scene2::Mesh& Scene2::AddMesh(const geometry::topology::TriangleList& indices,
+                              const types::PositionField<float, 3>& positions,
+                              std::optional<Field<float, 3>> opt_normals) {
+  decltype(auto) mesh= AddMesh();
+  mesh.SetIndices(indices).SetVertices(positions);
+  if (opt_normals.has_value()) {
+    mesh.SetNormals(opt_normals.value());
+  } else {
+    acg::geometry::Normal<F32> kern_normal(indices, positions);
+    auto normal = kern_normal.PerVertex(geometry::NormalPerVertexMode::kArea);
+    mesh.SetNormals(normal);
+  }
+  return mesh;
+}
+
+
 
 }  // namespace acg::gui

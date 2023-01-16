@@ -12,37 +12,39 @@ template <typename T> decltype(auto) identity(T&& value) { return std::forward<T
 
 namespace test {
 
-TEST_CASE("Scalar Non Lazy Auto Diff") {
-  Variable(float, X);
-  Variable(float, Y);
-  using X2 = Mul<X, X>;           // X * X
-  using E = Add<X2, Y>;           // X * X + Y
-  using P = Add<E, Ones<float>>;  // X * X + Y + 1
-  using dx = Simpliest_t<DirectionalDiff_t<P, X, OnesLike<X>>>;
-  using ddx = Simpliest_t<DirectionalDiff_t<dx, X, OnesLike<X>>>;
-  LazyContext<List<P, dx, ddx>> c;  // Compute Context
-  c.Set<X>(10);                     // Setup Input X
-  c.Set<Y>(20);                     // Setup Input Y
-  auto r = LazyResult(c);
-  CHECK_EQ(r.Get<X>(), 10);
-  CHECK_EQ(r.Get<Y>(), 20);
-  CHECK_EQ(r.Get<P>(), 121);
-  CHECK_EQ(r.Get<dx>(), 20);
-  CHECK_EQ(r.Get<ddx>(), 2);
-  {
-    Variable(Eigen::Matrix2f, Mx);
-    Variable(Eigen::Matrix2f, My);
-    using Yx = Mul<My, Mx>;
-    using Yxax = Add<Yx, Mx>;
-    using dx = DirectionalDiff_t<Yx, Mx, OnesLike<Mx>>;
-    using dy = DirectionalDiff_t<Yx, My, OnesLike<My>>;
-    Eigen::Matrix2f x;
-    LazyContext<List<Yxax, dx, dy>> c;
-    c.Set<My>(Eigen::Matrix2f{{1, 2}, {3, 4}});
-    c.Set<Mx>(Eigen::Matrix2f{{1, 2}, {3, 4}});
-    for (int i = 0; i < 1000; ++i) {
-      auto r = LazyResult(c);
-      r.Get<dy>().eval();
+TEST_CASE("sad-lazy") {
+  SUBCASE("default") {
+    Variable(float, X);
+    Variable(float, Y);
+    using X2 = Mul<X, X>;           // X * X
+    using E = Add<X2, Y>;           // X * X + Y
+    using P = Add<E, Ones<float>>;  // X * X + Y + 1
+    using dx = Simpliest_t<DirectionalDiff_t<P, X, OnesLike<X>>>;
+    using ddx = Simpliest_t<DirectionalDiff_t<dx, X, OnesLike<X>>>;
+    LazyContext<List<P, dx, ddx>> c;  // Compute Context
+    c.Set<X>(10);                     // Setup Input X
+    c.Set<Y>(20);                     // Setup Input Y
+    auto r = LazyResult(c);
+    CHECK_EQ(r.Get<X>(), 10);
+    CHECK_EQ(r.Get<Y>(), 20);
+    CHECK_EQ(r.Get<P>(), 121);
+    CHECK_EQ(r.Get<dx>(), 20);
+    CHECK_EQ(r.Get<ddx>(), 2);
+    {
+      Variable(Eigen::Matrix2f, Mx);
+      Variable(Eigen::Matrix2f, My);
+      using Yx = Mul<My, Mx>;
+      using Yxax = Add<Yx, Mx>;
+      using dx = DirectionalDiff_t<Yx, Mx, OnesLike<Mx>>;
+      using dy = DirectionalDiff_t<Yx, My, OnesLike<My>>;
+      Eigen::Matrix2f x;
+      LazyContext<List<Yxax, dx, dy>> c;
+      c.Set<My>(Eigen::Matrix2f{{1, 2}, {3, 4}});
+      c.Set<Mx>(Eigen::Matrix2f{{1, 2}, {3, 4}});
+      for (int i = 0; i < 1000; ++i) {
+        auto r = LazyResult(c);
+        r.Get<dy>().eval();
+      }
     }
   }
 
@@ -63,6 +65,28 @@ TEST_CASE("Scalar Non Lazy Auto Diff") {
     context.Set<X>(acg::Vec3f{1, 2, 3});
     context.Set<Y>(acg::Vec3f{3, 2, 1});
     auto result = LazyResult(context);
+    std::cout << result.Get<Dy0>() << std::endl;
+    std::cout << result.Get<Dy1>() << std::endl;
+    std::cout << result.Get<Dy2>() << std::endl;
+  }
+
+  SUBCASE("vector_lazy2") {
+    Constant_expr(acg::Vec3f, d0, v.y() = v.z() = 0; v.x() = 1);
+    Constant_expr(acg::Vec3f, d1, v.x() = v.z() = 0; v.y() = 1);
+    Constant_expr(acg::Vec3f, d2, v.x() = v.y() = 0; v.z() = 1);
+    Variable(acg::Vec3f, X);
+    Variable(acg::Vec3f, Y);
+    using FinalExp = Dot<Sub<X, Y>, Sub<X, Y>>;
+    using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
+    using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
+    using Dx2 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d2>>;
+    using Dy0 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d0>>;
+    using Dy1 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d1>>;
+    using Dy2 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d2>>;
+    LazyContext<List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2>> context;
+    context.Set<X>(acg::Vec3f{1, 2, 3});
+    context.Set<Y>(acg::Vec3f{3, 2, 1});
+    auto result = LazyResult2(context);
     std::cout << result.Get<Dy0>() << std::endl;
     std::cout << result.Get<Dy1>() << std::endl;
     std::cout << result.Get<Dy2>() << std::endl;
