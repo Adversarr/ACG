@@ -221,12 +221,14 @@ public:
 };
 
 template <typename T> class Result final {
+  static_assert(!std::is_reference_v<T>, "Result cannot contains a reference.");
 public:
   using E = Status;
   template <typename... Args> explicit Result(Args&&... args)
       : value_(std::forward<Args...>(args)...), is_inited_(true) {}
 
   explicit Result(T&& data) : value_(std::move(data)), is_inited_(true) {}
+
   explicit Result(const T& data) : value_(data), is_inited_(true) {}
 
   explicit Result(E err) : error_(err), is_inited_(false) {}
@@ -234,14 +236,14 @@ public:
   explicit Result(E err, std::string additional_message)
       : error_(err), is_inited_(false), additional_message_(std::move(additional_message)) {}
 
-// NOLINTBEGIN(google-explicit-constructor)
+  // NOLINTBEGIN(google-explicit-constructor)
   Result(const Result<void>& rhs)
       : is_inited_(rhs.HasValue()),
         additional_message_(rhs.additional_message_),
         error_(rhs.Error()) {
     ACG_DEBUG_CHECK(!HasValue(), "Cannot convert from Result<void> when it has no error.");
   }
-// NOLINTEND(google-explicit-constructor)
+  // NOLINTEND(google-explicit-constructor)
 
   Result& operator=(const Result<void>& rhs) {
     is_inited_ = rhs.is_inited_;

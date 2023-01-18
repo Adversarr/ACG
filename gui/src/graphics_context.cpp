@@ -16,9 +16,9 @@ VkGraphicsContext &VkGraphicsContext::Instance() {
 
 void VkGraphicsContext::CreateSwapchain(bool verbose) {
   auto &support = VkContext2::Instance().system_info_.physical_device_info;
-  vk::SurfaceCapabilitiesKHR surface_capabilities = VkContext2::Instance().physical_device_.getSurfaceCapabilitiesKHR(
-    VkContext2::Instance().surface_
-  );
+  vk::SurfaceCapabilitiesKHR surface_capabilities
+      = VkContext2::Instance().physical_device_.getSurfaceCapabilitiesKHR(
+          VkContext2::Instance().surface_);
 
   auto format = ChooseSwapSurfaceFormat(support.surface_formats);
   auto present_mode = ChooseSwapPresentMode(support.surface_present_modes, verbose);
@@ -222,7 +222,8 @@ vk::CommandBuffer VkGraphicsContext::BeginSingleTimeCommand() const {
 }
 
 void VkGraphicsContext::EndSingleTimeCommand(vk::CommandBuffer buffer) const {
-  VkContext2::Instance().EndSingleTimeCommand(buffer, graphics_command_pool_, VkContext2::Instance().graphics_queue_);
+  VkContext2::Instance().EndSingleTimeCommand(buffer, graphics_command_pool_,
+                                              VkContext2::Instance().graphics_queue_);
 }
 
 void VkGraphicsContext::TransitionImageLayout(vk::Image image, vk::Format /*format*/,
@@ -309,16 +310,18 @@ bool VkGraphicsContext::EndDraw(std::vector<vk::CommandBuffer> command_buffers) 
   vk::SubmitInfo submit_info{};
   auto wait_sem = std::array{syncs_[current_frame_].image_available};
   auto signal_sem = std::array{syncs_[current_frame_].render_finished};
-  vk::PipelineStageFlags wait_stages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+  auto wait_stages
+      = std::array<vk::PipelineStageFlags, 1>{vk::PipelineStageFlagBits::eColorAttachmentOutput};
   submit_info.setWaitSemaphores(wait_sem)
-      .setPWaitDstStageMask(&wait_stages)
+      .setPWaitDstStageMask(wait_stages.data())
       .setCommandBuffers(command_buffers)
       .setSignalSemaphores(signal_sem);
   VkContext2::Instance().graphics_queue_.submit(submit_info,
                                                 syncs_[current_frame_].in_flight_fence);
 
   vk::PresentInfoKHR present_info;
-  present_info.setWaitSemaphores(signal_sem)
+  auto render_finish = std::array{syncs_[current_frame_].render_finished};
+  present_info.setWaitSemaphores(render_finish)
       .setSwapchains(swapchain_)
       .setPImageIndices(&current_image_index_);
 

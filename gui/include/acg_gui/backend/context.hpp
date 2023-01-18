@@ -8,8 +8,9 @@ namespace acg::gui {
 
 class BufferWithMemory {
 public:
-  BufferWithMemory(vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize size)
-      : buffer_(buffer), memory_(memory), size_(size) {}
+  BufferWithMemory(vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize size,
+                   vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
+      : buffer_(buffer), memory_(memory), size_(size), usage_(usage), properties_(properties) {}
 
   inline bool IsMapped() const { return mapped_memory_ != nullptr; }
 
@@ -28,6 +29,9 @@ private:
   vk::DeviceMemory memory_{VK_NULL_HANDLE};
   vk::DeviceSize size_{0};
   void* mapped_memory_{nullptr};
+
+  const vk::BufferUsageFlags usage_;
+  const vk::MemoryPropertyFlags properties_;
 };
 
 class VkContext2 {

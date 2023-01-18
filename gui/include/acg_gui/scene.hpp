@@ -3,7 +3,6 @@
 #include <acg_core/geometry/mesh.hpp>
 #include <acg_core/geometry/particlesystem.hpp>
 #include <acg_core/math/access.hpp>
-#include <acg_utils/result.hpp>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -74,7 +73,7 @@ public:
   Scene2() = default;
 
   struct Mesh {
-    const int id;
+    size_t id;
     // mesh data.
     geometry::topology::TriangleList faces;
     types::PositionField<float, 3> vertices;
@@ -83,18 +82,23 @@ public:
     // Reserve for future use.
     Field<float, 2> uv;
 
-    bool enable_wireframe;
-    bool use_uniform_color;
-    bool use_double_side_lighting;
-    int specular_shiness;
+    bool enable_wireframe = false;
+    bool use_uniform_color = false;
+    bool use_double_side_lighting = false;
+    int specular_shiness = 32;
 
     // Push constants:
     Mat4x4f model;
     // Instancing
-    Ui32 instance_count;
+    Ui32 instance_count = 1;
     Field<float, 3> instance_position;
     Field<float, 4> instance_rotation;
-    explicit Mesh(int id) : id(id) {}
+
+    explicit Mesh(size_t id) : id(id) {}
+
+    Mesh& operator=(const Mesh&) = default;
+
+    Mesh(const Mesh&) = default;
 
     Mesh& SetIndices(const geometry::topology::TriangleList& val) {
       faces = val;
@@ -165,13 +169,21 @@ public:
   };
 
   struct Particles {
-    const int id;
+    size_t id;
     types::PositionField<float, 3> positions;
     types::RgbaField colors;
-    bool use_uniform_color;
-    F32 radius;
+    bool use_uniform_color = true;
+    F32 radius = 1.0f;
+    bool use_instance_rendering = false;
 
-    explicit Particles(int id): id(id) {}
+    Particles(const Particles&) = default;
+
+    explicit Particles(size_t id) : id(id) {}
+
+    inline Particles& SetUseInstanceRendering(bool value = false) {
+      use_instance_rendering = value;
+      return *this;
+    }
 
     inline Particles& SetPositions(const types::PositionField<float, 3>& val) {
       positions = val;
@@ -197,12 +209,14 @@ public:
   };
 
   struct Wireframe {
-    const int id;
+    size_t id;
     geometry::topology::LineList indices;
     types::PositionField<float, 3> positions;
     types::RgbField colors;
 
-    explicit Wireframe(int id): id(id) {}
+    Wireframe(const Wireframe&) = default;
+
+    explicit Wireframe(size_t id) : id(id) {}
 
     inline Wireframe& SetIndices(const geometry::topology::LineList& ind) {
       indices = ind;
@@ -226,6 +240,7 @@ private:
   std::optional<Camera> camera_;
 
   std::vector<Mesh> meshes_;
+  std::vector<Particles> mesh_particles_;
   std::vector<Particles> particles_;
   std::vector<Wireframe> wireframe_;
 
@@ -247,9 +262,10 @@ public:
   /**
    * @brief: Add a mesh-based particle using instancing rendering.
    */
-  Mesh& AddMeshParticles(const types::PositionField<float, 3>& positions, F32 radius = 1.0f);
+  Particles& AddMeshParticles();
+  Particles& AddMeshParticles(const types::PositionField<float, 3>& positions, F32 radius = 1.0f);
 
-  Result<Mesh&> GetMesh(size_t id);
+  Mesh& GetMesh(size_t id);
 
   size_t GetMeshCount() const { return meshes_.size(); }
 
@@ -262,18 +278,21 @@ public:
    */
   Particles& AddParticles(const types::PositionField<float, 3>& positions, F32 radius = 1.0f);
 
-  Result<Particles&> GetParticles(size_t id);
+  Particles& AddParticles();
+
+  Particles& GetParticles(size_t id);
 
   size_t GetParticlesCount() const { return particles_.size(); }
 
   const std::vector<Particles>& GetParticles() const { return particles_; }
 
   // WIREFRAME API
+  Wireframe& AddWireframe();
 
   Wireframe& AddWireframe(const geometry::topology::LineList& indices,
                           types::PositionField<float, 3> positions, const types::RgbField& colors);
 
-  Result<Wireframe&> GetWireframe(size_t id);
+  Wireframe& GetWireframe(size_t id);
 
   const std::vector<Wireframe>& GetWireframe() const { return wireframe_; }
 
@@ -282,6 +301,10 @@ public:
   /**
    * @brief: remove all the objects.
    */
+  void ClearMesh() { meshes_.clear(); }
+  void ClearMeshParticles() { meshes_.clear(); }
+  void ClearParticles() { particles_.clear(); }
+  void ClearWireframe() { wireframe_.clear(); }
   void Clear();
 };
 

@@ -469,7 +469,7 @@ acg::Result<std::pair<vk::Image, vk::DeviceMemory>> VkContext2::CreateImage(
   if (mt.HasValue()) {
     alloc_info.memoryTypeIndex = mt.Value();
   } else {
-    return mt.Error();
+    return make_error(mt.Error());
   }
 
   auto mem = device_.allocateMemory(alloc_info);
@@ -483,10 +483,10 @@ acg::Result<uint32_t> VkContext2::FindMemoryType(uint32_t type_filter,
   for (uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
     if ((type_filter & (1 << i))
         && (memory_properties.memoryTypes[i].propertyFlags & properties) == properties) {
-      return i;
+      return make_result<uint32_t>(i);
     }
   }
-  return Result<uint32_t>(acg::Status::kNotFound);
+  return make_error(Status::kNotFound);
 }
 
 BufferWithMemory VkContext2::CreateBufferWithMemory(vk::DeviceSize size, vk::BufferUsageFlags usage,
@@ -502,7 +502,7 @@ BufferWithMemory VkContext2::CreateBufferWithMemory(vk::DeviceSize size, vk::Buf
   vk::MemoryAllocateInfo alloc_info(mem_requirements.size, mem_type.Value());
   auto mem = device_.allocateMemory(alloc_info);
   device_.bindBufferMemory(buf, mem, 0);
-  return BufferWithMemory(buf, mem, size);
+  return BufferWithMemory(buf, mem, size, usage, properties);
 }
 
 void VkContext2::DestroyBufferWithMemory(BufferWithMemory &bufmem) const {
@@ -532,13 +532,13 @@ acg::Result<vk::Format> VkContext2::FindSupportedFormat(const std::vector<vk::Fo
     auto props = physical_device_.getFormatProperties(format);
 
     if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
-      return format;
+      return make_result<vk::Format>(format);
     } else if (tiling == vk::ImageTiling::eOptimal
                && (props.optimalTilingFeatures & features) == features) {
-      return format;
+      return make_result<vk::Format>(format);
     }
   }
-  return {acg::Status::kNotFound};
+  return make_error(acg::Status::kNotFound);
 }
 
 vk::CommandBuffer VkContext2::BeginSingleTimeCommand(vk::CommandPool command_pool) const {

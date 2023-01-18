@@ -122,7 +122,7 @@ Scene2::Mesh& Scene2::AddMesh() {
 Scene2::Mesh& Scene2::AddMesh(const geometry::topology::TriangleList& indices,
                               const types::PositionField<float, 3>& positions,
                               std::optional<Field<float, 3>> opt_normals) {
-  decltype(auto) mesh= AddMesh();
+  decltype(auto) mesh = AddMesh();
   mesh.SetIndices(indices).SetVertices(positions);
   if (opt_normals.has_value()) {
     mesh.SetNormals(opt_normals.value());
@@ -134,6 +134,57 @@ Scene2::Mesh& Scene2::AddMesh(const geometry::topology::TriangleList& indices,
   return mesh;
 }
 
+Scene2::Particles& Scene2::AddMeshParticles() {
+  mesh_particles_.emplace_back(mesh_particles_.size());
+  return mesh_particles_.back();
+}
 
+Scene2::Particles& Scene2::AddMeshParticles(const types::PositionField<float, 3>& positions,
+                                            F32 radius) {
+  return AddMeshParticles().SetPositions(positions).SetRadius(radius);
+}
+
+Scene2::Mesh& Scene2::GetMesh(size_t id) {
+  ACG_CHECK(id < meshes_.size(), "mesh-id out of range: {} of {}", id, meshes_.size());
+  return meshes_[id];
+}
+
+Scene2::Particles& Scene2::AddParticles() {
+  particles_.emplace_back(meshes_.size());
+  return particles_.back();
+}
+
+Scene2::Particles& Scene2::AddParticles(const types::PositionField<float, 3>& positions,
+                                        F32 radius) {
+  return AddParticles().SetPositions(positions).SetRadius(radius);
+}
+
+Scene2::Particles& Scene2::GetParticles(size_t id) {
+  ACG_CHECK(id < particles_.size(), "particle-id out of range: {} of {}", id, particles_.size());
+  return particles_[id];
+}
+
+Scene2::Wireframe& Scene2::GetWireframe(size_t id) {
+  ACG_CHECK(id < wireframe_.size(), "particle-id out of range: {} of {}", id, wireframe_.size());
+  return wireframe_[id];
+}
+
+Scene2::Wireframe& Scene2::AddWireframe() {
+  wireframe_.emplace_back(wireframe_.size());
+  return wireframe_.back();
+}
+
+Scene2::Wireframe& Scene2::AddWireframe(const geometry::topology::LineList& indices,
+                                        types::PositionField<float, 3> positions,
+                                        const types::RgbField& colors) {
+  auto&& wireframe = AddWireframe().SetIndices(indices).SetPositions(positions).SetColors(colors);
+  return wireframe;
+}
+
+void Scene2::Clear() {
+  ClearMesh();
+  ClearParticles();
+  ClearWireframe();
+}
 
 }  // namespace acg::gui

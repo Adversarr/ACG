@@ -48,6 +48,7 @@ public:
     vk::Fence in_flight_fence;
   };
   
+  vk::Semaphore data_available;
   Hooker config_;
 
   // Swapchain
@@ -71,7 +72,7 @@ public:
 
   bool EndDraw(std::vector<vk::CommandBuffer> command_buffers);
 
-  vk::CommandBuffer BeginSingleTimeCommand() const;
+  [[nodiscard]] vk::CommandBuffer BeginSingleTimeCommand() const;
   
   void EndSingleTimeCommand(vk::CommandBuffer buffer) const;
   
