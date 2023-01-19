@@ -27,6 +27,12 @@ target('ggui')
   add_deps('acg_gui', 'acg_core')
 target_end()
 
+target('async_gui')
+  add_files('async_gui/**.cpp')
+  add_deps('acg_gui', 'acg_core')
+target_end()
+
+
 add_requires('benchmark', 'autodiff')
 target('sad_bench')
   add_files('sad_bench/*.cpp')

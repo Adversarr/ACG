@@ -1,14 +1,19 @@
 #include "acg_gui/async_gui.hpp"
 
+#include <glm/gtc/type_ptr.hpp>
 #include <memory>
 #include <mutex>
 
+#include "acg_core/geometry/common_models.hpp"
 #include "acg_gui/backend/context.hpp"
 #include "acg_gui/backend/graphics_pass.hpp"
 #include "acg_gui/backend/mesh_ppl.hpp"
 #include "acg_gui/backend/point_ppl.hpp"
 #include "acg_gui/backend/ui_pass.hpp"
 #include "acg_gui/backend/wireframe_ppl.hpp"
+#include "acg_gui/convent.hpp"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_vulkan.h"
 
 #define ASSERT_IS_HOST()                            \
   ACG_CHECK(std::this_thread::get_id() == host_id_, \
@@ -25,18 +30,36 @@ namespace details {
 // Default staging buffer size = 1MB
 constexpr vk::DeviceSize default_staging_buffer_size = 1024 * 1024;
 
-std::unique_ptr<AsyncGui> async_gui_instance;
-
 }  // namespace details
 
+AsyncGui::Config::Config() {
+  host_id = std::this_thread::get_id();
+  light.light_position_ = Vec3f(3, 0, 3);
+  light.light_density_ = .8f;
+  light.light_color_ = Vec3f(.7, .7, .7);
+  light.parallel_light_color_ = acg::Vec3f(1, 1, 1);
+  light.parallel_light_dir_ = acg::Vec3f(0, -1, -1);
+  light.parallel_light_density_ = 0.5f;
+
+  camera.SetPosition({4, 4, 4});
+  camera.SetFront({-1, -1, -1});
+  camera.SetUp({0, 1, 0});
+  camera.SetProjectionMode(true);
+
+  scene.Clear();
+  auto sphere = acg::geometry::sphere_20({0, 0, 0}, 1);
+  scene.AddMesh()
+      .SetIndices(sphere.GetFaces())
+      .SetVertices(sphere.GetVertices())
+      .SetNormals(sphere.GetVertices());
+}
 // Device Thread Implementation
 class AsyncGui::AsyncGui_Impl {
 public:
-  using BufferID = size_t;
   struct AllocatedBuffers {
     BufferID vertex_buf_id;
-    std::optional<BufferID> index_buf_id;
-    std::optional<BufferID> instance_buf_id;
+    BufferID index_buf_id;
+    BufferID instance_buf_id;
   };
 
   struct StagingBufferManager {
@@ -111,9 +134,12 @@ public:
     }
   };
 
+  void RecreateSwapchain() const;
   StagingBufferManager staging_buffer_manager_;
 
   explicit AsyncGui_Impl(AsyncGui* parent);
+
+  ~AsyncGui_Impl();
 
   Status Render();
   // Initializers
@@ -123,7 +149,6 @@ public:
 
   // Destroy all buffers.
   void DestroyAllBuffers();
-  void BuildBuffers();
 
   // Event loop
   [[nodiscard]] acg::Status ProcessEvents(std::vector<GuiEvent>& events);
@@ -131,18 +156,20 @@ public:
 
   // Update commands
   void RebuildAllBuffers();
-  void UpdateMeshBuffer(AllocatedBuffers& buffers, const Scene2::Mesh& mesh);
-  void UpdateMeshParticleBuffer(AllocatedBuffers& buffers, const Scene2::Particles& particles);
-  void UpdateParticleBuffer(AllocatedBuffers& buffers, const Scene2::Particles& particles);
-  void UpdateWireframeBuffer(AllocatedBuffers& buffer, const Scene2::Wireframe& wireframe);
+  void UpdateMeshBuffer(size_t mesh_id, const Scene2::Mesh& mesh);
+  void UpdateMeshParticleBuffer(size_t mesh_id, const Scene2::Particles& particles);
+  void UpdateParticleBuffer(size_t particle_id, const Scene2::Particles& particles);
+  void UpdateWireframeBuffer(size_t wf_id, const Scene2::Wireframe& wireframe);
 
   // Register all the allocated buffers, destroy when ~AsyncGui is called.
   std::vector<BufferWithMemory> allocated_buffers_;
-  Status BufferReserveSize(BufferID id, vk::DeviceSize size);
 
   // Mesh pipeline and buffers:
   std::unique_ptr<acg::gui::details::MeshPipeline> mesh_pipeline_;
+  std::vector<uint32_t> mesh_index_count_;
+  std::vector<uint32_t> mesh_instance_count_;
   std::vector<AllocatedBuffers> mesh_buffers_;
+  std::vector<details::MeshPushConstants> mesh_push_constants_;
   std::vector<AllocatedBuffers> mesh_particle_buffers_;
 
   // Wireframe pipeline and buffers:
@@ -160,11 +187,14 @@ public:
   std::unique_ptr<details::UiPass> ui_pass_;
 
   // Scene backup.
-  std::unique_ptr<Scene2> scene_;
+  Scene2 scene_;
+  Camera camera_;
+  Light light_;
+  XyPlaneInfo xy_plane_info_;
   AsyncGui* parent_;
 
   // Allocate Mesh buffer
-  AllocatedBuffers& AllocateMesh(const Scene2::Mesh& mesh);
+  BufferID AllocateMesh(const Scene2::Mesh& mesh);
 
   AllocatedBuffers& AllocateMeshParticle(const Scene2::Particles& particles);
 
@@ -178,6 +208,16 @@ public:
 
   Result<BufferID> AllocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
                                   vk::MemoryPropertyFlags properties);
+
+  Status BufferReserveSize(BufferID id, vk::DeviceSize size);
+
+  Status PrepareMeshBuffer(const Scene2::Mesh& mesh);
+
+  Status PreparePointBuffer(const Scene2::Particles& particle);
+
+  Status PrepareMeshPointBuffer(const Scene2::Particles& particle);
+
+  Status PrepareWireframeBuffer(const Scene2::Wireframe& wireframe);
 };
 
 /************* Ctor *************/
@@ -189,14 +229,18 @@ AsyncGui::AsyncGui(const AsyncGui::Config& config)
   // Construct in host thread
   host_id_ = std::this_thread::get_id();
   should_shutdown_ = false;
-  host_light_ = config.light;
-  host_camera_ = config.camera;
-  host_scene_ = config.scene;
+  is_running_ = true;
+  light_ = config.light;
+  camera_ = config.camera;
+  scene_ = config.scene;
 
   // start child thread.
   child_thread_ = std::make_unique<std::thread>([this]() {
+    this->device_id_ = std::this_thread::get_id();
+    this->is_running_ = true;
     ACG_DEBUG_LOG("Device thread start.");
     this->Run();
+    this->is_running_ = false;
     ACG_DEBUG_LOG("Device thread exit.");
   });
 }
@@ -225,10 +269,19 @@ Status AsyncGui::ProcessEvents() {
 }
 
 void AsyncGui::Run() {
-  impl_ = std::make_unique<AsyncGui_Impl>(this);
-  should_shutdown_ = false;
   ASSERT_IS_DEVICE();
+  impl_ = std::make_unique<AsyncGui_Impl>(this);
+  {
+    auto lock = Lock();
+    ACG_DEBUG_LOG("Setup device scene, camera and light.");
+    impl_->scene_ = scene_;
+    impl_->camera_ = camera_;
+    impl_->light_ = light_;
+    impl_->xy_plane_info_ = xy_plane_info_;
+  }
+  should_shutdown_ = false;
   while (!should_shutdown_.load()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(30));
     Status status = ProcessEvents();
     if (status == Status::kCancelled) {
       ACG_DEBUG_LOG("ProcessEvents returns cancelled, shutdown now.");
@@ -245,7 +298,10 @@ void AsyncGui::Run() {
     }
 
     // Do rendering:
-    impl_->Render();
+    auto result = impl_->Render();
+    if (result != Status::kOk) {
+      impl_->RecreateSwapchain();
+    }
     auto events = impl_->PollEvents();
     if (!events.empty()) {
       ACG_DEBUG_LOG("Got device events, count = {}", events.size());
@@ -257,6 +313,8 @@ void AsyncGui::Run() {
     }
   }
 
+  VkContext2::Instance().device_.waitIdle();
+  impl_.reset();
   ACG_INFO("Device thread shutdown.");
 }
 
@@ -276,7 +334,9 @@ std::unique_lock<std::timed_mutex> AsyncGui::TryLock() {
   return lock;
 }
 
-std::unique_lock<std::timed_mutex> AsyncGui::Lock() { return std::unique_lock<std::timed_mutex>(mutex_); }
+std::unique_lock<std::timed_mutex> AsyncGui::Lock() {
+  return std::unique_lock<std::timed_mutex>(mutex_);
+}
 
 std::unique_lock<std::timed_mutex> AsyncGui::Lock(std::defer_lock_t) {
   return std::unique_lock<std::timed_mutex>(mutex_, std::defer_lock);
@@ -298,17 +358,17 @@ acg::Status AsyncGui::EnableXyPlaneDraw(acg::Vec4f color, acg::Vec2f range, acg:
     return Status::kInvalidArgument;
   }
 
-  xy_plane_density_ = density;
-  xy_plane_color_ = color;
-  xy_plane_enable_ = true;
-  xy_plane_height_ = height;
-  RegisterHostEvent(GuiEvent(GuiEvent::Kind::kPlaneUpdate));
+  xy_plane_info_.density = density;
+  xy_plane_info_.color = color;
+  xy_plane_info_.enable = true;
+  xy_plane_info_.height = height;
+  RegisterHostEvent(GuiEvent(GuiEvent::Kind::kXyPlaneUpdate));
   return Status::kOk;
 }
 
 void AsyncGui::DisableXyPlaneDraw() {
-  xy_plane_enable_ = false;
-  RegisterHostEvent(GuiEvent(GuiEvent::Kind::kPlaneUpdate));
+  xy_plane_info_.enable = false;
+  RegisterHostEvent(GuiEvent(GuiEvent::Kind::kXyPlaneUpdate));
 }
 
 /************* GETTER SETTER *************/
@@ -318,9 +378,9 @@ AsyncGui& AsyncGui::SetUIDrawCallback(std::function<void()> callback) {
   return *this;
 }
 
-Scene2& AsyncGui::GetScene() { return host_scene_; }
-Camera& AsyncGui::GetCamera() { return host_camera_; }
-Light& AsyncGui::GetLight() { return host_light_; }
+Scene2& AsyncGui::GetScene() { return scene_; }
+Camera& AsyncGui::GetCamera() { return camera_; }
+Light& AsyncGui::GetLight() { return light_; }
 
 /************* Event Register *************/
 
@@ -353,10 +413,10 @@ AsyncGui::AsyncGui_Impl::AsyncGui_Impl(AsyncGui* parent) : parent_(parent) {
   // Init all the pipelines and render pass
   InitRenderPasses();
   InitPipelines();
-  // 2. Create Mesh Pipeline.
 
   // Init staging buffer
   InitStagingBuffer();
+  // RebuildAllBuffers();
 }
 
 void AsyncGui::AsyncGui_Impl::InitRenderPasses() {
@@ -403,6 +463,287 @@ void AsyncGui::AsyncGui_Impl::InitStagingBuffer() {
   staging_buffer_manager_.parent_ = this;
   staging_buffer_manager_.staging_buffer_id = bm.Value();
   ACG_DEBUG_LOG("Staging buffer created, size = {} Bytes", details::default_staging_buffer_size);
+}
+
+void AsyncGui::AsyncGui_Impl::DestroyAllBuffers() {
+  for (auto& buf : allocated_buffers_) {
+    VkContext2::Instance().DestroyBufferWithMemory(buf);
+  }
+  allocated_buffers_.clear();
+}
+
+AsyncGui::AsyncGui_Impl::~AsyncGui_Impl() {
+  // TODO: Destroy everyting.
+  DestroyAllBuffers();
+
+  mesh_pipeline_.reset();
+  point_pipeline_.reset();
+  wireframe_pipeline_.reset();
+  ui_pass_.reset();
+  graphics_pass_.reset();
+}
+
+Status AsyncGui::AsyncGui_Impl::ProcessEvents(std::vector<GuiEvent>& events) {
+  for (auto event : events) {
+    if (event.kind == GuiEvent::Kind::kShutdown) {
+      return Status::kCancelled;
+    }
+  }
+
+  events.clear();
+  return Status::kOk;
+}
+
+Status AsyncGui::AsyncGui_Impl::Render() {
+  ACG_DEBUG_LOG("Renderer.");
+  // TODO: Render
+
+  // NOTE: glfwPollEvents();
+
+  // Render.
+  auto result = acg::gui::VkGraphicsContext::Instance().BeginDraw();
+  if (!result) {
+    return Status::kCancelled;
+  }
+  auto cbuf = graphics_pass_->BeginRender();
+  mesh_pipeline_->BeginPipeline(cbuf);
+  for (size_t i = 0; i < mesh_buffers_.size(); ++i) {
+    const auto& buf = mesh_buffers_[i];
+    const auto& pc = mesh_push_constants_[i];
+    cbuf.bindVertexBuffers(0, GetBufferWithMemory(buf.vertex_buf_id).GetBuffer(),
+                           static_cast<vk::DeviceSize>(0));
+    cbuf.bindVertexBuffers(1, GetBufferWithMemory(buf.instance_buf_id).GetBuffer(),
+                           static_cast<vk::DeviceSize>(0));
+    cbuf.bindIndexBuffer(GetBufferWithMemory(buf.index_buf_id).GetBuffer(), 0,
+                         vk::IndexType::eUint32);
+    cbuf.pushConstants(mesh_pipeline_->GetPipelineLayout(),
+                       vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex, 0,
+                       sizeof(pc), &pc);
+    cbuf.drawIndexed(mesh_index_count_[i], mesh_instance_count_[i], 0, 0, 0);
+  }
+  graphics_pass_->EndRender();
+
+  ImGui_ImplVulkan_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+  ImGui::SetNextWindowBgAlpha(0.3);
+  ImGui::SetNextWindowPos(ImVec2(0, 0));
+  ImGui::Begin("Control", nullptr, ImGuiWindowFlags_NoMove);
+  ImGui::LogText("Hello!");
+  ImGui::End();
+  ImGui::Render();
+  auto* data = ImGui::GetDrawData();
+  auto ui_cbuf = ui_pass_->Render(data);
+
+  auto result2 = acg::gui::VkGraphicsContext::Instance().EndDraw({cbuf, ui_cbuf});
+  if (result2) {
+    return Status::kCancelled;
+  }
+  return Status::kOk;
+}
+
+std::vector<GuiEvent> AsyncGui::AsyncGui_Impl::PollEvents() {
+  // TODO: Events
+  return {};
+}
+
+AsyncGui::~AsyncGui() {
+  if (is_running_) {
+    ShutdownImmediately();
+    ACG_INFO("Waiting for shutdown.");
+    WaitForShutdownActually();
+  }
+  ACG_DEBUG_LOG("Exit async gui.");
+}
+
+Result<AsyncGui::BufferID> AsyncGui::AsyncGui_Impl::AllocateBuffer(
+    vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties) {
+  allocated_buffers_.push_back(
+      VkContext2::Instance().CreateBufferWithMemory(size, usage, properties));
+  return make_result<BufferID>(allocated_buffers_.size() - 1);
+}
+
+void AsyncGui::WaitForShutdownActually() const {
+  int t = 1;
+  while (is_running_.load()) {
+    ACG_DEBUG_LOG("Wait for shutdown, time = {}", t);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+
+  child_thread_->join();
+}
+
+void AsyncGui::AsyncGui_Impl::RebuildAllBuffers() {
+  auto status = Status::kOk;
+  for (const auto& mesh : scene_.GetMesh()) {
+    status = PrepareMeshBuffer(mesh);
+    ACG_CHECK(status == Status::kOk, "Failed to prepare mesh buffer.");
+  }
+
+  // TODO: add support.
+  // for (const auto& particle : scene_.GetParticles()) {
+  //   if (particle.use_instance_rendering) {
+  //     PrepareMeshPointBuffer(particle);
+  //   } else {
+  //     PreparePointBuffer(particle);
+  //   }
+  // }
+  //
+  // for (const auto& wf: scene_.GetWireframe()) {
+  //   PrepareWireframeBuffer(wf);
+  // }
+}
+
+Status AsyncGui::AsyncGui_Impl::PrepareMeshBuffer(const Scene2::Mesh& mesh) {
+  auto vert_count = FieldCAccess{mesh.vertices}.Size();
+  auto face_count = FieldCAccess{mesh.faces}.Size();
+  auto instance_count = mesh.instance_count;
+  auto vert_buffer_size = static_cast<vk::DeviceSize>(vert_count * sizeof(details::MeshVertex));
+  auto index_buffer_size = static_cast<vk::DeviceSize>(face_count * 3 * sizeof(uint32_t));
+  auto instance_buffer_size = instance_count * sizeof(details::MeshInstance);
+  auto mesh_id = mesh.id;
+  if (mesh_id >= mesh_buffers_.size()) {
+    // init buffer first.
+    AllocatedBuffers bid;
+    auto r_v = AllocateBuffer(
+        vert_buffer_size,
+        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal);
+    if (r_v.HasValue()) {
+      bid.vertex_buf_id = r_v.Value();
+    } else {
+      return r_v.Error();
+    }
+
+    auto r_id = AllocateBuffer(
+        index_buffer_size,
+        vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+    if (r_id.HasValue()) {
+      bid.index_buf_id = r_id.Value();
+    } else {
+      return r_id.Error();
+    }
+
+    auto r_it = AllocateBuffer(
+        index_buffer_size,
+        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+    if (r_it.HasValue()) {
+      bid.instance_buf_id = r_it.Value();
+    } else {
+      return r_it.Error();
+    }
+    mesh_buffers_.push_back(bid);
+    mesh_index_count_.push_back(index_buffer_size);
+    mesh_instance_count_.push_back(instance_count);
+    details::MeshPushConstants pc;
+    mesh_push_constants_.push_back(pc);
+  } else {
+    // only make sure that the buffer is large enough.
+    // TODO: check status.
+    auto bid = mesh_buffers_[mesh_id];
+    BufferReserveSize(bid.vertex_buf_id, vert_buffer_size);
+    BufferReserveSize(bid.index_buf_id, index_buffer_size);
+    BufferReserveSize(bid.instance_buf_id, instance_buffer_size);
+    mesh_instance_count_[mesh_id] = instance_count;
+    mesh_index_count_[mesh_id] = 3 * face_count;
+  }
+
+  // Update the buffer:
+  UpdateMeshBuffer(mesh_id, mesh);
+  // 1. vertex buffer:
+  return Status::kOk;
+}
+
+void AsyncGui::AsyncGui_Impl::UpdateMeshBuffer(size_t mesh_id, const Scene2::Mesh& mesh) {
+  auto vert_count = FieldCAccess{mesh.vertices}.Size();
+  auto face_count = FieldCAccess{mesh.faces}.Size();
+  auto instance_count = mesh.instance_count;
+  auto vert_buffer_size = static_cast<vk::DeviceSize>(vert_count * sizeof(details::MeshVertex));
+  auto index_buffer_size = static_cast<vk::DeviceSize>(face_count * 3 * sizeof(uint32_t));
+  auto instance_buffer_size = instance_count * sizeof(details::MeshInstance);
+  auto bid = mesh_buffers_[mesh_id];
+  std::vector<details::MeshVertex> vert_buffer_content;
+  for (Idx i = 0; i < vert_count; ++i) {
+    auto p = mesh.vertices.col(i);
+    auto c = mesh.color.col(i);
+    auto n = mesh.normals.col(i);
+    details::MeshVertex v;
+    v.position_ = glm::vec3(p.x(), p.y(), p.z());
+    v.color_ = glm::vec4(c.x(), c.y(), c.z(), c.w());
+    v.normal_ = glm::vec3(n.x(), n.y(), n.z());
+    vert_buffer_content.push_back(v);
+  }
+  staging_buffer_manager_.Commit(
+      StagingBufferManager::UpdateInfo(vert_buffer_size, bid.vertex_buf_id),
+      vert_buffer_content.data());
+  staging_buffer_manager_.Flush();
+
+  std::vector<uint32_t> index_buffer_content;
+  for (Idx i = 0; i < face_count; ++i) {
+    index_buffer_content.push_back(mesh.faces.col(i).x());
+    index_buffer_content.push_back(mesh.faces.col(i).y());
+    index_buffer_content.push_back(mesh.faces.col(i).z());
+  }
+  staging_buffer_manager_.Commit(
+      StagingBufferManager::UpdateInfo(index_buffer_size, bid.index_buf_id),
+      index_buffer_content.data());
+  staging_buffer_manager_.Flush();
+
+  std::vector<details::MeshInstance> instance_buffer_content;
+  for (Idx i = 0; static_cast<size_t>(i) < mesh.instance_count; ++i) {
+    details::MeshInstance inst;
+    if (i >= mesh.instance_position.cols()) {
+      inst.position = glm::vec3(0, 0, 0);
+    } else {
+      Vec3f p = mesh.instance_position.col(i);
+      inst.position = to_glm(p);
+    }
+    if (i >= mesh.instance_rotation.cols()) {
+      inst.rotation = glm::vec4(1, 0, 0, 0);
+    } else {
+      Vec4f r = mesh.instance_rotation.col(i);
+      inst.rotation = glm::vec4(r.x(), r.y(), r.z(), r.w());
+    }
+    instance_buffer_content.push_back(inst);
+  }
+  staging_buffer_manager_.Commit(
+      StagingBufferManager::UpdateInfo(instance_buffer_size, bid.instance_buf_id),
+      instance_buffer_content.data());
+  staging_buffer_manager_.Flush();
+  Mat4x4f model_t = mesh.model.transpose();
+  mesh_push_constants_[mesh_id].model = glm::make_mat4x4(model_t.data());
+}
+
+BufferWithMemory& AsyncGui::AsyncGui_Impl::GetBufferWithMemory(BufferID id) {
+  return allocated_buffers_[id];
+}
+Status AsyncGui::AsyncGui_Impl::BufferReserveSize(BufferID id, vk::DeviceSize size) {
+  auto& buffer = GetBufferWithMemory(id);
+  if (buffer.GetSize() >= size) {
+    return Status::kCancelled;
+  }
+
+  VkContext2::Instance().DestroyBufferWithMemory(buffer);
+  buffer = VkContext2::Instance().CreateBufferWithMemory(size, buffer.usage_, buffer.properties_);
+
+  return Status::kOk;
+}
+
+void AsyncGui::AsyncGui_Impl::RecreateSwapchain() const {
+  ACG_DEBUG_LOG("Recreate swapchain.");
+  VkGraphicsContext::Instance().RecreateSwapchain();
+  graphics_pass_->RecreateSwapchain();
+  ui_pass_->RecreateSwapchain();
+  mesh_pipeline_->SetCamera(camera_);
+  mesh_pipeline_->UpdateUbo();
+  wireframe_pipeline_->SetCamera(camera_);
+  wireframe_pipeline_->UpdateUbo();
+  point_pipeline_->SetCamera(camera_);
+  point_pipeline_->UpdateUbo();
 }
 
 }  // namespace acg::gui

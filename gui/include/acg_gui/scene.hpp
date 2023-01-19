@@ -90,7 +90,7 @@ public:
     // Push constants:
     Mat4x4f model;
     // Instancing
-    Ui32 instance_count = 1;
+    size_t instance_count = 1;
     Field<float, 3> instance_position;
     Field<float, 4> instance_rotation;
 
@@ -152,7 +152,7 @@ public:
       return *this;
     }
 
-    inline Mesh& SetInstanceCount(Ui32 count) {
+    inline Mesh& SetInstanceCount(size_t count) {
       instance_count = count;
       return *this;
     }
@@ -177,6 +177,8 @@ public:
     bool use_instance_rendering = false;
 
     Particles(const Particles&) = default;
+
+    Particles& operator=(const Particles& ) = default;
 
     explicit Particles(size_t id) : id(id) {}
 
@@ -216,6 +218,8 @@ public:
 
     Wireframe(const Wireframe&) = default;
 
+    Wireframe& operator=(const Wireframe& ) = default;
+
     explicit Wireframe(size_t id) : id(id) {}
 
     inline Wireframe& SetIndices(const geometry::topology::LineList& ind) {
@@ -239,6 +243,7 @@ private:
 
   std::optional<Camera> camera_;
 
+  // Internal data:
   std::vector<Mesh> meshes_;
   std::vector<Particles> mesh_particles_;
   std::vector<Particles> particles_;
@@ -268,6 +273,8 @@ public:
   Mesh& GetMesh(size_t id);
 
   size_t GetMeshCount() const { return meshes_.size(); }
+
+  const std::vector<Particles>& GetMeshParticle() const { return mesh_particles_; }
 
   const std::vector<Mesh>& GetMesh() const { return meshes_; }
 

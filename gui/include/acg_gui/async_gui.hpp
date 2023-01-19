@@ -10,6 +10,14 @@
 
 namespace acg::gui {
 
+struct XyPlaneInfo {
+  Vec2f range;
+  Vec4f color;
+  Vec2f density;
+  float height;
+  bool enable;
+};
+
 struct GuiEvent {
   enum class Kind {
     kShutdown,
@@ -18,7 +26,7 @@ struct GuiEvent {
     kSceneParticleUpdate,
     kSceneMeshParticleUpdate,
     kSceneWireframeUpdate,
-    kPlaneUpdate,
+    kXyPlaneUpdate,
     kCameraUpdate,
     kLightUpdate,
   };
@@ -44,6 +52,7 @@ struct GuiEvent {
 
 class AsyncGui {
 public:
+  using BufferID = size_t;
   ~AsyncGui();
   struct Config {
     std::thread::id host_id;
@@ -53,8 +62,9 @@ public:
     bool ignore_unprocessed_device_event = false;
     uint32_t device_lock_try_duration = 100;
     uint32_t device_lock_try_rounds = 3;
-  };
 
+    Config();
+  };
 
   /**
    * @brief register a gui event.
@@ -103,6 +113,11 @@ public:
   [[nodiscard]] std::unique_lock<std::timed_mutex> Lock(std::try_to_lock_t);
   [[nodiscard]] std::unique_lock<std::timed_mutex> TryLock();
 
+  // Constructor, for hooking.
+  explicit AsyncGui(const Config& config);
+
+  void WaitForShutdownActually() const;
+
 private:
   /**
    * @brief sync scene object to device. if event is not empty, will do additive
@@ -115,29 +130,23 @@ private:
 
   Status ProcessEvents();
 
-  // Constructor, for hooking.
-  explicit AsyncGui(const Config& config);
-
   // p-impl mode for hiding vulkan based things
   class AsyncGui_Impl;
 
   std::unique_ptr<AsyncGui_Impl> impl_;
   // AsyncGui_Impl will have objects for backup and swapping.(double-buffering)
-  Scene2 host_scene_;
-  Light host_light_;
-  Camera host_camera_;
+  Scene2 scene_;
+  Light light_;
+  Camera camera_;
   std::vector<GuiEvent> host_events_;
   std::vector<GuiEvent> device_events_;
   std::timed_mutex mutex_;
   std::thread::id host_id_;
   std::thread::id device_id_;
+  XyPlaneInfo xy_plane_info_;
 
-  Vec2f xy_plane_range_;
-  Vec4f xy_plane_color_;
-  Vec2f xy_plane_density_;
-  float xy_plane_height_;
-  bool xy_plane_enable_;
   std::atomic_bool should_shutdown_;
+  std::atomic_bool is_running_;
 
   const bool ignore_unprocessed_device_event;
   const uint32_t try_lock_duration_ = 100;

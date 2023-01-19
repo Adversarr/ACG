@@ -12,6 +12,18 @@ public:
                    vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
       : buffer_(buffer), memory_(memory), size_(size), usage_(usage), properties_(properties) {}
 
+  BufferWithMemory(const BufferWithMemory&) = default;
+
+  BufferWithMemory& operator=(const BufferWithMemory& rhs) {
+    if (&rhs != this) {
+      buffer_ = rhs.buffer_;
+      memory_ = rhs.memory_;
+      size_ = rhs.size_;
+      mapped_memory_ = rhs.mapped_memory_;
+    }
+    return *this;
+  }
+
   inline bool IsMapped() const { return mapped_memory_ != nullptr; }
 
   inline void SetMappedMemory(void* memory) { mapped_memory_ = memory; }
@@ -30,6 +42,7 @@ private:
   vk::DeviceSize size_{0};
   void* mapped_memory_{nullptr};
 
+public:
   const vk::BufferUsageFlags usage_;
   const vk::MemoryPropertyFlags properties_;
 };
