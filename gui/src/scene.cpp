@@ -136,6 +136,7 @@ Scene2::Mesh& Scene2::AddMesh(const geometry::topology::TriangleList& indices,
 
 Scene2::Particles& Scene2::AddMeshParticles() {
   mesh_particles_.emplace_back(mesh_particles_.size());
+  mesh_particles_.back().SetUseInstanceRendering(true);
   return mesh_particles_.back();
 }
 
@@ -150,7 +151,7 @@ Scene2::Mesh& Scene2::GetMesh(size_t id) {
 }
 
 Scene2::Particles& Scene2::AddParticles() {
-  particles_.emplace_back(meshes_.size());
+  particles_.emplace_back(particles_.size());
   return particles_.back();
 }
 
@@ -187,4 +188,18 @@ void Scene2::Clear() {
   ClearWireframe();
 }
 
+void Scene2::Mesh::MarkUpdate() {
+  update_flag = true;
+  // TODO: add debug check.
+}
+
+void Scene2::Particles::MarkUpdate() {
+  update_flag = true;
+  // TODO: add debug check.
+}
+
+void Scene2::Wireframe::MarkUpdate() {
+  update_flag = true;
+  // TODO: add debug check.
+}
 }  // namespace acg::gui

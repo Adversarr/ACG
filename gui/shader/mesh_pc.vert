@@ -8,6 +8,7 @@ layout (location = 3) in vec2 inUV;
 
 layout (location = 4) in vec3 instancePosition;
 layout (location = 5) in vec4 instanceRotation;
+layout (location = 6) in vec4 instanceColor;
 
 
 layout(binding = 0) uniform Ubo{
@@ -52,7 +53,11 @@ void main() {
   gl_Position =  (ubo.projection * ubo.view * world_pos);
   vec4 normal_rotated = pre * vec4(inNormal.xyz, 0.0);
   outNormal = normal_rotated.xyz;
-  outColor = inColor;
+  if (pc.options[2] != 0) {
+    outColor = instanceColor;
+  } else {
+    outColor = inColor;
+  }
   outUV = inUV;
   outWorldPosiion = world_pos.xyz;
   return;

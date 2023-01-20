@@ -246,6 +246,7 @@ int main(int argc, char** argv) {
           wf_ppl.UpdateUbo();
           ppl.UpdateUbo();
         }
+        ImGui::ShowDemoWindow();
         ImGui::End();
         ImGui::Render();
         auto* data = ImGui::GetDrawData();

@@ -1,9 +1,11 @@
 #include <acg_core/init.hpp>
-#include <acg_gui/async_gui.hpp>
 #include <acg_gui/backend/context.hpp>
 #include <acg_gui/backend/graphics_context.hpp>
 #include <acg_gui/backend/window.hpp>
+#include <acg_gui/ggui.hpp>
 #include <acg_utils/init.hpp>
+#include <acg_utils/time.hpp>
+
 using namespace acg::gui;
 
 int main(int argc, char** argv) {
@@ -18,14 +20,14 @@ int main(int argc, char** argv) {
   vkctx_hooker.Hook();
   VkGraphicsContext::Hooker().Hook();
   acg::init(argc, argv);
-
-  do {
-    AsyncGui::Config config;
-    AsyncGui ag(config);
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-    ag.SignalShutdown();
-    ag.WaitForShutdownActually();
-  } while (false);
+  GGui::Config config;
+  {
+    GGui gui(config);
+    while (!Window::Instance().ShouldClose()) {
+      glfwPollEvents();
+      gui.RenderOnce();
+    }
+  }
 
   acg::clean_up();
   return EXIT_SUCCESS;

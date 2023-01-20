@@ -23,7 +23,7 @@ public:
 
     Iterator(difference_type index, RawType& raw_data) : index(index), raw_data(raw_data) {}
 
-    value_type operator*() const { return raw_data.col(index); }
+    decltype(auto) operator*() const { return raw_data.col(index); }
 
     Iterator& operator++() {
       index++;
@@ -63,7 +63,7 @@ public:
 
     Iterator(difference_type index, RawType& raw_data) : index(index), raw_data(raw_data) {}
 
-    value_type operator*() const { return raw_data.col(index); }
+    decltype(auto) operator*() const { return raw_data.col(index); }
 
     Iterator& operator++() {
       index++;
@@ -103,6 +103,41 @@ public:
     Iterator(difference_type index, RawType& raw_data) : index(index), raw_data(raw_data) {}
 
     value_type operator*() const { return std::make_pair(index, raw_data.col(index)); }
+
+    Iterator& operator++() {
+      index++;
+      return *this;
+    }
+
+    bool operator==(const Iterator& rhs) const { return index == rhs.index; }
+
+    bool operator!=(const Iterator& rhs) const { return index != rhs.index; }
+  };
+
+  inline Iterator begin() { return Iterator(0, field_ref_); }
+
+  inline Iterator end() { return Iterator(field_ref_.cols(), field_ref_); }
+};
+
+template <typename Scalar, int dim> class FieldCEnumerate {
+  using RawType = Field<Scalar, dim>;
+  const RawType& field_ref_;
+
+public:
+  inline explicit FieldCEnumerate(const Field<Scalar, dim>& field_ref) noexcept
+      : field_ref_(field_ref) {}
+
+  struct Iterator {
+    using iterator_category = std::random_access_iterator_tag;
+    using difference_type = typename RawType::Index;
+    using value_type = std::pair<difference_type, decltype(std::declval<RawType>().col(0))>;
+
+    difference_type index;
+    const RawType& raw_data;
+
+    Iterator(difference_type index, const RawType& raw_data) : index(index), raw_data(raw_data) {}
+
+    decltype(auto) operator*() const { return std::make_pair(index, raw_data.col(index)); }
 
     Iterator& operator++() {
       index++;

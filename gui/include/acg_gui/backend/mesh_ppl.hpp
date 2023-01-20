@@ -21,6 +21,7 @@ struct MeshVertex {
 struct MeshInstance {
   glm::vec3 position;
   glm::vec4 rotation;
+  glm::vec4 color;
   static std::vector<vk::VertexInputBindingDescription> GetBindingDescriptions();
   static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescriptions();
 };
@@ -32,7 +33,8 @@ struct MeshPushConstants {
   // 4 * 4B
   // Options[0] => use double side lighting
   // Options[1] => specular shineness
-  int options[4];
+  // Options[2] => use pc color
+  int options[4] = {0, 32, 0, 0};
 };
 
 // Vulkan states that, Uniform buffer support at least 16384 bytes.

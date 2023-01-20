@@ -37,6 +37,8 @@ public:
 
   void SetDepthStencilValue(F32 depth);
 
+  inline vk::ClearColorValue& GetBackgroundColor() { return background_color_;}
+
   explicit GraphicsRenderPass(Config config);
 
   vk::CommandBuffer & GetCurrentFrameCommandBuffer();

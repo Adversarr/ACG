@@ -73,6 +73,7 @@ public:
   Scene2() = default;
 
   struct Mesh {
+    bool update_flag;
     size_t id;
     // mesh data.
     geometry::topology::TriangleList faces;
@@ -88,7 +89,7 @@ public:
     int specular_shiness = 32;
 
     // Push constants:
-    Mat4x4f model;
+    Mat4x4f model{Mat4x4f::Identity()};
     // Instancing
     size_t instance_count = 1;
     Field<float, 3> instance_position;
@@ -133,7 +134,8 @@ public:
 
     inline Mesh& SetUniformColor(types::Rgba const& val) {
       use_uniform_color = true;
-      color = val;
+      color.resize(4, 1);
+      color.col(0) = val;
       return *this;
     }
 
@@ -166,10 +168,13 @@ public:
       instance_rotation = rotations;
       return *this;
     }
+
+    void MarkUpdate();
   };
 
   struct Particles {
     size_t id;
+    bool update_flag;
     types::PositionField<float, 3> positions;
     types::RgbaField colors;
     bool use_uniform_color = true;
@@ -200,7 +205,8 @@ public:
 
     inline Particles& SetUniformColor(types::Rgba color) {
       use_uniform_color = true;
-      colors = color;
+      colors.resize(4, 1);
+      colors.col(0) = color;
       return *this;
     }
 
@@ -208,6 +214,8 @@ public:
       radius = r;
       return *this;
     }
+
+    void MarkUpdate();
   };
 
   struct Wireframe {
@@ -215,6 +223,7 @@ public:
     geometry::topology::LineList indices;
     types::PositionField<float, 3> positions;
     types::RgbField colors;
+    bool update_flag{true};
 
     Wireframe(const Wireframe&) = default;
 
@@ -236,6 +245,8 @@ public:
       colors = color;
       return *this;
     }
+
+    void MarkUpdate();
   };
 
 private:
@@ -275,6 +286,10 @@ public:
   size_t GetMeshCount() const { return meshes_.size(); }
 
   const std::vector<Particles>& GetMeshParticle() const { return mesh_particles_; }
+
+  Particles& GetMeshParticle(size_t i) { return mesh_particles_[i]; }
+
+  size_t GetMeshParticleCount() const { return mesh_particles_.size(); }
 
   const std::vector<Mesh>& GetMesh() const { return meshes_; }
 

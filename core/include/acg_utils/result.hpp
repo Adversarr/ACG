@@ -3,6 +3,9 @@
 
 #include "log.hpp"
 
+#define ACG_CHECK_STATUS_OK(r, ...) \
+  ACG_CHECK((r) == acg::Status::kOk, "Status expr[" #r "] check failed." __VA_ARGS__)
+
 namespace acg {
 // Reference: Google/Abseil
 enum class Status {
@@ -222,6 +225,7 @@ public:
 
 template <typename T> class Result final {
   static_assert(!std::is_reference_v<T>, "Result cannot contains a reference.");
+
 public:
   using E = Status;
   template <typename... Args> explicit Result(Args&&... args)
@@ -238,9 +242,9 @@ public:
 
   // NOLINTBEGIN(google-explicit-constructor)
   Result(const Result<void>& rhs)
-      : is_inited_(rhs.HasValue()),
+      : error_(rhs.Error()),
         additional_message_(rhs.additional_message_),
-        error_(rhs.Error()) {
+        is_inited_(rhs.HasValue()) {
     ACG_DEBUG_CHECK(!HasValue(), "Cannot convert from Result<void> when it has no error.");
   }
   // NOLINTEND(google-explicit-constructor)

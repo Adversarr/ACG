@@ -27,8 +27,8 @@ target('ggui')
   add_deps('acg_gui', 'acg_core')
 target_end()
 
-target('async_gui')
-  add_files('async_gui/**.cpp')
+target('ggui2')
+  add_files('ggui2/**.cpp')
   add_deps('acg_gui', 'acg_core')
 target_end()
 

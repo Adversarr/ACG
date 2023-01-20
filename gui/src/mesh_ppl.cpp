@@ -62,7 +62,12 @@ std::vector<vk::VertexInputAttributeDescription> MeshInstance::GetAttributeDescr
   desc2.format = vk::Format::eR32G32B32A32Sfloat;
   desc2.offset = offsetof(MeshInstance, rotation);
 
-  return {desc1, desc2};
+  vk::VertexInputAttributeDescription desc3;
+  desc3.binding = 1;
+  desc3.location = 6;
+  desc3.format = vk::Format::eR32G32B32A32Sfloat;
+  desc3.offset = offsetof(MeshInstance, color);
+  return {desc1, desc2, desc3};
 }
 
 MeshPipeline::MeshPipeline(const GraphicsRenderPass &pass, Config config) : config_(config) {
