@@ -190,16 +190,30 @@ void Scene2::Clear() {
 
 void Scene2::Mesh::MarkUpdate() {
   update_flag = true;
-  // TODO: add debug check.
+  auto vert_count = vertices.cols();
+  if (!use_uniform_color) {
+    ACG_CHECK(vert_count == color.cols(), "#Vertex != #Color");
+  } else {
+    ACG_CHECK(color.cols() == 1, "Use Uniform Color => #Color == 1");
+  }
+
+  ACG_CHECK(normals.cols() == vertices.cols(), "#Normal != #Vertex");
 }
 
 void Scene2::Particles::MarkUpdate() {
   update_flag = true;
-  // TODO: add debug check.
+  if (!use_uniform_color) {
+    ACG_CHECK(positions.cols() == colors.cols(), "#Vertex != #Color");
+  } else {
+    ACG_CHECK(colors.cols() == 1, "Use Uniform Color => #Color == 1");
+  }
+  ACG_CHECK(radius > 0, "Particle Radius should be greater than zero.");
 }
 
 void Scene2::Wireframe::MarkUpdate() {
   update_flag = true;
+  ACG_CHECK(positions.cols() == colors.cols() || colors.cols() == 1,
+      "#Color error");
   // TODO: add debug check.
 }
 }  // namespace acg::gui

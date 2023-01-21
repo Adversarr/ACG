@@ -29,45 +29,46 @@ GGui::GGui(const GGui::Config& config)
   // Pipeline:
   MeshPipeline::Config mp_config;
   mp_config.cull_mode_ = vk::CullModeFlagBits::eNone;
-  mp_config.enable_color_blending = true;
+  mp_config.enable_color_blending = config.enable_blending;
   mesh_pipeline_ = std::make_unique<MeshPipeline>(*graphics_pass_, mp_config);
   PointPipeline::Config pp_config;
-  pp_config.enable_color_blending = true;
+  pp_config.enable_color_blending = config.enable_blending;
   point_pipeline_ = std::make_unique<PointPipeline>(*graphics_pass_, pp_config);
   WireframePipeline::Config wf_config;
   wireframe_pipeline_ = std::make_unique<WireframePipeline>(*graphics_pass_, wf_config);
 
   // Staging buffer init
   InitStagingBuffer();
-  InitDefaultScene();
+  InitDefaultScene(config.init_default_scene);
   UpdateScene();
   UpdateLightCamera();
 }
 
-void GGui::InitDefaultScene() {
+void GGui::InitDefaultScene(bool init_default_scene) {
   scene_.Clear();
-  auto [i, v] = get_default_ball();
-  scene_.AddMesh()
-      .SetIndices(i)
-      .SetVertices(v)
-      .SetNormals(v)
-      .SetUniformColor(Vec4f{.7, .7, .7, 1})
-      .SetInstanceCount(1)
-      .SetEnableWireframe(true)
-      .MarkUpdate();
+  if (init_default_scene) {
+    auto [i, v] = get_default_ball();
+    scene_.AddMesh()
+        .SetIndices(i)
+        .SetVertices(v)
+        .SetNormals(v)
+        .SetUniformColor(Vec4f{.7, .7, .7, 1})
+        .SetInstanceCount(1)
+        .SetEnableWireframe(true)
+        .MarkUpdate();
 
-  scene_.AddParticles()
-      .SetPositions(Vec3f(2, 0, 0))
-      .SetUniformColor(Vec4f(1, 0, 0, 1))
-      .SetRadius(10)
-      .MarkUpdate();
+    scene_.AddParticles()
+        .SetPositions(Vec3f(2, 0, 0))
+        .SetUniformColor(Vec4f(1, 0, 0, 1))
+        .SetRadius(32)
+        .MarkUpdate();
 
-  scene_.AddMeshParticles()
-      .SetUniformColor(types::Rgba(0, 1, 0, 1))
-      .SetRadius(.5)
-      .SetPositions(Vec3f(0, 2, 0))
-      .MarkUpdate();
-
+    scene_.AddMeshParticles()
+        .SetUniformColor(types::Rgba(0, 1, 0, 1))
+        .SetRadius(.5)
+        .SetPositions(Vec3f(0, 2, 0))
+        .MarkUpdate();
+  }
   light_.light_position_ = Vec3f(3, 0, 3);
   light_.light_density_ = .8f;
   light_.light_color_ = Vec3f(.7, .7, .7);
@@ -75,8 +76,8 @@ void GGui::InitDefaultScene() {
   light_.parallel_light_dir_ = acg::Vec3f(0, -1, -1);
   light_.parallel_light_density_ = 0.5f;
 
-  camera_.SetPosition({4, 4, 4});
-  camera_.SetFront({-1, -1, -1});
+  camera_.SetPosition({4, 0, 1});
+  camera_.SetFront({-1, 0, 0});
   camera_.SetUp({0, 0, 1});
   camera_.SetProjectionMode(true);
 
@@ -391,12 +392,7 @@ void GGui::FillXyPlaneBuffers() {
   TryCommitDeferred({xy_plane_render_info_.index, inde.size() * sizeof(uint32_t)}, inde.data());
 }
 
-void GGui::RenderOnce() {
-  auto cur_time = std::chrono::steady_clock::now();
-  auto ms = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(cur_time - last_time).count();
-  last_time = cur_time;
-  render_time_samples_[render_index_++] = ms;
-  render_index_ = render_index_ % 32;
+void GGui::RenderOnce(bool verbose) {
   auto result = acg::gui::VkGraphicsContext::Instance().BeginDraw();
   while (!result) {
     RecreateSwapchain();
@@ -406,8 +402,10 @@ void GGui::RenderOnce() {
   // 1. Mesh
   mesh_pipeline_->BeginPipeline(cbuf);
   for (const auto& info : mesh_render_info_) {
-    ACG_DEBUG_LOG("Rendering mesh: buffers = [{} {} {}], #index={}, #instance={}", info.vertex,
-                  info.index, info.instance, info.index_count, info.instance_count);
+    if (verbose) {
+      ACG_DEBUG_LOG("Rendering mesh: buffers = [{} {} {}], #index={}, #instance={}", info.vertex,
+                    info.index, info.instance, info.index_count, info.instance_count);
+    }
     auto v = GetAllocatedBuffer(info.vertex).GetBuffer();
     auto id = GetAllocatedBuffer(info.index).GetBuffer();
     auto it = GetAllocatedBuffer(info.instance).GetBuffer();
@@ -421,8 +419,10 @@ void GGui::RenderOnce() {
   }
 
   for (const auto& info : mesh_particle_render_info_) {
-    ACG_DEBUG_LOG("Rendering mesh particle: buffers = [{} {} {}], #index={}, #instance={}",
-                  info.vertex, info.index, info.instance, info.index_count, info.instance_count);
+    if (verbose) {
+      ACG_DEBUG_LOG("Rendering mesh particle: buffers = [{} {} {}], #index={}, #instance={}",
+                    info.vertex, info.index, info.instance, info.index_count, info.instance_count);
+    }
     auto v = GetAllocatedBuffer(info.vertex).GetBuffer();
     auto id = GetAllocatedBuffer(info.index).GetBuffer();
     auto it = GetAllocatedBuffer(info.instance).GetBuffer();
@@ -438,7 +438,9 @@ void GGui::RenderOnce() {
 
   point_pipeline_->BeginPipeline(cbuf);
   for (const auto& info : particle_render_info_) {
-    ACG_DEBUG_LOG("Rendering particle: buffers=[{}]", info.vertex);
+    if (verbose) {
+      ACG_DEBUG_LOG("Rendering particle: buffers=[{}]", info.vertex);
+    }
     auto v = info.vertex;
     cbuf.pushConstants(point_pipeline_->GetPipelineLayout(),
                        vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
@@ -448,14 +450,18 @@ void GGui::RenderOnce() {
   }
 
   wireframe_pipeline_->BeginPipeline(cbuf);
-  cbuf.setLineWidth(1.0);
-  cbuf.bindVertexBuffers(0, GetAllocatedBuffer(xy_plane_render_info_.vertex).GetBuffer(),
-                         static_cast<vk::DeviceSize>(0));
-  cbuf.bindIndexBuffer(GetAllocatedBuffer(xy_plane_render_info_.index).GetBuffer(), 0,
-                       vk::IndexType::eUint32);
-  cbuf.drawIndexed(xy_plane_render_info_.index_count, 1, 0, 0, 0);
+  cbuf.setLineWidth(linewidth_);
+  if (xy_plane_info_.enable) {
+    cbuf.bindVertexBuffers(0, GetAllocatedBuffer(xy_plane_render_info_.vertex).GetBuffer(),
+                           static_cast<vk::DeviceSize>(0));
+    cbuf.bindIndexBuffer(GetAllocatedBuffer(xy_plane_render_info_.index).GetBuffer(), 0,
+                         vk::IndexType::eUint32);
+    cbuf.drawIndexed(xy_plane_render_info_.index_count, 1, 0, 0, 0);
+  }
   for (const auto& info : wireframe_render_info_) {
-    ACG_DEBUG_LOG("Rendering wireframe: buffers=[{} {}] #index={}", info.index, info.vertex);
+    if (verbose) {
+      ACG_DEBUG_LOG("Rendering wireframe: buffers=[{} {}] #index={}", info.index, info.vertex);
+    }
     cbuf.bindVertexBuffers(0, GetAllocatedBuffer(info.vertex).GetBuffer(),
                            static_cast<vk::DeviceSize>(0));
     cbuf.bindIndexBuffer(GetAllocatedBuffer(info.index).GetBuffer(), 0, vk::IndexType::eUint32);
@@ -463,8 +469,10 @@ void GGui::RenderOnce() {
   }
   for (const auto& info : mesh_render_info_) {
     if (info.enable_wireframe) {
-      ACG_DEBUG_LOG("Rendering mesh-wireframe: buffers=[{} {}] #index={}", info.wireframe_vertex,
-                    info.wireframe_index, info.index_count * 2);
+      if (verbose) {
+        ACG_DEBUG_LOG("Rendering mesh-wireframe: buffers=[{} {}] #index={}", info.wireframe_vertex,
+                      info.wireframe_index, info.index_count * 2);
+      }
       cbuf.bindVertexBuffers(0, GetAllocatedBuffer(info.wireframe_vertex).GetBuffer(),
                              static_cast<vk::DeviceSize>(0));
       cbuf.bindIndexBuffer(GetAllocatedBuffer(info.wireframe_index).GetBuffer(), 0,
@@ -707,12 +715,48 @@ void GGui::FillWireframeBuffer(const Scene2::Wireframe& wireframe,
 }
 
 void GGui::DrawDefaultUI() {
-  ImGui::Begin("GGui Control");
+  ImGui::SetNextWindowPos(ImVec2(0, 0));
+  auto extent = VkGraphicsContext::Instance().swapchain_extent_;
+  ImGui::SetNextWindowSize(ImVec2(360, extent.height * .5), ImGuiCond_Once);
+  ImGui::Begin("GGui Control", nullptr, ImGuiWindowFlags_NoMove);
   ImGui::Text("Background Color");
   ImGui::ColorEdit3("Clear Color", graphics_pass_->GetBackgroundColor().float32,
                     ImGuiColorEditFlags_Float);
   ImGui::Text("Mesh-outline Color");
   ImGui::ColorEdit3("Outline Color", mesh_outline_color_.data(), ImGuiColorEditFlags_Float);
+
+  ImGui::Text("Xy plane info");
+  bool changed = ImGui::ColorEdit3("Color", xy_plane_info_.color.data(), ImGuiColorEditFlags_Float);
+  changed |= ImGui::DragFloat("Height", &xy_plane_info_.height, 0.1f, -5.0f, 5.0f);
+  changed |= ImGui::Checkbox("Enable?", &xy_plane_info_.enable);
+  if (changed) {
+    ACG_DEBUG_LOG("XyPlane Mark Update");
+    xy_plane_info_.MarkUpdate();
+  }
+
+  ImGui::Text("Camera Info");
+  changed = ImGui::InputFloat3("Position", camera_.GetPosition().data());
+  changed |= ImGui::InputFloat3("Front", camera_.GetFront().data());
+  changed |= ImGui::InputFloat3("Up", camera_.GetUp().data());
+  changed |= ImGui::Checkbox("Prespective?", &camera_.GetProjectionMode());
+  changed |= ImGui::Checkbox("Fix Up Dir?", &disable_camera_up_update_);
+
+  ImGui::Text("Light Info");
+  changed |= ImGui::InputFloat3("Point-Light position", light_.light_position_.data());
+  changed |= ImGui::ColorEdit3("Point-Light color", light_.light_color_.data(),
+                               ImGuiColorEditFlags_Float);
+  changed |= ImGui::DragFloat("Point-Light Density", &light_.light_density_, 0.03, 0, 1);
+  changed |= ImGui::ColorEdit3("Para-Light Color", light_.parallel_light_color_.data(),
+                               ImGuiColorEditFlags_Float);
+  changed |= ImGui::InputFloat3("Para-Light Direction", light_.parallel_light_dir_.data());
+  changed |= ImGui::DragFloat("Para-Light Density", &light_.parallel_light_density_, 0.03, 0, 1);
+  changed |= ImGui::ColorEdit3("Ambient Color", light_.ambient_light_color_.data(),
+                               ImGuiColorEditFlags_Float);
+  changed |= ImGui::DragFloat("Ambient Density", &light_.light_density_, 0.03, 0, 1);
+
+  if (changed) {
+    UpdateLightCamera();
+  }
 
   ImGui::Text("Render Time Statics");
   float sum = 0;
@@ -720,9 +764,94 @@ void GGui::DrawDefaultUI() {
     sum += value;
   }
   auto s = fmt::format("avg={:.3f}", sum / 32);
-  ImGui::PlotHistogram("Time(ms)", render_time_samples_.data(), render_time_samples_.size(), 0, s.c_str(),
-                   FLT_MAX, FLT_MAX, ImVec2(0, 80));
+  ImGui::PlotHistogram("Time(ms)", render_time_samples_.data(), render_time_samples_.size(), 0,
+                       s.c_str(), FLT_MAX, FLT_MAX, ImVec2(0, 80));
   ImGui::End();
+}
+
+void GGui::Tick() {
+  auto cur_time = std::chrono::steady_clock::now();
+  dt = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(cur_time - last_time);
+  last_time = cur_time;
+  render_time_samples_[render_index_++] = dt.count();
+  render_index_ = render_index_ % 32;
+  ProcessCamera();
+}
+void GGui::ProcessCamera() {
+  Vec3f camera_velocity = Vec3f::Zero();
+  float rot_hori = 0;
+  float rot_vert = 0;
+  Vec3f right = camera_.GetFront().cross(camera_.GetUp());
+  bool changed = false;
+  // 1. pressed 'WSAD' => horizonal
+  auto pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_W);
+  if (pressed) {
+    changed = true;
+    camera_velocity += camera_.GetFront().normalized();
+  }
+  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_S);
+  if (pressed) {
+    changed = true;
+    camera_velocity -= camera_.GetFront().normalized();
+  }
+  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_A);
+  if (pressed) {
+    changed = true;
+    camera_velocity -= right.normalized();
+  }
+  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_D);
+  if (pressed) {
+    changed = true;
+    camera_velocity += right.normalized();
+  }
+  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_Q);
+  if (pressed) {
+    changed = true;
+    camera_velocity -= camera_.GetUp().normalized();
+  }
+  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_E);
+  if (pressed) {
+    changed = true;
+    camera_velocity += camera_.GetUp().normalized();
+  }
+
+  // 2. hjkl => angle
+  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_H);
+  if (pressed) {
+    changed = true;
+    rot_hori -= 1.0;
+  }
+  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_L);
+  if (pressed) {
+    changed = true;
+    rot_hori += 1.0;
+  }
+  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_J);
+  if (pressed) {
+    changed = true;
+    rot_vert -= 1.0;
+  }
+  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_K);
+  if (pressed) {
+    changed = true;
+    rot_vert += 1.0;
+  }
+
+  Vec3f front = camera_.GetFront().normalized();
+  Vec3f up = camera_.GetUp().normalized();
+  camera_.GetFront()
+      += (rot_hori * right - rot_vert * up) * dt.count() * .001 * camera_moving_speed;
+  camera_.GetFront().normalize();
+  if (disable_camera_up_update_) {
+    camera_.SetUp({0, 0, 1});
+  } else {
+    camera_.GetUp() += (-rot_vert * front) * dt.count() * .001 * camera_moving_speed;
+    camera_.GetUp().normalize();
+  }
+  camera_.GetPosition() += camera_velocity * dt.count() * 0.001 * camera_moving_speed;
+  if (changed) {
+    UpdateLightCamera();
+  }
 }
 
 }  // namespace acg::gui::details

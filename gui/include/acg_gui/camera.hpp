@@ -58,6 +58,8 @@ public:
   F32 GetRoll() const;
   F32 GetPitch() const;
 
+
+  bool& GetProjectionMode() { return is_perspective_; }
 private:
 
   bool is_perspective_{true};

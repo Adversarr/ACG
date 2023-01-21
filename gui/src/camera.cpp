@@ -17,6 +17,9 @@ glm::mat4 Camera::GetView() const {
 
 glm::mat4 Camera::GetProjection(float width, float height, bool inverted_y_axis) const {
   auto proj = glm::perspective(glm::radians(fov_), width / height, near_, far_);
+  if (!is_perspective_) {
+    proj = glm::ortho(-width / 2, width / 2, height / 2, -height / 2, near_, far_);
+  }
   if (inverted_y_axis) {
     proj[1][1] *= -1;
   }
@@ -105,7 +108,6 @@ Camera& Camera::SetUp(Vec3f up) {
   up_ = up;
   return *this;
 }
-
 
 // TODO: compute everything using yrp.
 

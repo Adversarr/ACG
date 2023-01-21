@@ -21,11 +21,19 @@ int main(int argc, char** argv) {
   VkGraphicsContext::Hooker().Hook();
   acg::init(argc, argv);
   GGui::Config config;
+  config.init_default_scene = true;
+  config.enable_blending = true;
   {
     GGui gui(config);
+    gui.SetUIDrawCallback([]() {
+      ImGui::Begin("GGui User Window");
+      ImGui::Text("Hello world!");
+    });
     while (!Window::Instance().ShouldClose()) {
       glfwPollEvents();
+      gui.Tick();
       gui.RenderOnce();
+      gui.UpdateScene();
     }
   }
 

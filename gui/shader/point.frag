@@ -26,5 +26,5 @@ void main() {
   vec2 off = gl_PointCoord - vec2(0.5, 0.5);
   float density = clamp(length(off), 0, 0.5) * PI;
   density = cos(density);
-  outColor = vec4(inColor.xyz, density * inColor.w);
+  outColor = vec4(inColor.xyz * density, density * inColor.w);
 }

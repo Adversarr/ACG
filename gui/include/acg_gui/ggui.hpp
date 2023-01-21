@@ -21,6 +21,8 @@ struct XyPlaneRenderInfo {
   float height;
   bool enable = false;
   bool update_flag = false;
+
+  void MarkUpdate() { update_flag = true; }
 };
 
 struct GuiEvent {
@@ -104,6 +106,8 @@ class GGui {
 public:
   struct Config {
     vk::DeviceSize staging_buffer_size = 16 * 1024 * 1024;
+    bool enable_blending = false;
+    bool init_default_scene = false;
   };
   static GGui& Instance();
 
@@ -113,21 +117,25 @@ public:
 
   Camera& GetCamera() { return camera_; }
 
-  void UpdateScene(bool force = false);
+  void UpdateScene(bool force_all = false);
 
   void UpdateLightCamera();
 
   void SetUIDrawCallback(std::function<void()> callback) { ui_draw_callback_ = callback; }
 
-  void RenderOnce();
+  void RenderOnce(bool verbose = false);
 
   void DrawDefaultUI();
 
   explicit GGui(const Config& config);
 
+  void Tick();
+
   ~GGui();
 
 private:
+  void ProcessCamera();
+
   void PrepareBuffers();
   void PrepareXyPlaneBuffer();
   void PrepareMeshBuffer(MeshRenderInfo& info);
@@ -155,9 +163,11 @@ private:
 
   void DestroyStagingBuffer();
 
-  void InitDefaultScene();
+  void InitDefaultScene(bool init_default_scene);
 
   void Destroy();
+
+  void TryUpdateLinewidth();
 
   void RecreateSwapchain();
 
@@ -189,12 +199,16 @@ private:
   Scene2 scene_;
   Camera camera_;
   Light light_;
+  bool disable_camera_up_update_{true};
   XyPlaneRenderInfo xy_plane_info_;
+  float camera_moving_speed{1.0f};
 
   using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
   std::array<float, 32> render_time_samples_;
   size_t render_index_{0};
   TimePoint last_time;
+  std::chrono::duration<float, std::milli> dt;
+  float linewidth_{1.0f};
 
   Vec4f mesh_outline_color_ = {.1, .1, .1, 1.0};
   // Staging buffer and manipulator
