@@ -409,7 +409,7 @@ void GGui::RenderOnce(bool verbose) {
     auto v = GetAllocatedBuffer(info.vertex).GetBuffer();
     auto id = GetAllocatedBuffer(info.index).GetBuffer();
     auto it = GetAllocatedBuffer(info.instance).GetBuffer();
-    cbuf.bindVertexBuffers(0, v, vk::DeviceSize(0));
+    cbuf.bindVertexBuffers(0, v, static_cast<vk::DeviceSize>(0));
     cbuf.bindVertexBuffers(1, it, static_cast<vk::DeviceSize>(0));
     cbuf.bindIndexBuffer(id, 0, vk::IndexType::eUint32);
     cbuf.pushConstants(mesh_pipeline_->GetPipelineLayout(),
@@ -426,7 +426,7 @@ void GGui::RenderOnce(bool verbose) {
     auto v = GetAllocatedBuffer(info.vertex).GetBuffer();
     auto id = GetAllocatedBuffer(info.index).GetBuffer();
     auto it = GetAllocatedBuffer(info.instance).GetBuffer();
-    cbuf.bindVertexBuffers(0, v, vk::DeviceSize(0));
+    cbuf.bindVertexBuffers(0, v, static_cast<vk::DeviceSize>(0));
     cbuf.bindVertexBuffers(1, it, static_cast<vk::DeviceSize>(0));
     cbuf.bindIndexBuffer(id, 0, vk::IndexType::eUint32);
     cbuf.pushConstants(mesh_pipeline_->GetPipelineLayout(),
@@ -826,12 +826,12 @@ void GGui::ProcessCamera() {
     changed = true;
     rot_hori += 1.0;
   }
-  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_J);
+  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_K);
   if (pressed) {
     changed = true;
     rot_vert -= 1.0;
   }
-  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_K);
+  pressed = glfwGetKey(Window::Instance().GetWindow(), GLFW_KEY_J);
   if (pressed) {
     changed = true;
     rot_vert += 1.0;

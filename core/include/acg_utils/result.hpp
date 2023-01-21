@@ -252,7 +252,7 @@ public:
   Result& operator=(const Result<void>& rhs) {
     is_inited_ = rhs.is_inited_;
     ACG_DEBUG_CHECK(!HasValue(), "Cannot convert from Result<void> when it has no error.");
-    additional_message_(rhs.additional_message_);
+    additional_message_ = rhs.additional_message_;
   }
 
   // Disable Copy
