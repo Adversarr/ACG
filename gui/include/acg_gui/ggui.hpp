@@ -119,6 +119,8 @@ public:
 
   void UpdateScene(bool force_all = false);
 
+  void ClearScene();
+
   void UpdateLightCamera();
 
   void SetUIDrawCallback(std::function<void()> callback) { ui_draw_callback_ = callback; }

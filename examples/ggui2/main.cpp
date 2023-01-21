@@ -25,15 +25,20 @@ int main(int argc, char** argv) {
   config.enable_blending = true;
   {
     GGui gui(config);
-    gui.SetUIDrawCallback([]() {
+    bool clear = false;
+    gui.SetUIDrawCallback([& clear]() {
       ImGui::Begin("GGui User Window");
       ImGui::Text("Hello world!");
+      clear =ImGui::Button("Clear Scene!");
     });
     while (!Window::Instance().ShouldClose()) {
       glfwPollEvents();
       gui.Tick();
       gui.RenderOnce();
       gui.UpdateScene();
+      if (clear) {
+        gui.ClearScene();
+      }
     }
   }
 

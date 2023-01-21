@@ -854,4 +854,25 @@ void GGui::ProcessCamera() {
   }
 }
 
+void GGui::ClearScene() {
+  scene_.Clear();
+  std::vector<BufferWithMemory> remapped;
+  // Register old buffers.
+  remapped.push_back(GetAllocatedBuffer(xy_plane_render_info_.vertex));
+  remapped.push_back(GetAllocatedBuffer(xy_plane_render_info_.index));
+  for (size_t i = 0; i < allocated_buffers_.size(); ++i) {
+    if (i != xy_plane_render_info_.vertex && i != xy_plane_render_info_.index) {
+      VkContext2::Instance().DestroyBufferWithMemory(allocated_buffers_[i]);
+    }
+  }
+  xy_plane_render_info_.vertex = 0;
+  xy_plane_render_info_.index = 1;
+  mesh_render_info_.clear();
+  mesh_particle_render_info_.clear();
+  wireframe_render_info_.clear();
+  particle_render_info_.clear();
+
+  allocated_buffers_ = remapped;
+}
+
 }  // namespace acg::gui::details
