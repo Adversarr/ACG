@@ -24,17 +24,24 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
   GGui::Config config;
   config.init_default_scene = false;
-  config.enable_blending = true;
+  config.enable_blending = false;
   {
     GGui gui(config);
     bool clear = false;
-    gui.SetUIDrawCallback([&clear]() {
-      ImGui::Begin("GGui User Window");
-      ImGui::Text("Hello world!");
-      clear = ImGui::Button("Clear Scene!");
-    });
+    bool running = false;
     MpmExplictApp app;
     app.Init();
+    gui.SetUIDrawCallback([&clear, &running, &app]() {
+      ImGui::Begin("GGui User Window");
+      clear = ImGui::Button("Reset Scene.");
+      // running = ImGui::Button("Run Once");
+      ImGui::Checkbox("Run", &running);
+      acg::F64 vel_eng = app.particle_velocity_.array().square().sum();
+      Vec3f pos = app.particle_position_.rowwise().mean().cast<F32>();
+      ImGui::Text("Velocity Energy = %lf, Weight %lf", vel_eng, app.weight_sum);
+      ImGui::InputFloat3("Position", pos.data());
+      ImGui::DragFloat3("Gravity", app.grav_.data(), 0.1, -3, 3);
+    });
 
     gui.GetScene().AddParticles()
       .SetPositions(app.particle_position_.cast<F32>())
@@ -47,10 +54,20 @@ int main(int argc, char** argv) {
       gui.RenderOnce();
       gui.UpdateScene();
       if (clear) {
-        gui.ClearScene();
+        app.Init();
+        gui.GetScene().GetParticles().front()
+          .SetPositions(app.particle_position_.cast<F32>())
+          .MarkUpdate();
+      }
+
+      if (running) {
+        app.Run();
+        gui.GetScene().GetParticles().front()
+          .SetPositions(app.particle_position_.cast<F32>())
+          .MarkUpdate();
       }
     }
   }
-
+  acg::clean_up();
   return EXIT_SUCCESS;
 }

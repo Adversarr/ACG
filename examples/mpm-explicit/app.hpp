@@ -153,21 +153,28 @@ public:
   void Projection();
 
   inline Idx GetGridIndex(Idx i, Idx j, Idx k) const {
+    assert(0 <= i && i < n_grid_ + 1);
+    assert(0 <= j && j < n_grid_ + 1);
+    assert(0 <= k && k < n_grid_ + 1);
     return k + (n_grid_ + 1) * (j + (n_grid_ + 1) * i);
   }
 
-  Idx n_grid_{32};
+  Idx n_grid_{48};
+  Idx grid_size_;
+
+  Vec3f grav_ = {0, 0, -9.8};
 
   Idx steps_{32};
 
   F64 simulation_range_{1};
   F64 dx_;
-  F64 dt_ = 4e-4;
+  F64 dt_ = 4e-3;
 
-  F64 rho_ = 1;
+  F64 rho_ = 1e3;
   F64 particle_mass_;
   F64 particle_vol_;
-  F64 E_ = 400;
+  F64 E_ = 4;
+  F64 weight_sum;
 
   Idx n_particles_;
   Field<F64, 3> grid_velocity_;

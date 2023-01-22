@@ -183,7 +183,7 @@ public:
 
     Particles(const Particles&) = default;
 
-    Particles& operator=(const Particles& ) = default;
+    Particles& operator=(const Particles&) = default;
 
     explicit Particles(size_t id) : id(id) {}
 
@@ -227,7 +227,7 @@ public:
 
     Wireframe(const Wireframe&) = default;
 
-    Wireframe& operator=(const Wireframe& ) = default;
+    Wireframe& operator=(const Wireframe&) = default;
 
     explicit Wireframe(size_t id) : id(id) {}
 
@@ -285,13 +285,13 @@ public:
 
   size_t GetMeshCount() const { return meshes_.size(); }
 
-  const std::vector<Particles>& GetMeshParticle() const { return mesh_particles_; }
+  std::vector<Particles>& GetMeshParticle() { return mesh_particles_; }
 
   Particles& GetMeshParticle(size_t i) { return mesh_particles_[i]; }
 
   size_t GetMeshParticleCount() const { return mesh_particles_.size(); }
 
-  const std::vector<Mesh>& GetMesh() const { return meshes_; }
+  std::vector<Mesh>& GetMesh() { return meshes_; }
 
   // PARTICLE API
 
@@ -306,7 +306,7 @@ public:
 
   size_t GetParticlesCount() const { return particles_.size(); }
 
-  const std::vector<Particles>& GetParticles() const { return particles_; }
+  std::vector<Particles>& GetParticles() { return particles_; }
 
   // WIREFRAME API
   Wireframe& AddWireframe();
@@ -316,7 +316,7 @@ public:
 
   Wireframe& GetWireframe(size_t id);
 
-  const std::vector<Wireframe>& GetWireframe() const { return wireframe_; }
+  std::vector<Wireframe>& GetWireframe() { return wireframe_; }
 
   size_t GetWireframeCount() const { return wireframe_.size(); }
 
