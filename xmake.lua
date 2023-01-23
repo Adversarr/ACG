@@ -8,7 +8,7 @@ set_warnings('allextra') -- -Wall
 
 add_rules("mode.debug", "mode.release")
 
-set_optimize('faster')
+-- set_optimize('faster')
 
 includes(
   '3rdparty',

@@ -51,9 +51,8 @@ void MpmExplictApp::P2G() {
           Idx gid = GetGridIndex(base.x() + di, base.y() + dj, base.z() + dk);
           assert(gid < grid_size_);
           // compute the weight.
-          auto weight_d = (Vec3Idx(1 - di, 1 - dj, 1 - dk).cast<F64>() - fx);
+          auto weight_d = (Vec3d(1 - di, 1 - dj, 1 - dk) - fx);
           F64 weight = abs(weight_d.x() * weight_d.y() * weight_d.z());
-
           // TODO: Affine Transform.
           // ACG_DEBUG_LOG("Gid = {}", gid);
           grid_mass_(gid) += weight;
@@ -130,23 +129,26 @@ void MpmExplictApp::G2P() {
     Vec3d base_f = xp.array().floor().matrix();
     Vec3Idx base = base_f.cast<Idx>();
     Vec3d fx = xp - base_f;
+    F64 weight_sum_local = 0;
     auto blk = new_vel.col(i);
     for (Idx di = 0; di <= 1; ++di) {
       for (Idx dj = 0; dj <= 1; ++dj) {
         for (Idx dk = 0; dk <= 1; ++dk) {
           Idx gid = GetGridIndex(base.x() + di, base.y() + dj, base.z() + dk);
           // compute the weight.
-          auto weight_d = (Vec3Idx(1 - di, 1 - dj, 1 - dk).cast<F64>() - fx);
+          auto weight_d = (Vec3d(1 - di, 1 - dj, 1 - dk) - fx);
           F64 weight = abs(weight_d.x() * weight_d.y() * weight_d.z());
-          weight_sum += weight;
+          assert(weight < 1);
+          weight_sum_local += weight;
 
           // TODO: Affine Transform.
           blk += weight * grid_velocity_.col(gid);
         }
       }
     }
+    weight_sum += weight_sum_local;
   }
-  weight_sum /= grid_size_;
+  weight_sum /= n_particles_;
 
   auto new_position = (particle_position_ + (particle_velocity_ + new_vel) * dt_ * .5).eval();
   for (auto blk : new_position.colwise()) {

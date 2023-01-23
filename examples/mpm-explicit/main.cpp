@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
   GGui::Config config;
   config.init_default_scene = false;
-  config.enable_blending = false;
+  config.enable_blending = true;
   {
     GGui gui(config);
     bool clear = false;
@@ -65,6 +65,8 @@ int main(int argc, char** argv) {
         gui.GetScene().GetParticles().front()
           .SetPositions(app.particle_position_.cast<F32>())
           .MarkUpdate();
+        // running = false;
+        // acg::utils::SleepMs(500);
       }
     }
   }
