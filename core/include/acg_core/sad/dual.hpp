@@ -19,28 +19,25 @@ template <typename T, typename... E> struct Expr {
   static constexpr bool is_input = false;
 };
 
-template <typename T> struct IsConstant {
-  static constexpr bool value = T::is_constant;
-};
+template <typename T> struct IsConstant { static constexpr bool value = T::is_constant; };
 
-template <typename T> struct IsInput {
-  static constexpr bool value = T::is_input;
-};
+template <typename T> struct IsInput { static constexpr bool value = T::is_input; };
 
 // Helper classes
 template <typename L, typename R> struct IsSubNode {
   static constexpr bool value = Has_v<L, typename R::SubNodes>;
 };
 
-template <typename L> struct GetSubNodes {
-  using type = typename L::SubNodes;
-};
+template <typename T> constexpr bool IsScalar_v = Trait<typename T::type>::is_scalar;
 
-template <typename T> struct GetInnerType {
-  using type = typename T::type;
-};
+template <typename T> using Scalar_t = typename Trait<typename T::type>::Scalar;
 
-template <typename T> using GetInnerType_t = typename T::type;
+template <typename L> struct GetSubNodes { using type = typename L::SubNodes; };
+
+template <typename T> struct GetRunTimeType { using type = typename T::type; };
+
+template <typename T> using GetRunTimeType_t = typename T::type;
+
 template <typename T, typename Derived> struct Input : public Expr<T> {
   static constexpr bool is_input = true;
   using InputNodes = List<Derived>;
@@ -74,12 +71,18 @@ template <> struct Zeros<float> : Constant<float> {
 template <> struct Zeros<double> : Constant<double> {
   inline decltype(auto) operator()() const noexcept { return static_cast<double>(0); }
 };
+
 template <typename X> using ZerosLike = Zeros<typename X::type>;
 
 template <typename T, int... dmd> struct Dirac;
 
 template <typename T> struct Dirac<T> : public Ones<T> {};
 
+template <typename T, int r> struct Dirac<T, r> : public Constant<T> {
+  inline decltype(auto) operator()() const noexcept {
+    return T::Unit(r);
+  }
+};
 template <typename T, int r, int c> struct Dirac<T, r, c> : public Constant<T> {
   inline decltype(auto) operator()() const noexcept {
     constexpr int64_t rows = T::RowsAtCompileTime;
@@ -167,20 +170,19 @@ struct Mul<L, R,
       = std::conditional_t<std::is_same_v<X, R>, Mul<L, G>, Mul<G, R>>;
 };
 
-template <typename L> struct Mul<
-    L, L,
-    std::enable_if_t<Trait<typename L::type>::cols == Trait<typename L::type>::rows
-                     && Trait<typename L::type>::is_scalar>>
+template <typename L>
+struct Mul<L, L,
+           std::enable_if_t<Trait<typename L::type>::cols == Trait<typename L::type>::rows
+                            && Trait<typename L::type>::is_scalar>>
     : public Expr<typename L::type, L> {
   template <typename Li> inline decltype(auto) operator()(Li&& l) const noexcept { return l * l; }
   template <typename X, typename G> using Grad_t = Add<Mul<L, G>, Mul<G, L>>;
 };
 
 // Scalar * Matrix
-template <typename L, typename R>
-struct Mul<L, R,
-           std::enable_if_t<Trait<typename L::type>::is_scalar
-                            && !(Trait<typename R::type>::is_scalar)>>
+template <typename L, typename R> struct Mul<
+    L, R,
+    std::enable_if_t<Trait<typename L::type>::is_scalar && !(Trait<typename R::type>::is_scalar)>>
     : public Expr<typename R::type, L, R> {
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
@@ -190,10 +192,9 @@ struct Mul<L, R,
       = std::conditional_t<std::is_same_v<X, R>, Mul<L, G>, Mul<G, R>>;
 };
 
-template <typename L, typename R>
-struct Mul<L, R,
-           std::enable_if_t<!Trait<typename L::type>::is_scalar
-                            && Trait<typename R::type>::is_scalar>>
+template <typename L, typename R> struct Mul<
+    L, R,
+    std::enable_if_t<!Trait<typename L::type>::is_scalar && Trait<typename R::type>::is_scalar>>
     : public Expr<typename L::type, L, R> {
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
@@ -207,12 +208,10 @@ template <typename L, typename R>
 struct Mul<L, R,
            std::enable_if_t<!std::is_same_v<L, R> && !(Trait<typename L::type>::is_scalar)
                             && !(Trait<typename R::type>::is_scalar)>>
-    : public Expr<
-          Eigen::Matrix<typename Trait<typename L::type>::Scalar,
-                        Trait<typename L::type>::rows, Trait<typename R::type>::cols>,
-          L, R> {
-  static_assert(Trait<typename L::type>::cols == Trait<typename R::type>::rows,
-                "L.col != R.rows");
+    : public Expr<Eigen::Matrix<typename Trait<typename L::type>::Scalar,
+                                Trait<typename L::type>::rows, Trait<typename R::type>::cols>,
+                  L, R> {
+  static_assert(Trait<typename L::type>::cols == Trait<typename R::type>::rows, "L.col != R.rows");
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
     return std::forward<Li>(l) * std::forward<Ri>(r);
@@ -221,10 +220,10 @@ struct Mul<L, R,
       = std::conditional_t<std::is_same_v<X, R>, Mul<L, G>, Mul<G, R>>;
 };
 
-template <typename L> struct Mul<
-    L, L,
-    std::enable_if_t<Trait<typename L::type>::cols == Trait<typename L::type>::rows
-                     && !Trait<typename L::type>::is_scalar>>
+template <typename L>
+struct Mul<L, L,
+           std::enable_if_t<Trait<typename L::type>::cols == Trait<typename L::type>::rows
+                            && !Trait<typename L::type>::is_scalar>>
     : public Expr<typename L::type, L> {
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
@@ -243,9 +242,8 @@ template <typename E> using ZerosLike = details::ZerosLike<E>;
 template <typename T, int... dmd> using Dirac = details::Dirac<T, dmd...>;
 
 // NOLINTBEGIN(bugprone-macro-parentheses)
-#define Variable(type, name)                                  \
-  struct name : public acg::sad::details::Input<type, name> { \
-  }
+#define Variable(type, name) \
+  struct name : public acg::sad::details::Input<type, name> {}
 
 #define Constant_value(type, name, value)                                                  \
   struct name : public acg::sad::details::Constant<type> {                                 \

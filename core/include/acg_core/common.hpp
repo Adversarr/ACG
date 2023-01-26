@@ -41,18 +41,16 @@ using F64 = double;
  */
 using Float = F64;
 
-using I32 = int32_t;
-using Ui32 = uint32_t;
-using I64 = int64_t;
-using Ui64 = uint64_t;
-
+using I32 = std::int32_t;
+using Ui32 = std::uint32_t;
+using I64 = std::int64_t;
+using Ui64 = std::uint64_t;
 
 /**
  * @brief Index & Size type for mesh, particle system, rendering(index buffer), etc.
  */
-using Idx = I64;
-
-using ULIdx = Ui64;
+using Index = I64;
+using UIndex = Ui64;
 
 
 }  // namespace acg

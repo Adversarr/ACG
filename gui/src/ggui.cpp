@@ -83,7 +83,7 @@ void GGui::InitDefaultScene(bool init_default_scene) {
 
   xy_plane_info_.color = Vec4f(.7, .7, 0, 1);
   xy_plane_info_.update_flag = true;
-  xy_plane_info_.density = Vec2Idx(10, 10);
+  xy_plane_info_.density = Vec2Index (10, 10);
   xy_plane_info_.range = Vec2f(10, 10);
   xy_plane_info_.enable = true;
   xy_plane_info_.height = 0.0;
@@ -355,11 +355,11 @@ void GGui::FillBuffers(bool force) {
 void GGui::FillXyPlaneBuffers() {
   std::vector<WireframePoint> vert(xy_plane_render_info_.vertex_count);
   std::vector<uint32_t> inde;
-  Idx rows = xy_plane_info_.density.y();
-  Idx cols = xy_plane_info_.density.x();
-  Idx id = 0;
-  for (Idx i = 0; i < 2 * rows + 1; ++i) {
-    for (Idx j = 0; j < 2 * cols + 1; ++j) {
+  Index rows = xy_plane_info_.density.y();
+  Index cols = xy_plane_info_.density.x();
+  Index id = 0;
+  for (Index i = 0; i < 2 * rows + 1; ++i) {
+    for (Index j = 0; j < 2 * cols + 1; ++j) {
       auto&& ref = vert[id];
       ref.color = glm::make_vec3(xy_plane_info_.color.data());
       float off_x = xy_plane_info_.range.x() * static_cast<float>(i - rows) / rows;
@@ -369,16 +369,16 @@ void GGui::FillXyPlaneBuffers() {
     }
   }
 
-  for (Idx i = 0; i < 2 * rows; ++i) {
-    for (Idx j = 0; j < 2 * cols + 1; ++j) {
+  for (Index i = 0; i < 2 * rows; ++i) {
+    for (Index j = 0; j < 2 * cols + 1; ++j) {
       auto up = i * (2 * cols + 1) + j;
       auto bot = up + (2 * cols + 1);
       inde.push_back(up);
       inde.push_back(bot);
     }
   }
-  for (Idx j = 0; j < 2 * cols; ++j) {
-    for (Idx i = 0; i < 2 * rows + 1; ++i) {
+  for (Index j = 0; j < 2 * cols; ++j) {
+    for (Index i = 0; i < 2 * rows + 1; ++i) {
       auto left = i * (2 * cols + 1) + j;
       auto right = left + 1;
       inde.push_back(left);
@@ -527,7 +527,7 @@ void GGui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) 
 
   // Vertex Buffer
   std::vector<details::MeshVertex> vert_buffer_content;
-  for (Idx i = 0; i < vert_count; ++i) {
+  for (Index i = 0; i < vert_count; ++i) {
     auto p = mesh.vertices.col(i);
     auto c = mesh.color.col(mesh.use_uniform_color ? 0 : i);
     auto n = mesh.normals.col(i);
@@ -541,7 +541,7 @@ void GGui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) 
 
   // Index buffer:
   std::vector<uint32_t> index_buffer_content;
-  for (Idx i = 0; i < face_count; ++i) {
+  for (Index i = 0; i < face_count; ++i) {
     index_buffer_content.push_back(mesh.faces.col(i).x());
     index_buffer_content.push_back(mesh.faces.col(i).y());
     index_buffer_content.push_back(mesh.faces.col(i).z());
@@ -550,7 +550,7 @@ void GGui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) 
 
   // Instance Buffer
   std::vector<details::MeshInstance> instance_buffer_content;
-  for (Idx i = 0; static_cast<size_t>(i) < mesh.instance_count; ++i) {
+  for (Index i = 0; static_cast<size_t>(i) < mesh.instance_count; ++i) {
     details::MeshInstance inst;
     if (i >= mesh.instance_position.cols()) {
       inst.position = glm::vec3(0, 0, 0);
@@ -644,7 +644,7 @@ void GGui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshR
   auto instance_buffer_size = info.instance_count * sizeof(details::MeshInstance);
 
   std::vector<details::MeshVertex> vert_buffer_content;
-  for (Idx i = 0; i < vert_count; ++i) {
+  for (Index i = 0; i < vert_count; ++i) {
     auto p = v.col(i);
     auto n = v.col(i);
     details::MeshVertex v;
@@ -657,7 +657,7 @@ void GGui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshR
 
   // Index buffer:
   std::vector<uint32_t> index_buffer_content;
-  for (Idx i = 0; i < face_count; ++i) {
+  for (Index i = 0; i < face_count; ++i) {
     index_buffer_content.push_back(ind.col(i).x());
     index_buffer_content.push_back(ind.col(i).y());
     index_buffer_content.push_back(ind.col(i).z());
@@ -667,7 +667,7 @@ void GGui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshR
 
   // Instance Buffer
   std::vector<details::MeshInstance> instance_buffer_content;
-  for (Idx i = 0; static_cast<size_t>(i) < info.instance_count; ++i) {
+  for (Index i = 0; static_cast<size_t>(i) < info.instance_count; ++i) {
     Vec3f p = particle.positions.col(i);
     details::MeshInstance inst;
     inst.position = glm::make_vec3(p.data());

@@ -42,10 +42,10 @@ public:
     auto rhs_cols = rhs_.cols();
     OutType output(lhs_rows * rhs_rows, lhs_cols * rhs_cols);
 
-    for (Idx l_j = 0; l_j < lhs_cols; ++l_j) {
-      for (Idx r_j = 0; r_j < rhs_cols; ++r_j) {
-        for (Idx l_i = 0; l_i < lhs_rows; ++l_i) {
-          for (Idx r_i = 0; r_i < rhs_rows; ++r_i) {
+    for (Index l_j = 0; l_j < lhs_cols; ++l_j) {
+      for (Index r_j = 0; r_j < rhs_cols; ++r_j) {
+        for (Index l_i = 0; l_i < lhs_rows; ++l_i) {
+          for (Index r_i = 0; r_i < rhs_rows; ++r_i) {
             output(l_i * rhs_rows + r_i, l_j * rhs_cols + r_j) = lhs_(l_i, l_j) * rhs_(r_i, r_j);
           }
         }

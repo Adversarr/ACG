@@ -250,12 +250,12 @@ void VkContext::PickPhysicalDevice() {
   auto devices = instance_.enumeratePhysicalDevices();
   for (const auto &d : devices) {
     auto properties = d.getProperties();
-    ACG_DEBUG_LOG("Found Device: id={}, name=<{}>", properties.deviceID, properties.deviceName);
+    ACG_DEBUG("Found Device: id={}, name=<{}>", properties.deviceID, properties.deviceName);
     if (IsSuitable(d)) {
       physical_device_ = d;
       break;
     }
-    ACG_DEBUG_LOG("Not Suitable.");
+    ACG_DEBUG("Not Suitable.");
   }
 
   if (!physical_device_) {

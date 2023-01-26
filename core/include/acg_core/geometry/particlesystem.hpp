@@ -47,7 +47,7 @@ public:
     auto extended_size = std::distance(first, last);
     centers_.resize(3, centers_.cols() + extended_size);
     radiuses_.resize(radiuses_.cols() + extended_size);
-    Idx i = centers_.cols() - extended_size;
+    Index i = centers_.cols() - extended_size;
     for (auto it = first; it != last; ++it) {
       centers_.col(i) = it->GetCenter();
       radiuses_(i) = it->GetRadius();
@@ -56,7 +56,7 @@ public:
 
   std::string to_string() const {
     fmt::memory_buffer buf;
-    for (Idx i = 0; i < centers_.cols(); ++i) {
+    for (Index i = 0; i < centers_.cols(); ++i) {
       fmt::format_to(std::back_inserter(buf), "center=({} {} {}) radius={}\n", centers_.col(i).x(),
                      centers_.col(i).y(), centers_.col(i).z(), radiuses_[i]);
     }
@@ -67,12 +67,12 @@ public:
 
   inline const StateType& GetCenter() const { return centers_; }
 
-  inline auto& UpdateCenter(Idx idx, const Vec3<T>& center) {
+  inline auto& UpdateCenter(Index idx, const Vec3<T>& center) {
     centers_.col(idx) = center;
     return *this;
   }
 
-  inline auto& UpdateRadius(Idx idx, T r) {
+  inline auto& UpdateRadius(Index idx, T r) {
     ACG_DEBUG_CHECK(r > 0, "Radius should be greater than zero");
     radiuses_(idx) = r;
     return *this;

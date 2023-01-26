@@ -33,7 +33,7 @@ vk::DeviceSize Scene::GetRequiredIndexBufferSize() const {
   }
   // INFO: 20 is hard coded because we use sphere_20 for particle rendering.
   size += particles_.size() * 20;
-  return size * 3 * sizeof(details::GuiIdx);
+  return size * 3 * sizeof(details::GuiIndex );
 }
 
 void Scene::Reset() {
@@ -44,19 +44,19 @@ void Scene::Reset() {
   particles_colors_.clear();
 }
 
-std::pair<std::vector<Vertex>, std::vector<GuiIdx>> Scene::Build() const {
+std::pair<std::vector<Vertex>, std::vector<GuiIndex >> Scene::Build() const {
   std::vector<Vertex> vertices;
-  std::vector<GuiIdx> indices;
+  std::vector<GuiIndex > indices;
   for (size_t i = 0; i < meshes_.size(); ++i) {
     const auto& m = meshes_[i];
     const auto& c = mesh_colors_[i];
     const auto& n = normals_[i];
-    Idx n_v = m.GetVertices().cols();
-    Idx i_offset = vertices.size();
+    Index n_v = m.GetVertices().cols();
+    Index i_offset = vertices.size();
     if (n.has_value()) {
       ACG_CHECK(n.value().cols() == n_v, "#Normal {} != #Vertices {}", n.value().cols(), n_v);
     }
-    for (Idx j = 0; j < n_v; ++j) {
+    for (Index j = 0; j < n_v; ++j) {
       Vec3f position = m.GetVertices().col(j);
       Vec3f color = (c.cols() == 1) ? c : c.col(j);
       Vec3f normal = Vec3f::Zero();
@@ -75,7 +75,7 @@ std::pair<std::vector<Vertex>, std::vector<GuiIdx>> Scene::Build() const {
 
   for (size_t i = 0; i < particles_.size(); ++i) {
     auto m = geometry::sphere_20(Vec3f::Zero(), particles_[i].GetRadius());
-    Idx i_offset = vertices.size();
+    Index i_offset = vertices.size();
     for (Vec3f position : m.GetVertices().colwise()) {
       vertices.emplace_back(Vertex(to_glm(Vec3f(position + particles_[i].GetCenter())),
                                    to_glm(particles_colors_[i]), to_glm(position)));

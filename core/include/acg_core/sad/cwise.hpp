@@ -5,9 +5,6 @@ namespace acg::sad {
 
 namespace details {
 
-template <typename T> constexpr bool IsScalar_v = Trait<typename T::type>::is_scalar;
-template <typename T> using Scalar_t = typename Trait<typename T::type>::Scalar;
-
 ///> CwiseMul
 template <typename L, typename R> struct CwiseMul : public Expr<typename L::type, L, R> {
   static_assert(std::is_same_v<typename L::type, typename R::type>,
@@ -28,7 +25,7 @@ template <typename L, typename R> struct CwiseMul : public Expr<typename L::type
 
 ///> CwiseAbs2
 /// INFO: may leads to bug, when X is complex.
-template <typename X> struct CwiseAbs2 : public Expr<GetInnerType_t<X>, X> {
+template <typename X> struct CwiseAbs2 : public Expr<GetRunTimeType_t<X>, X> {
   template <typename Xi> inline decltype(auto) operator()(Xi&& x) const noexcept {
     if constexpr (IsScalar_v<X>) {
       return x * x;

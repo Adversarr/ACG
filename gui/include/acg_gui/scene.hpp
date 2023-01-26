@@ -41,7 +41,7 @@ public:
    * @example AddMesh(mesh, std::nullopt, Vec3f(0.4, 0.5, 0.6));
    * @example
    *     AttrVec<F32, 3> v = AttrVecTrans<F32, 3>{{0, 0, 1}, {0, 0, 0}, {0, 1, 0}}.transpose();
-   *     AttrVec<Idx, 3> f = AttrVecTrans<Idx, 3>{{0, 1, 2}}.transpose();
+   *     AttrVec<Index , 3> f = AttrVecTrans<Index , 3>{{0, 1, 2}}.transpose();
    *     AttrVec<F32, 3> c = AttrVecTrans<F32, 3>{{7, .7, .7}}.transpose();
    *     geometry::Mesh<F32> mesh(v, f);
    *     scene_.AddMesh(mesh, AttrVecTrans<F32, 3>{{1, 0, 0}, {1, 0, 0}, {1, 0, 0}}.transpose(),
@@ -54,7 +54,7 @@ public:
 
   vk::DeviceSize GetRequiredIndexBufferSize() const;
 
-  std::pair<std::vector<Vertex>, std::vector<GuiIdx>> Build() const;
+  std::pair<std::vector<Vertex>, std::vector<GuiIndex >> Build() const;
 
 private:
   std::vector<geometry::SimpleMesh<F32>> meshes_;

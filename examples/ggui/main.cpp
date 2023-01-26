@@ -15,7 +15,6 @@
 #include <glm/gtx/transform.hpp>
 
 #include "api.hpp"
-
 std::vector<acg::gui::details::MeshVertex> ball_vert() {
   auto result = acg::geometry::sphere_20(acg::Vec3f{0, 0, 0}, 1);
   auto vertices = result.GetVertices();
@@ -137,10 +136,10 @@ int main(int argc, char** argv) {
       auto vert = ball_vert();
       auto index = ball_index();
       std::vector<acg::gui::details::MeshInstance> instances;
-      instances.push_back({glm::vec3{0.5, 0.5, 0}, glm::vec4{1, 0, 0, 0}});
-      instances.push_back({glm::vec3{-0.5, 0.5, 0}, glm::vec4{1, 0, 0, 1}});
-      instances.push_back({glm::vec3{-0.5, -0.5, 0}, glm::vec4{1, 0, 0, 2}});
-      instances.push_back({glm::vec3{0.5, -0.5, 0}, glm::vec4{1, 0, 0, 3}});
+      instances.push_back({glm::vec3{0.5, 0.5, 0}, glm::vec4{1, 0, 0, 0}, {1, 0, 0, 0}});
+      instances.push_back({glm::vec3{-0.5, 0.5, 0}, glm::vec4{1, 0, 0, 1}, {1, 0, 0, 0}});
+      instances.push_back({glm::vec3{-0.5, -0.5, 0}, glm::vec4{1, 0, 0, 2}, {1, 0, 0, 0}});
+      instances.push_back({glm::vec3{0.5, -0.5, 0}, glm::vec4{1, 0, 0, 3}, {1, 0, 0, 0}});
       acg::gui::VkContext2::Instance().CopyHostToBuffer(vert.data(), vb,
                                                         sizeof(vert.front()) * vert.size());
       acg::gui::VkContext2::Instance().CopyHostToBuffer(index.data(), ib,

@@ -26,7 +26,7 @@ int NBodySim::RunPhysicsImpl(F64 dt) {
 
   auto new_velocity = velocity_ + acceleration_ * dt;
 
-  for (Idx i = 0; i < n_; ++i) {
+  for (Index i = 0; i < n_; ++i) {
     auto& p = particles_[i];
     p.SetCenter(dt * (velocity_.col(i) + new_velocity.col(i)) + p.GetCenter());
   }
@@ -106,7 +106,7 @@ void NBodySim::RegenerateScene() {
   // Clear previous scene
   scene_.Reset();
   // push the particles to the scene
-  for (Idx i = 0; i < n_; ++i) {
+  for (Index i = 0; i < n_; ++i) {
     scene_.AddParticle(particles_[i].Cast<F32>(), color_[i]);
   }
 }

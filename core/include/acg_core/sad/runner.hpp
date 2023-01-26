@@ -1,9 +1,9 @@
 #pragma once
 // NOLINTBEGIN(readability-identifier-naming)
 
+#include "acg_core/math/tensor_traits.hpp"
 #include "dual.hpp"
 #include "simplify.hpp"
-#include "acg_core/math/tensor_traits.hpp"
 namespace acg::sad {
 namespace details {
 
@@ -27,9 +27,7 @@ struct Chain<F, List<IH, IT...>, X, D> {
   using type = Add<dual_fhx, typename Chain<F, List<IT...>, X, D>::type>;
 };
 
-template <typename X, typename D> struct DirectionalDiff<X, X, D> {
-  using type = D;
-};
+template <typename X, typename D> struct DirectionalDiff<X, X, D> { using type = D; };
 
 // Context
 template <typename L> struct Context {};
@@ -40,9 +38,8 @@ template <typename... E> struct Context<List<E...>> {
   using data_type
       = TopoSort_t<IsSubNode,
                    Unique_t<Concat_t<inputs, Concat_t<internals, outputs>>, ExprHasSameValue>>;
-  using data_actual_type = Map_t<GetInnerType, data_type>;
-  template <typename T> static constexpr size_t index
-      = Find<T, data_type, ExprHasSameValue>::value;
+  using data_actual_type = Map_t<GetRunTimeType, data_type>;
+  template <typename T> static constexpr size_t index = Find<T, data_type, ExprHasSameValue>::value;
 
   using data_container = typename data_actual_type::template cast<std::tuple>;
   template <typename T> using param_type = std::tuple_element_t<index<T>, data_container>;
@@ -59,10 +56,11 @@ template <typename T> struct Runner {
   template <typename Exp, typename... I> struct Task<Exp, List<I...>> {
     inline void operator()(typename T::data_container& data) const noexcept {
       if constexpr (!Exp::is_input) {
-        if constexpr (acg::Trait<GetInnerType_t<Exp>>::is_scalar)
-        std::get<T::template index<Exp>>(data) = Exp{}(std::get<T::template index<I>>(data)...);
+        if constexpr (acg::Trait<GetRunTimeType_t<Exp>>::is_scalar)
+          std::get<T::template index<Exp>>(data) = Exp{}(std::get<T::template index<I>>(data)...);
         else
-        std::get<T::template index<Exp>>(data).noalias() = Exp{}(std::get<T::template index<I>>(data)...);
+          std::get<T::template index<Exp>>(data).noalias()
+              = Exp{}(std::get<T::template index<I>>(data)...);
       }
     }
   };

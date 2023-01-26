@@ -6,10 +6,10 @@
 
 TEST_CASE("FVTransform") {
   acg::geometry::topology::TriangleList triangle_list(3, 4);
-  Eigen::MatrixX3<acg::Idx> triangles_transpose(4, 3);
+  Eigen::MatrixX3<acg::Index> triangles_transpose(4, 3);
   triangles_transpose << 0, 1, 2, 1, 3, 2, 3, 0, 2, 0, 3, 1;
   triangle_list = triangles_transpose.transpose();
-  acg::Idx n = 4;
+  acg::Index n = 4;
   acg::Field<float, 1> x(1, 4);
   x << 1, 2, 3, 4;
   acg::geometry::FVTransform transformer(triangle_list, n);
@@ -19,7 +19,7 @@ TEST_CASE("FVTransform") {
 
 TEST_CASE("Normal") {
   acg::geometry::topology::TriangleList triangle_list(3, 4);
-  Eigen::MatrixX3<acg::Idx> triangles_transpose(4, 3);
+  Eigen::MatrixX3<acg::Index> triangles_transpose(4, 3);
   triangles_transpose << 0, 1, 2, 1, 3, 2, 3, 0, 2, 0, 3, 1;
   triangle_list = triangles_transpose.transpose();
   Eigen::MatrixX3f positions_transpose(4, 3);

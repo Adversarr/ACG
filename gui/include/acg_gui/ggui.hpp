@@ -17,7 +17,7 @@ namespace details {
 struct XyPlaneRenderInfo {
   Vec2f range;
   Vec4f color;
-  Vec2Idx density;
+  Vec2Index density;
   float height;
   bool enable = false;
   bool update_flag = false;

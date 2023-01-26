@@ -13,13 +13,13 @@ namespace acg::gui {
 namespace details {
 
 constexpr auto VK_INDEX_TYPE = vk::IndexType::eUint32;
-using GuiIdx = uint32_t;
+using GuiIndex = uint32_t;
 
 
 }  // namespace details
 
 
-using GuiIdx = details::GuiIdx;
+using GuiIndex = details::GuiIndex ;
 
 /**
  * @brief Vertex Buffer.

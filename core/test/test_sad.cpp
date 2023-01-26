@@ -49,9 +49,9 @@ TEST_CASE("sad-lazy") {
   }
 
   SUBCASE("vector") {
-    Constant_expr(acg::Vec3f, d0, v.y() = v.z() = 0; v.x() = 1);
-    Constant_expr(acg::Vec3f, d1, v.x() = v.z() = 0; v.y() = 1);
-    Constant_expr(acg::Vec3f, d2, v.x() = v.y() = 0; v.z() = 1);
+    using d0 = acg::sad::Dirac<acg::Vec3f, 0>;
+    Constant_expr(acg::Vec3f, d1, v.setUnit(1));
+    Constant_expr(acg::Vec3f, d2, v.setUnit(2));
     Variable(acg::Vec3f, X);
     Variable(acg::Vec3f, Y);
     using FinalExp = Dot<Sub<X, Y>, Sub<X, Y>>;

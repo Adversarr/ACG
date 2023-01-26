@@ -30,7 +30,7 @@ public:
 template <typename Scalar> Field<Scalar, 3> Normal<Scalar>::PerFace() const noexcept {
   int n_face = triangle_list_.cols();
   Field<Scalar, 3> face_normal(3, n_face);
-  for (Idx i = 0; i < n_face; ++i) {
+  for (Index i = 0; i < n_face; ++i) {
     const auto& face = triangle_list_.col(i);
     auto d0 = positions_.col(face.y()) - positions_.col(face.x());
     auto d1 = positions_.col(face.z()) - positions_.col(face.x());

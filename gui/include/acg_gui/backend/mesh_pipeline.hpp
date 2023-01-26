@@ -42,7 +42,7 @@ private:
    * @param cull
    * @param front
    */
-  [[deprecated]] explicit MeshPipelineWithRenderPass(VkContext& renderer, bool is_present = true,
+  explicit MeshPipelineWithRenderPass(VkContext& renderer, bool is_present = true,
                                        vk::PolygonMode polygon = vk::PolygonMode::eFill,
                                        vk::CullModeFlags cull = vk::CullModeFlagBits::eNone,
                                        vk::FrontFace front = vk::FrontFace::eClockwise);

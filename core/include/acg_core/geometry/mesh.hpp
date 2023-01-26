@@ -4,6 +4,7 @@
 
 #include "../common.hpp"
 #include "../math/common.hpp"
+#include "common.hpp"
 
 namespace acg::geometry {
 
@@ -14,13 +15,13 @@ namespace acg::geometry {
  */
 template <typename T = F32> class SimpleMesh {
 public:
-  using VertexType = Vec3<T>;
+  using VertexType = types::Position<T>;
 
-  using VerticesType = Field<T, 3>;
+  using VerticesType = types::PositionField<T, 3>;
 
-  using FaceType = Vec3<Idx>;
+  using FaceType = Vec3Index ;
 
-  using FacesType = Field<Idx, 3>;
+  using FacesType = geometry::topology::TriangleList;
 
 private:
   // Mesh should be column major, AoS layout.
@@ -61,18 +62,16 @@ public:
   inline const FacesType& GetFaces() const;
 
   inline SimpleMesh<T>& SetVertices(const Field<T, 3>& vertices) {
-    assert(vertices_.cols() == vertices.cols());
     vertices_ = vertices;
     return *this;
   }
 
-  inline SimpleMesh<T>& SetFaces(const Field<Idx, 3>& faces) {
-    assert(faces_.cols() == faces.cols());
+  inline SimpleMesh<T>& SetFaces(const Field<Index, 3>& faces) {
     faces_ = faces;
     return *this;
   }
 
-  inline SimpleMesh<T>& Set(const Field<T, 3>& vertices, const Field<Idx, 3>& faces) {
+  inline SimpleMesh<T>& Set(const Field<T, 3>& vertices, const Field<Index, 3>& faces) {
     vertices_ = vertices;
     faces_ = faces;
     return *this;
@@ -85,9 +84,9 @@ public:
    *
    * @return int
    */
-  inline Idx GetNumVertices() const { return GetVertices().cols(); }
+  inline Index GetNumVertices() const { return vertices_.cols(); }
 
-  inline Idx GetNumFaces() const { return faces_.cols(); }
+  inline Index GetNumFaces() const { return faces_.cols(); }
 };
 
 template <typename T>

@@ -2,48 +2,48 @@
 #include <acg_core/math/access.hpp>
 #include <acg_core/math/constants.hpp>
 
-geometry::SimpleMesh<F64> make_plane_xy(Idx n) {
+geometry::SimpleMesh<F64> make_plane_xy(Index n) {
   // z = 0, xy in [0, 1]
   // 3x3 => x = 0, 0.5, 1
   //        y = 0, 0.5, 1
   //        z = 0.
   Field<F64, 3> vertices(3, n * n);
   geometry::SimpleMesh<F64>::FacesType faces(3, 2 * (n - 1) * (n - 1));
-  for (Idx i = 0; i < n; ++i) {
-    for (Idx j = 0; j < n; ++j) {
-      Idx idx = i * n + j;
+  for (Index i = 0; i < n; ++i) {
+    for (Index j = 0; j < n; ++j) {
+      Index idx = i * n + j;
       vertices.col(idx)
           = Vec3d(static_cast<double>(i) / (n - 1), static_cast<double>(j) / (n - 1), 0);
     }
   }
 
-  for (Idx i = 0; i < n - 1; ++i) {
-    for (Idx j = 0; j < n - 1; ++j) {
-      Idx idx = 2 * (i * (n - 1) + j);
-      Idx lt = i * n + j;
-      Idx rt = i * n + j + 1;
-      Idx lb = (i + 1) * n + j;
-      Idx rb = (i + 1) * n + j + 1;
+  for (Index i = 0; i < n - 1; ++i) {
+    for (Index j = 0; j < n - 1; ++j) {
+      Index idx = 2 * (i * (n - 1) + j);
+      Index lt = i * n + j;
+      Index rt = i * n + j + 1;
+      Index lb = (i + 1) * n + j;
+      Index rb = (i + 1) * n + j + 1;
 
-      faces.col(idx) = Vec3Idx(lt, lb, rt);
-      faces.col(idx + 1) = Vec3Idx(rt, lb, rb);
+      faces.col(idx) = Vec3Index (lt, lb, rt);
+      faces.col(idx + 1) = Vec3Index (rt, lb, rb);
     }
   }
   return {vertices, faces};
 }
 
-MassSpring::MassSpring(Idx n) : n_(n), mesh_(make_plane_xy(n)) {
+MassSpring::MassSpring(Index n) : n_(n), mesh_(make_plane_xy(n)) {
   ACG_DEBUG_LOG("#faces = {}, #vert = {}", mesh_.GetNumFaces(), mesh_.GetNumVertices());
   position_ = mesh_.GetVertices();
   edges_.resize(2, (n_ - 1) * n_ * 2 + 2 * (n_ - 1) * (n_ - 1));
   original_length_.resize(1, edges_.cols());
-  Idx idx = 0;
-  for (Idx i = 0; i < n_ - 1; ++i) {
-    for (Idx j = 0; j < n_ - 1; ++j) {
-      Idx lt = i * n_ + j;
-      Idx rt = i * n_ + j + 1;
-      Idx lb = (i + 1) * n_ + j;
-      Idx rb = (i + 1) * n_ + j + 1;
+  Index idx = 0;
+  for (Index i = 0; i < n_ - 1; ++i) {
+    for (Index j = 0; j < n_ - 1; ++j) {
+      Index lt = i * n_ + j;
+      Index rt = i * n_ + j + 1;
+      Index lb = (i + 1) * n_ + j;
+      Index rb = (i + 1) * n_ + j + 1;
       edges_(0, idx) = lt;
       edges_(1, idx) = rt;
       original_length_(idx) = 1.0 / n_;
@@ -64,8 +64,8 @@ MassSpring::MassSpring(Idx n) : n_(n), mesh_(make_plane_xy(n)) {
       original_length_(idx) = acg::constants::sqrt2<F64> / n_;
       idx++;
     }
-    Idx r_tail = n_ * (i + 1) - 1;
-    Idx bottom = n_ * (n_ - 1) + i;
+    Index r_tail = n_ * (i + 1) - 1;
+    Index bottom = n_ * (n_ - 1) + i;
     edges_(0, idx) = r_tail;
     edges_(1, idx) = r_tail + n_;
     original_length_(idx) = 1.0 / n_;
@@ -79,15 +79,15 @@ MassSpring::MassSpring(Idx n) : n_(n), mesh_(make_plane_xy(n)) {
 
 /* Semi Implicit Method
   acceleration_.setZero();
-  for (Idx i = 0; i < n_ * n_; ++i) {
+  for (Index i = 0; i < n_ * n_; ++i) {
     acceleration_.col(i) += Vec3d(0, 0, -1);
   }
-  for (Idx i = 0; i < n_ - 1; ++i) {
-    for (Idx j = 0; j < n_ - 1; ++j) {
-      Idx lt = i * n_ + j;
-      Idx rt = i * n_ + j + 1;
-      Idx lb = (i + 1) * n_ + j;
-      Idx rb = (i + 1) * n_ + j + 1;
+  for (Index i = 0; i < n_ - 1; ++i) {
+    for (Index j = 0; j < n_ - 1; ++j) {
+      Index lt = i * n_ + j;
+      Index rt = i * n_ + j + 1;
+      Index lb = (i + 1) * n_ + j;
+      Index rb = (i + 1) * n_ + j + 1;
 
       ApplyForce(lt, rt);
       ApplyForce(lt, lb);
@@ -98,7 +98,7 @@ MassSpring::MassSpring(Idx n) : n_(n), mesh_(make_plane_xy(n)) {
     }
   }
 
-  for (Idx i = 0; i < n_; ++i) {
+  for (Index i = 0; i < n_; ++i) {
     acceleration_.col(i).setZero();
   }
   auto new_velocity = velocity_ + acceleration_ * dt;
@@ -198,7 +198,7 @@ void MassSpring::RegenerateScene() {
   scene_.AddMesh(mesh_.Cast<F32>(), std::nullopt, color_);
 }
 
-void MassSpring::ApplyForce(Idx i, Idx j) {
+void MassSpring::ApplyForce(Index i, Index j) {
   auto dij = mesh_.GetVertices().col(i) - mesh_.GetVertices().col(j);
   F64 original_length = 1.0 / (n_ - 1);
 

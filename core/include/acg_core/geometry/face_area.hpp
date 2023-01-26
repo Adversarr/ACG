@@ -11,7 +11,7 @@ types::ScalarList<Scalar> face_area(const topology::TriangleList& triangles,
   static_assert(dim == 2 || dim == 3, "Face area computing requires dim = 2 or 3.");
   types::ScalarList<Scalar> areas;
   areas.resize(1, triangles.cols());
-  for (Idx i = 0; i < triangles.cols(); ++i) {
+  for (Index i = 0; i < triangles.cols(); ++i) {
     int x = triangles(0, i);
     int y = triangles(1, i);
     int z = triangles(2, i);

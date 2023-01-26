@@ -38,7 +38,7 @@ private:
 
   std::unique_ptr<MeshPipelineWithRenderPass> mesh_ppl_;
 
-  Idx n_;
+  Index n_;
 
   Scene scene_;
   Camera camera_;

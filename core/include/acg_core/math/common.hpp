@@ -25,11 +25,11 @@ using Vec2f = Eigen::Vector2<F32>;
 
 using Vec2d = Eigen::Vector2<F64>;
 
-using Vec2Idx = Eigen::Vector2<Idx>;
+using Vec2Index = Eigen::Vector2<Index>;
 
-using Vec3Idx = Eigen::Vector3<Idx>;
+using Vec3Index = Eigen::Vector3<Index>;
 
-using Vec4Idx = Eigen::Vector4<Idx>;
+using Vec4Index = Eigen::Vector4<Index>;
 
 // Matrix Alias for Eigen
 template <typename Scalar, int Rows, int Cols,
@@ -88,11 +88,11 @@ using Mat4x4d = Mat4x4<F64>;
 
 // Sparse Matrix
 template<typename Scalar, int Options = 0>
-using SpMat = Eigen::SparseMatrix<Scalar, Options, acg::Idx>;
+using SpMat = Eigen::SparseMatrix<Scalar, Options, acg::Index>;
 
 // Sparse Vector
 template<typename Scalar, int Options = 0>
-using SpVec = Eigen::SparseVector<Scalar, Options, acg::Idx>;
+using SpVec = Eigen::SparseVector<Scalar, Options, acg::Index>;
 
 
 template <typename T, int n_attrib> using Field

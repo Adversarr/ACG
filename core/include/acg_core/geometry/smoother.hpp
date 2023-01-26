@@ -9,7 +9,7 @@ private:
   const topology::TriangleList& triangle_list_;
 
   template <typename S, int i> void Aggre(Field<S, i>& output, const Field<S, i>& input,
-                                          Field<S, 1>& weight, Idx self, Idx lhs, Idx rhs) const;
+                                          Field<S, 1>& weight, Index self, Index lhs, Index rhs) const;
 
 public:
   explicit UniformLaplacianSmoother(const topology::TriangleList& faces) : triangle_list_(faces) {}
@@ -21,7 +21,7 @@ public:
 
 template <typename S, int i>
 inline void UniformLaplacianSmoother::Aggre(Field<S, i>& output, const Field<S, i>& input,
-                                            Field<S, 1>& weight, Idx self, Idx lhs, Idx rhs) const {
+                                            Field<S, 1>& weight, Index self, Index lhs, Index rhs) const {
   output.col(self) += input.col(lhs) + input.col(rhs);
   weight(1, self) += static_cast<S>(2);
 }
@@ -29,7 +29,7 @@ inline void UniformLaplacianSmoother::Aggre(Field<S, i>& output, const Field<S, 
 template <typename S, int i>
 Field<S, i> UniformLaplacianSmoother::Compute(const Field<S, i>& attr) const {
   Field<S, i> output;
-  Idx v_cnt = attr.cols();
+  Index v_cnt = attr.cols();
   Field<S, 1> weight;
   output.setZero(i, v_cnt);
   weight.setZero(1, v_cnt);

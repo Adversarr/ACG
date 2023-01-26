@@ -15,7 +15,7 @@ using geometry::SimpleMesh;
  * @param n_stacks number of horizonal lines
  * @return TriangleMesh<f32>
  */
-SimpleMesh<F32> sphere_uv(Vec3f center, F32 radius, Idx n_stacks = 6, Idx n_slices = 12);
+SimpleMesh<F32> sphere_uv(Vec3f center, F32 radius, Index n_stacks = 6, Index n_slices = 12);
 
 /**
  * @brief Create an icosphere

@@ -31,7 +31,7 @@ int FreeFall::RunPhysicsImpl(F64 dt) {
 
   auto new_velocity = velocity_ + acceleration_ * dt;
 
-  for (Idx i = 0; i < n_; ++i) {
+  for (Index i = 0; i < n_; ++i) {
     auto& p = particles_[i];
     p.SetCenter(dt * (velocity_.col(i) + new_velocity.col(i)) + p.GetCenter());
   }
@@ -169,7 +169,7 @@ void FreeFall::RunUiImpl() {
 
 void FreeFall::RegenerateScene() {
   scene_.Reset();
-  for (Idx i = 0; i < n_; ++i) {
+  for (Index i = 0; i < n_; ++i) {
     scene_.AddParticle(particles_[i].Cast<F32>(), color_[i]);
   }
 }

@@ -48,10 +48,61 @@ TEST_CASE("Field Builder") {
   auto ones = acg::FieldBuilder<acg::F32, 2>(2).Ones();
   CHECK(ones.cwiseEqual(1).all());
 
-  auto func = [](acg::Idx i) { return acg::Vec2f::Constant((float)i); };
+  auto func = [](acg::Index i) { return acg::Vec2f::Constant(static_cast<float>(i)); };
   auto generated = acg::FieldBuilder<acg::F32, 2>(2).FromFunction(func);
   CHECK(acg::FieldAccess(generated)[0](0) == 0);
   CHECK(acg::FieldAccess(generated)[1](0) == 1);
+}
+
+TEST_CASE("FieldGetter") {
+  using namespace acg::details;
+  using namespace acg;
+  Index p = 4, q = 3, r = 5;
+  Index x = 1, y = 2, z = 4;
+  SequentialGetter<3> getter(p, q, r);
+  CHECK(getter(x, y, z) == x * r * q + r * y + z);
+
+  SUBCASE("Field Rvalue") {
+    Field<float, 3> ones(3, 1);
+    ones.setOnes();
+    auto acc = access((ones + ones).eval());
+    for (auto blk: acc) {
+      CHECK(blk.array().sum() == 6);
+    }
+  }
+  SUBCASE("Field accessor") {
+    Field<float, 3> field(3, p * q * r);
+    auto acc = access(field, getter);
+    acc[x * r * q + r * y + z].setOnes();
+    CHECK(acc(x, y, z).array().sum() == 3);
+  }
+
+  SUBCASE("Row") {
+    Field<float, 1> field(1, p * q * r);
+    auto acc = access(field, getter);
+    acc[x * r * q + r * y + z].setOnes();
+    CHECK(acc(x, y, z).array().sum() == 1);
+  }
+
+  SUBCASE("Access standard iterate") {
+    Field<float, 3> field(3, p * q * r);
+    field.setOnes();
+    auto acc = access(field, getter);
+    for (auto blk: acc) {
+      blk.setZero();
+    }
+    CHECK(field.array().sum() == 0);
+  }
+
+  SUBCASE("Default getter") {
+    Field<float, 3> field(3, p * q * r);
+    field.setOnes();
+    auto acc = access(field);
+    for (auto blk: acc) {
+      blk.setZero();
+    }
+    CHECK(field.array().sum() == 0);
+  }
 }
 
 TEST_CASE("Kronecker") {

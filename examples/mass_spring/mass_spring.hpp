@@ -15,7 +15,7 @@ class MassSpring : public MPWorldCtrl {
 public:
   using Mesh = geometry::SimpleMesh<F64>;
 
-  explicit MassSpring(Idx n);
+  explicit MassSpring(Index n);
 
 protected:
 
@@ -27,17 +27,17 @@ protected:
 
   void PreRun() final;
 
-  void ApplyForce(Idx i, Idx j);
+  void ApplyForce(Index i, Index j);
 
 
 private:
   void RegenerateScene();
-  Idx n_;
+  Index n_;
   Vec3f color_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> position_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> velocity_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> acceleration_;
-  Field<Idx, 2> edges_;
+  Field<Index, 2> edges_;
   Field<F64, 1> original_length_;
 
   // Slack Variable

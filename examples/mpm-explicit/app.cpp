@@ -20,7 +20,7 @@ void MpmExplictApp::Init() {
   particle_velocity_.resize(Eigen::NoChange, n_particles_);
   particle_C_.setZero();
   particle_velocity_.setZero();
-  for (Idx i = 0; i < n_particles_; ++i) {
+  for (Index i = 0; i < n_particles_; ++i) {
     Vec3d dpos = Vec3d::Ones() * 0.5 + Vec3d::Random() * .4;
     particle_position_.col(i) = dpos;
     particle_J_(i) = 1.0;
@@ -36,19 +36,19 @@ void MpmExplictApp::P2G() {
   // base --- *
   //  |  [p]  |
   //  * ----- *
-  for (Idx i = 0; i < n_particles_; ++i) {
+  for (Index i = 0; i < n_particles_; ++i) {
     Vec3d xp = (particle_position_.col(i) / dx_);
     Vec3d base_f = xp.array().floor().matrix();
-    Vec3Idx base = base_f.cast<Idx>();
+    Vec3Index base = base_f.cast<Index >();
     // std::cout << base << std::endl;
     Vec3d fx = xp - base_f;
     // F64 stress = -dt_ * 4 * E_ * particle_vol_ * (particle_J_(i) - 1);
     // Mat3x3d affine
     //     = Mat3x3d::Identity() * stress + particle_mass_ * particle_C_.col(i).reshaped(3, 3);
-    for (Idx di = 0; di <= 1; ++di) {
-      for (Idx dj = 0; dj <= 1; ++dj) {
-        for (Idx dk = 0; dk <= 1; ++dk) {
-          Idx gid = GetGridIndex(base.x() + di, base.y() + dj, base.z() + dk);
+    for (Index di = 0; di <= 1; ++di) {
+      for (Index dj = 0; dj <= 1; ++dj) {
+        for (Index dk = 0; dk <= 1; ++dk) {
+          Index gid = GetGridIndex(base.x() + di, base.y() + dj, base.z() + dk);
           assert(gid < grid_size_);
           // compute the weight.
           auto weight_d = (Vec3d(1 - di, 1 - dj, 1 - dk) - fx);
@@ -64,10 +64,10 @@ void MpmExplictApp::P2G() {
 }
 
 void MpmExplictApp::Projection() {
-  for (Idx i = 0; i <= n_grid_; ++i) {
-    for (Idx j = 0; j <= n_grid_; ++j) {
-      for (Idx k = 0; k <= n_grid_; ++k) {
-        Idx gid = GetGridIndex(i, j, k);
+  for (Index i = 0; i <= n_grid_; ++i) {
+    for (Index j = 0; j <= n_grid_; ++j) {
+      for (Index k = 0; k <= n_grid_; ++k) {
+        Index gid = GetGridIndex(i, j, k);
         if (grid_mass_(gid) > 0) {
           grid_velocity_.col(gid) /= grid_mass_(gid);
         } else {
@@ -77,16 +77,16 @@ void MpmExplictApp::Projection() {
       }
     }
   }
-  for (Idx i = 1; i < n_grid_; ++i) {
-    for (Idx j = 1; j < n_grid_; ++j) {
-      for (Idx k = 1; k < n_grid_; ++k) {
-        Idx g_dx0 = GetGridIndex(i - 1, j, k);
-        Idx g_dx1 = GetGridIndex(i + 1, j, k);
-        Idx g_dy0 = GetGridIndex(i, j - 1, k);
-        Idx g_dy1 = GetGridIndex(i, j + 1, k);
-        Idx g_dz0 = GetGridIndex(i, j, k - 1);
-        Idx g_dz1 = GetGridIndex(i, j, k + 1);
-        Idx g_this = GetGridIndex(i, j, k);
+  for (Index i = 1; i < n_grid_; ++i) {
+    for (Index j = 1; j < n_grid_; ++j) {
+      for (Index k = 1; k < n_grid_; ++k) {
+        Index g_dx0 = GetGridIndex(i - 1, j, k);
+        Index g_dx1 = GetGridIndex(i + 1, j, k);
+        Index g_dy0 = GetGridIndex(i, j - 1, k);
+        Index g_dy1 = GetGridIndex(i, j + 1, k);
+        Index g_dz0 = GetGridIndex(i, j, k - 1);
+        Index g_dz1 = GetGridIndex(i, j, k + 1);
+        Index g_this = GetGridIndex(i, j, k);
         F64 m_dx = grid_mass_(g_dx1) - grid_mass_(g_dx0);
         F64 m_dy = grid_mass_(g_dy1) - grid_mass_(g_dy0);
         F64 m_dz = grid_mass_(g_dz1) - grid_mass_(g_dz0);
@@ -95,9 +95,9 @@ void MpmExplictApp::Projection() {
     }
   }
 
-  for (Idx i = 0; i <= n_grid_; ++i) {
-    for (Idx j = 0; j <= n_grid_; ++j) {
-      for (Idx k = 0; k <= n_grid_; ++k) {
+  for (Index i = 0; i <= n_grid_; ++i) {
+    for (Index j = 0; j <= n_grid_; ++j) {
+      for (Index k = 0; k <= n_grid_; ++k) {
         auto blk = grid_velocity_.col(GetGridIndex(i, j, k));
         if (i == 0) {
           blk.x() = abs(blk.x());
@@ -124,17 +124,17 @@ void MpmExplictApp::G2P() {
   new_vel.resizeLike(particle_velocity_);
   new_vel.setZero();
   weight_sum = 0;
-  for (Idx i = 0; i < n_particles_; ++i) {
+  for (Index i = 0; i < n_particles_; ++i) {
     Vec3d xp = (particle_position_.col(i) / dx_);
     Vec3d base_f = xp.array().floor().matrix();
-    Vec3Idx base = base_f.cast<Idx>();
+    Vec3Index base = base_f.cast<Index >();
     Vec3d fx = xp - base_f;
     F64 weight_sum_local = 0;
     auto blk = new_vel.col(i);
-    for (Idx di = 0; di <= 1; ++di) {
-      for (Idx dj = 0; dj <= 1; ++dj) {
-        for (Idx dk = 0; dk <= 1; ++dk) {
-          Idx gid = GetGridIndex(base.x() + di, base.y() + dj, base.z() + dk);
+    for (Index di = 0; di <= 1; ++di) {
+      for (Index dj = 0; dj <= 1; ++dj) {
+        for (Index dk = 0; dk <= 1; ++dk) {
+          Index gid = GetGridIndex(base.x() + di, base.y() + dj, base.z() + dk);
           // compute the weight.
           auto weight_d = (Vec3d(1 - di, 1 - dj, 1 - dk) - fx);
           F64 weight = abs(weight_d.x() * weight_d.y() * weight_d.z());

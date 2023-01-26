@@ -27,7 +27,7 @@ template <typename E, typename L> struct LazyEvalActual;
 template <typename E, typename... T> struct LazyEvalActual<E, List<T...>> {
   using type = decltype(std::declval<E>()(std::declval<T>()...));
 };
-template <typename E> struct LazyEvalActual<E, List<>> : public GetInnerType<E> {};
+template <typename E> struct LazyEvalActual<E, List<>> : public GetRunTimeType<E> {};
 template <typename E, typename L> struct LazyEval {
   // Map: E input -> E input's Lazy Type
   using e_input = typename GetInputLazy<typename E::InputExpr, L>::type;
@@ -71,7 +71,7 @@ template <typename... E> struct LazyContext<List<E...>> {
   using non_lazy_exprs = typename Filter<NotLazy, exprs>::type;
 
   static_assert(std::is_same_v<non_lazy_exprs, Car_t<layers>>, "eval layers[0] != non lazy");
-  using non_lazy_data_actual_type = Map_t<GetInnerType, non_lazy_exprs>;
+  using non_lazy_data_actual_type = Map_t<GetRunTimeType, non_lazy_exprs>;
   using data_container = typename non_lazy_data_actual_type::template cast<std::tuple>;
   // using lazy_container_dict = Reverse_t<typename DetermineLazyDataType<Reverse_t<exprs>>::type>;
 
@@ -144,9 +144,9 @@ template <typename C, typename... Rest, typename... E>
 struct LazyResultImpl<C, List<List<E...>, Rest...>> : private LazyResultImpl<C, List<Rest...>> {
   using layer_output = List<E...>;
   using layer_last = List<Rest...>;
+  using base_type = LazyResultImpl<C, layer_last>;
   using future_exprs = Reduce_t<Concat, List<List<>, Rest...>>;
   template <typename T> using Tester = All<NotContianOperator<T>::template Tester, future_exprs>;
-  using base_type = LazyResultImpl<C, layer_last>;
   template <typename T> static constexpr size_t index
       = Find<T, layer_output, ExprHasSameValue>::value;
 
@@ -162,17 +162,17 @@ struct LazyResultImpl<C, List<List<E...>, Rest...>> : private LazyResultImpl<C, 
     }
 
     forceinline decltype(auto) lazy_eval(base_type& impl) {
-      return Exp{}(impl.template Get<I>() ...);
+      return Exp{}(impl.template Get<I>()...);
     }
 
     forceinline decltype(auto) eval(base_type& impl) {
-      return Exp{}(impl.template Get<I>() ...).eval();
+      return Exp{}(impl.template Get<I>()...).eval();
     }
   };
   using output_type = decltype(std::make_tuple(
       Task<Tester<E>::value, E, typename E::InputExpr>{}(std::declval<base_type&>())...));
-  decltype(std::make_tuple(
-      Task<Tester<E>::value, E, typename E::InputExpr>{}(std::declval<base_type&>())...)) data_;
+
+  output_type data_;
 
   template <typename T, std::enable_if_t<Has_v<T, layer_output, ExprHasSameValue>, int> = 0>
   forceinline decltype(auto) Get() {
@@ -220,5 +220,6 @@ template <typename C> struct LazyResult
     return static_cast<impl_type&>(*this).template Get<T>();
   }
 };
+
 }  // namespace acg::sad
 // NOLINTEND(readability-identifier-naming)

@@ -23,7 +23,7 @@ protected:
 private:
   void RegenerateScene();
 
-  Idx n_;
+  Index n_;
 
   std::vector<P64> particles_;
   Eigen::VectorXd mass_;
@@ -31,5 +31,5 @@ private:
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> velocity_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> acceleration_;
 
-  Field<Idx, 2> edges_;
+  Field<Index, 2> edges_;
 };
