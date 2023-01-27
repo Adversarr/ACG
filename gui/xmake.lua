@@ -8,6 +8,7 @@ add_requires('vk-bootstrap')
 
 target('acg_gui')
   set_kind('static')
+  set_group('library')
   add_includedirs('include', { public = true })
   add_files('src/**.cpp')
   add_packages('glslang', 'vulkansdk', 'glm', 'glfw', 'imgui', 'vk-bootstrap', {public=true})
