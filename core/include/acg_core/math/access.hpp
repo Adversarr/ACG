@@ -46,7 +46,6 @@ protected:
   Index this_dim{0};
 };
 
-
 // NOTE: Field Access Constructor Tags.
 struct LvalueTag {};
 struct RvalueTag {};
@@ -96,32 +95,31 @@ template <typename Type, typename Indexer = MultiDimensionGetter<1>> struct Fiel
 }  // namespace details
 
 // NOTE: Access Function for fields.
-template <typename Indexer = details::MultiDimensionGetter<1>, typename Scalar, int n_attrib>
-decltype(auto) access(Field<Scalar, n_attrib>&& field, Indexer getter = Indexer()) {
-  auto ret = details::FieldAccessor<Field<Scalar, n_attrib>, Indexer>(
-      std::forward<decltype(field)>(field), getter, details::RvalueTag{});
+template <typename Indexer = details::MultiDimensionGetter<1>, typename Type>
+decltype(auto) access(Type&& field, Indexer getter = Indexer()) {
+  auto ret = details::FieldAccessor<std::remove_cv_t<Type>, Indexer>(
+      std::forward<Type>(field), getter,
+      details::RvalueTag{});
+      // std::enable_if<std::is_rvalue_reference_v<Type>, details::RvalueTag>{});
   return ret;
 }
 
-template <typename Indexer = details::MultiDimensionGetter<1>, typename Scalar, int n_attrib>
-decltype(auto) access(const Field<Scalar, n_attrib>&& field, Indexer getter = Indexer()) {
-  auto ret = details::FieldAccessor<Field<Scalar, n_attrib>, Indexer>(
-      std::forward<decltype(field)>(field), getter, details::ConstRvalueTag{});
+template <typename Indexer = details::MultiDimensionGetter<1>, typename Type>
+decltype(auto) access(const Type&& field, Indexer getter = Indexer()) {
+  auto ret = details::FieldAccessor<Type, Indexer>(std::forward<decltype(field)>(field), getter,
+                                                   details::ConstRvalueTag{});
   return ret;
 }
 
-template <typename Indexer = details::MultiDimensionGetter<1>, typename Scalar, int n_attrib>
-decltype(auto) access(const Field<Scalar, n_attrib>& field, Indexer getter = Indexer()) {
-  return details::FieldAccessor<const Field<Scalar, n_attrib>&, Indexer>(field, getter,
-                                                                         details::ConstLvalueTag{});
+template <typename Indexer = details::MultiDimensionGetter<1>, typename Type>
+decltype(auto) access(const Type& field, Indexer getter = Indexer()) {
+  return details::FieldAccessor<const Type&, Indexer>(field, getter, details::ConstLvalueTag{});
 }
 
-template <typename Indexer = details::MultiDimensionGetter<1>, typename Scalar, int n_attrib>
-decltype(auto) access(Field<Scalar, n_attrib>& field, Indexer getter = Indexer()) {
-  return details::FieldAccessor<Field<Scalar, n_attrib>&, Indexer>(field, getter,
-                                                                   details::LvalueTag{});
+template <typename Indexer = details::MultiDimensionGetter<1>, typename Type>
+decltype(auto) access(Type& field, Indexer getter = Indexer()) {
+  return details::FieldAccessor<Type&, Indexer>(field, getter, details::LvalueTag{});
 }
-
 
 template <typename Scalar, int dim> class FieldEnumerate {
   using RawType = Field<Scalar, dim>;
