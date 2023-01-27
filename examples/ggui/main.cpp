@@ -19,7 +19,7 @@ std::vector<acg::gui::details::MeshVertex> ball_vert() {
   auto result = acg::geometry::sphere_20(acg::Vec3f{0, 0, 0}, 1);
   auto vertices = result.GetVertices();
   std::vector<acg::gui::details::MeshVertex> ret;
-  for (auto vert : acg::FieldAccess{vertices}.Xwise()) {
+  for (auto vert : acg::access(vertices)) {
     acg::gui::details::MeshVertex vr;
     vr.position_ = acg::gui::to_glm(acg::Vec3f(vert));
     vr.normal_ = vr.position_;
@@ -33,7 +33,7 @@ std::vector<uint32_t> ball_index() {
   auto result = acg::geometry::sphere_20(acg::Vec3f{0, 0, 0}, 1);
   auto indices = result.GetFaces();
   std::vector<uint32_t> ret;
-  for (auto vert : acg::FieldAccess{indices}.Xwise()) {
+  for (auto vert : acg::access(indices)) {
     ret.push_back(vert.x());
     ret.push_back(vert.y());
     ret.push_back(vert.z());

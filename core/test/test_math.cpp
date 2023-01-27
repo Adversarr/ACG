@@ -32,26 +32,14 @@ TEST_CASE("Field Enumerate") {
   }
 }
 
-TEST_CASE("Field Access") {
-  acg::Field<acg::F32, 3> positions(3, 2);
-  positions << 1, 2, 3, 4, 5, 6;
-  acg::FieldAccess accessor(positions);
-
-  CHECK(accessor[0](0) == 1);
-  CHECK(accessor[0](1) == 3);
-  CHECK(accessor[0](2) == 5);
-
-  CHECK(accessor.Size() == 2);
-}
-
 TEST_CASE("Field Builder") {
   auto ones = acg::FieldBuilder<acg::F32, 2>(2).Ones();
   CHECK(ones.cwiseEqual(1).all());
 
   auto func = [](acg::Index i) { return acg::Vec2f::Constant(static_cast<float>(i)); };
   auto generated = acg::FieldBuilder<acg::F32, 2>(2).FromFunction(func);
-  CHECK(acg::FieldAccess(generated)[0](0) == 0);
-  CHECK(acg::FieldAccess(generated)[1](0) == 1);
+  CHECK(acg::access(generated)[0](0) == 0);
+  CHECK(acg::access(generated)[1](0) == 1);
 }
 
 TEST_CASE("FieldGetter") {
@@ -59,7 +47,7 @@ TEST_CASE("FieldGetter") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
-  SequentialGetter<3> getter(p, q, r);
+  MultiDimensionGetter<3> getter(p, q, r);
   CHECK(getter(x, y, z) == x * r * q + r * y + z);
 
   SUBCASE("Field Rvalue") {

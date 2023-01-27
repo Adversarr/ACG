@@ -157,11 +157,6 @@ void MpmExplictApp::G2P() {
     blk.z() = std::clamp(blk.z(), 0.01, .99);
   }
   particle_velocity_ = (new_position - particle_position_) / dt_;
-  for (auto blk : particle_velocity_.colwise()) {
-    // blk.x() = std::clamp(blk.x(), 0.01, 0.99);
-    // blk.y() = std::clamp(blk.y(), 0.01, .99);
-    // blk.z() = std::clamp(blk.z(), 0.01, .99);
-  }
   particle_position_ = new_position;
 }
 

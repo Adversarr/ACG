@@ -518,8 +518,8 @@ void GGui::UpdateLightCamera() {
 }
 
 void GGui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) {
-  auto vert_count = FieldCAccess{mesh.vertices}.Size();
-  auto face_count = FieldCAccess{mesh.faces}.Size();
+  auto vert_count = acg::access(mesh.vertices).Size();
+  auto face_count = acg::access(mesh.faces).Size();
   auto instance_count = mesh.instance_count;
   auto vert_buffer_size = static_cast<vk::DeviceSize>(vert_count * sizeof(details::MeshVertex));
   auto index_buffer_size = static_cast<vk::DeviceSize>(face_count * 3 * sizeof(uint32_t));
@@ -637,8 +637,8 @@ void GGui::PrepareIndexBufferHelper(vk::DeviceSize size, BufferID& id) {
 
 void GGui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshRenderInfo& info) {
   auto [ind, v] = get_default_ball();
-  auto vert_count = FieldCAccess{v}.Size();
-  auto face_count = FieldCAccess{ind}.Size();
+  auto vert_count = access(v).Size();
+  auto face_count = access(ind).Size();
   auto vert_buffer_size = static_cast<vk::DeviceSize>(vert_count * sizeof(MeshVertex));
   auto index_buffer_size = static_cast<vk::DeviceSize>(face_count * 3 * sizeof(uint32_t));
   auto instance_buffer_size = info.instance_count * sizeof(details::MeshInstance);
