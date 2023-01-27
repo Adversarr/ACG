@@ -1,0 +1,18 @@
+name: cpp-build
+on: [push]
+
+
+jobs:
+  ubuntu-job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+      - name: configure
+        run: cd ${{ github.workspace }} && xmake f -y --toolchain=clang -m debug
+      - name: build
+        run: xmake b -v
+      - name: run-test
+        run: xmake run --group=test
