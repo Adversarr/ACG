@@ -9,7 +9,9 @@ jobs:
       - name: install Vulkan
         run: |
           mkdir -p $HOME/Downloads
-          wget -P $HOME/Downloads https://sdk.lunarg.com/sdk/download/1.3.236.0/linux/vulkansdk-linux-x86_64-1.3.236.0.tar.gz
+          mkdir -p $HOME/tools
+          cd $HOME && ls
+          wget -q -P $HOME/Downloads https://sdk.lunarg.com/sdk/download/1.3.236.0/linux/vulkansdk-linux-x86_64-1.3.236.0.tar.gz
           tar xf $HOME/Downloads/vulkansdk-linux-x86_64-1.3.236.0.tar.gz --directory=$HOME/tools/
           source $HOME/tools/1.3.236.0/setup-env.sh
       - uses: actions/checkout@v3
