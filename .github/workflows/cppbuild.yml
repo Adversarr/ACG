@@ -24,6 +24,9 @@ jobs:
           sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list http://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
           sudo apt update
           sudo apt install vulkan-sdk
+          vulkaninfo
+          which vulkaninfo
+          echo $VULKAN_SDK
       - uses: actions/checkout@v3
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
