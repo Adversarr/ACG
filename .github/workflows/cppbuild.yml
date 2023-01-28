@@ -27,7 +27,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
-          xmake-version: latest
+          xmake-version: '2.7.5'
+          actions-cache-folder: '.xmake-cache'
       - name: configure
         run: cd ${{ github.workspace }} && xmake f -y --toolchain=clang -m debug
       - name: build
