@@ -1,13 +1,12 @@
 #pragma once
 
 #include <acg_core/geometry/particle.hpp>
-#include <acg_vis/mesh_pipeline.hpp>
-#include <acg_vis/mp_scene.hpp>
-#include <acg_vis/point_light.hpp>
-#include <acg_vis/scene.hpp>
-#include <acg_vis/world_controller.hpp>
+#include <acg_gui/mp_scene.hpp>
+#include <acg_gui/light.hpp>
+#include <acg_gui/scene.hpp>
+#include <acg_gui/world_controller.hpp>
 using namespace acg;
-using namespace acg::visualizer;
+using namespace acg::gui;
 
 class NBodySim : public MPWorldCtrl {
 public:
@@ -24,7 +23,7 @@ protected:
 private:
   void RegenerateScene();
 
-  Idx n_;
+  Index n_;
 
   std::vector<P64> particles_;
   Eigen::VectorXd mass_;
@@ -32,5 +31,5 @@ private:
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> velocity_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> acceleration_;
 
-  AttrVec<Idx, 2> edges_;
+  Field<Index, 2> edges_;
 };

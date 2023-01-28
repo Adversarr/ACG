@@ -1,13 +1,14 @@
 #include "nbody.hpp"
 
-#include <co/random.h>
-
 #include <acg_core/geometry/common_models.hpp>
-#include <acg_core/math.hpp>
+#include <acg_core/math/common.hpp>
+#include <acg_core/math/constants.hpp>
 #include <acg_utils/log.hpp>
+#include <acg_utils/random.hpp>
 #include <cmath>
-NBodySim::NBodySim(int n) : n_(n) {}
 
+
+NBodySim::NBodySim(int n) : n_(n) {}
 
 int NBodySim::RunPhysicsImpl(F64 dt) {
   ACG_DEBUG_LOG("Run Simulation For dt={}", dt);
@@ -25,7 +26,7 @@ int NBodySim::RunPhysicsImpl(F64 dt) {
 
   auto new_velocity = velocity_ + acceleration_ * dt;
 
-  for (Idx i = 0; i < n_; ++i) {
+  for (Index i = 0; i < n_; ++i) {
     auto& p = particles_[i];
     p.SetCenter(dt * (velocity_.col(i) + new_velocity.col(i)) + p.GetCenter());
   }
@@ -39,7 +40,7 @@ void NBodySim::PreRun() {
   F64 r = 3;
   // Initialzie the particles.
   for (int i = 0; i < n_; ++i) {
-    Random rand(clock());  // Random number generator.
+    acg::utils::Random rand(clock());  // Random number generator.
 
     // Center for Particle[i]
     Vec3f center((rand.next() % 1000) / 1000.0, r * sin(2.0 * i / n_ * acg::constants::pi<F32>),
@@ -51,7 +52,8 @@ void NBodySim::PreRun() {
     // Color for Particle[i]
     Vec3f color = 0.5f * (Vec3f::Random() + Vec3f::Ones());
 
-    // NOTE: particles_ is vector<Particle<F64>>, vector is a standard "container" in c++ stl. (列表类型)
+    // NOTE: particles_ is vector<Particle<F64>>, vector is a standard "container" in c++ stl.
+    // (列表类型)
     particles_.push_back(P64(center.cast<F64>(), .4));
     color_.push_back(color);
   }
@@ -104,8 +106,7 @@ void NBodySim::RegenerateScene() {
   // Clear previous scene
   scene_.Reset();
   // push the particles to the scene
-  for (Idx i = 0; i < n_; ++i) {
+  for (Index i = 0; i < n_; ++i) {
     scene_.AddParticle(particles_[i].Cast<F32>(), color_[i]);
   }
-
 }

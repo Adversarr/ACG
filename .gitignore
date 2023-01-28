@@ -19,7 +19,7 @@ out
 .idea
 cmake-build-*
 
-*.spv
+**.spv
 
 logs
 
@@ -28,3 +28,4 @@ logs
 .xmake
 .luarc.json
 .vscode
+

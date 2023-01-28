@@ -1,48 +1,93 @@
 #include "mass_spring.hpp"
+#include <acg_core/math/access.hpp>
+#include <acg_core/math/constants.hpp>
 
-geometry::Mesh<F64> make_plane_xy(Idx n) {
+geometry::SimpleMesh<F64> make_plane_xy(Index n) {
   // z = 0, xy in [0, 1]
   // 3x3 => x = 0, 0.5, 1
   //        y = 0, 0.5, 1
   //        z = 0.
-  AttrVec<F64, 3> vertices(3, n * n);
-  geometry::Mesh<F64>::FaceListType faces(3, 2 * (n - 1) * (n - 1));
-  for (Idx i = 0; i < n; ++i) {
-    for (Idx j = 0; j < n; ++j) {
-      Idx idx = i * n + j;
+  Field<F64, 3> vertices(3, n * n);
+  geometry::SimpleMesh<F64>::FacesType faces(3, 2 * (n - 1) * (n - 1));
+  for (Index i = 0; i < n; ++i) {
+    for (Index j = 0; j < n; ++j) {
+      Index idx = i * n + j;
       vertices.col(idx)
           = Vec3d(static_cast<double>(i) / (n - 1), static_cast<double>(j) / (n - 1), 0);
     }
   }
 
-  for (Idx i = 0; i < n - 1; ++i) {
-    for (Idx j = 0; j < n - 1; ++j) {
-      Idx idx = 2 * (i * (n - 1) + j);
-      Idx lt = i * n + j;
-      Idx rt = i * n + j + 1;
-      Idx lb = (i + 1) * n + j;
-      Idx rb = (i + 1) * n + j + 1;
+  for (Index i = 0; i < n - 1; ++i) {
+    for (Index j = 0; j < n - 1; ++j) {
+      Index idx = 2 * (i * (n - 1) + j);
+      Index lt = i * n + j;
+      Index rt = i * n + j + 1;
+      Index lb = (i + 1) * n + j;
+      Index rb = (i + 1) * n + j + 1;
 
-      faces.col(idx) = Vec3Idx(lt, rt, lb);
-      faces.col(idx + 1) = Vec3Idx(rt, rb, lb);
+      faces.col(idx) = Vec3Index (lt, lb, rt);
+      faces.col(idx + 1) = Vec3Index (rt, lb, rb);
     }
   }
   return {vertices, faces};
 }
 
-MassSpring::MassSpring(Idx n) : n_(n), mesh_(make_plane_xy(n)) {}
+MassSpring::MassSpring(Index n) : n_(n), mesh_(make_plane_xy(n)) {
+  ACG_DEBUG_LOG("#faces = {}, #vert = {}", mesh_.GetNumFaces(), mesh_.GetNumVertices());
+  position_ = mesh_.GetVertices();
+  edges_.resize(2, (n_ - 1) * n_ * 2 + 2 * (n_ - 1) * (n_ - 1));
+  original_length_.resize(1, edges_.cols());
+  Index idx = 0;
+  for (Index i = 0; i < n_ - 1; ++i) {
+    for (Index j = 0; j < n_ - 1; ++j) {
+      Index lt = i * n_ + j;
+      Index rt = i * n_ + j + 1;
+      Index lb = (i + 1) * n_ + j;
+      Index rb = (i + 1) * n_ + j + 1;
+      edges_(0, idx) = lt;
+      edges_(1, idx) = rt;
+      original_length_(idx) = 1.0 / n_;
+      idx++;
 
-int MassSpring::RunPhysicsImpl(F64 dt) {
+      edges_(0, idx) = lt;
+      edges_(1, idx) = lb;
+      original_length_(idx) = 1.0 / n_;
+      idx++;
+
+      edges_(0, idx) = lt;
+      edges_(1, idx) = rb;
+      original_length_(idx) = acg::constants::sqrt2<F64> / n_;
+      idx++;
+
+      edges_(0, idx) = rt;
+      edges_(1, idx) = lb;
+      original_length_(idx) = acg::constants::sqrt2<F64> / n_;
+      idx++;
+    }
+    Index r_tail = n_ * (i + 1) - 1;
+    Index bottom = n_ * (n_ - 1) + i;
+    edges_(0, idx) = r_tail;
+    edges_(1, idx) = r_tail + n_;
+    original_length_(idx) = 1.0 / n_;
+    idx++;
+    edges_(0, idx) = bottom;
+    edges_(1, idx) = bottom + 1;
+    original_length_(idx) = 1.0 / n_;
+    idx++;
+  }
+}
+
+/* Semi Implicit Method
   acceleration_.setZero();
-  for (Idx i = 0; i < n_ * n_ ; ++i) {
+  for (Index i = 0; i < n_ * n_; ++i) {
     acceleration_.col(i) += Vec3d(0, 0, -1);
   }
-  for (Idx i = 0; i < n_ - 1; ++i) {
-    for (Idx j = 0; j < n_ - 1; ++j) {
-      Idx lt = i * n_ + j;
-      Idx rt = i * n_ + j + 1;
-      Idx lb = (i + 1) * n_ + j;
-      Idx rb = (i + 1) * n_ + j + 1;
+  for (Index i = 0; i < n_ - 1; ++i) {
+    for (Index j = 0; j < n_ - 1; ++j) {
+      Index lt = i * n_ + j;
+      Index rt = i * n_ + j + 1;
+      Index lb = (i + 1) * n_ + j;
+      Index rb = (i + 1) * n_ + j + 1;
 
       ApplyForce(lt, rt);
       ApplyForce(lt, lb);
@@ -53,17 +98,29 @@ int MassSpring::RunPhysicsImpl(F64 dt) {
     }
   }
 
-
+  for (Index i = 0; i < n_; ++i) {
+    acceleration_.col(i).setZero();
+  }
   auto new_velocity = velocity_ + acceleration_ * dt;
-  AttrVec<F64, 3> position = mesh_.GetVertices() + (velocity_ + new_velocity) * 0.5 * dt;
-  position.col(0) = Vec3d::Zero();
-  position.col(n_ - 1) = Vec3d(0, 1, 0);
-  velocity_ = new_velocity * .9;
+  Field<F64, 3> position = mesh_.GetVertices() + (velocity_ + new_velocity) * 0.5 * dt;
+  velocity_ = new_velocity * .96;
 
   mesh_ = Mesh(position, mesh_.GetFaces());
+*/
 
+int MassSpring::RunPhysicsImpl(F64 dt) {
+  LocalStep(dt);
   RegenerateScene();
   return 0;
+}
+
+void MassSpring::LocalStep(F64 dt) {
+  d_.resize(3, (n_ - 1) * n_ * 2 + 2 * (n_ - 1) * (n_ - 1));
+  d_.setZero();
+  for (auto [i, edge]: acg::FieldEnumerate(edges_)) {
+    auto dx = position_.col(edge.x()) - position_.col(edge.y());
+    d_.col(i) = dx.normalized() * original_length_(i);
+  }
 }
 
 void MassSpring::RunUiImpl() {
@@ -75,8 +132,9 @@ void MassSpring::RunUiImpl() {
                         -10.0, 10.0);
     ImGui::SliderFloat3("Camera Front", reinterpret_cast<float*>(&(camera_.GetFront())), -10.0,
                         10.0);
+    ImGui::SliderFloat3("Camera Up", reinterpret_cast<float*>(&(camera_.GetUp())), -10.0, 10.0);
 
-    ImGui::SliderFloat("K", &k_, 0, 10000);
+    ImGui::SliderFloat("K", &k_, 0, 100);
     if (ImGui::Button("Update Camera!", button_size)) {
       update_camera_ = true;
     }
@@ -94,10 +152,10 @@ void MassSpring::PreRun() {
   acceleration_.resize(3, n_ * n_);
   camera_.SetPosition(glm::vec3(1, 1, 1));
   camera_.SetFront(glm::vec3(-1, -1, -1));
-  light_.light_position_ = Vec3f(3, 0, 0);
+  light_.light_position_ = Vec3f(2, 1, 3);
   light_.ambient_light_color_ = Vec3f(1, 1, 1);
   light_.ambient_light_density_ = 0.5;
-  light_.light_color_ = Vec3f(.7, .7, .7);
+  light_.light_color_ = Vec3f(.5, .5, .5);
   mesh_ppl_->SetUbo(&camera_, &light_, true);
 
   keyboard_callbacks_.insert({GLFW_KEY_W, [this]() {
@@ -140,7 +198,7 @@ void MassSpring::RegenerateScene() {
   scene_.AddMesh(mesh_.Cast<F32>(), std::nullopt, color_);
 }
 
-void MassSpring::ApplyForce(Idx i, Idx j) {
+void MassSpring::ApplyForce(Index i, Index j) {
   auto dij = mesh_.GetVertices().col(i) - mesh_.GetVertices().col(j);
   F64 original_length = 1.0 / (n_ - 1);
 

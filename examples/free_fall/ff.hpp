@@ -2,13 +2,13 @@
 
 #include <acg_core/geometry/particle.hpp>
 
-#include <acg_vis/mesh_pipeline.hpp>
-#include <acg_vis/point_light.hpp>
-#include <acg_vis/scene.hpp>
-#include <acg_vis/world_controller.hpp>
+#include <acg_gui/backend/mesh_pipeline.hpp>
+#include <acg_gui/light.hpp>
+#include <acg_gui/scene.hpp>
+#include <acg_gui/world_controller.hpp>
 using namespace acg;
-using namespace acg::visualizer;
-using namespace acg::visualizer::details;
+using namespace acg::gui;
+using namespace acg::gui::details;
 
 class FreeFall : public WorldCtrlUiOnly {
 public:
@@ -36,9 +36,9 @@ protected:
 private:
   void RegenerateScene();
 
-  std::unique_ptr<MeshPipeline> mesh_ppl_;
+  std::unique_ptr<MeshPipelineWithRenderPass> mesh_ppl_;
 
-  Idx n_;
+  Index n_;
 
   Scene scene_;
   Camera camera_;

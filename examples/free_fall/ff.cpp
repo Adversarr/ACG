@@ -1,12 +1,12 @@
 #include "ff.hpp"
 
 #include <acg_core/geometry/common_models.hpp>
-#include <acg_core/math.hpp>
+#include <acg_core/math/common.hpp>
+#include <acg_core/math/constants.hpp>
 #include <acg_utils/log.hpp>
 #include <cmath>
 
-#include "co/random.h"
-
+#include <acg_utils/random.hpp>
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 
@@ -31,7 +31,7 @@ int FreeFall::RunPhysicsImpl(F64 dt) {
 
   auto new_velocity = velocity_ + acceleration_ * dt;
 
-  for (Idx i = 0; i < n_; ++i) {
+  for (Index i = 0; i < n_; ++i) {
     auto& p = particles_[i];
     p.SetCenter(dt * (velocity_.col(i) + new_velocity.col(i)) + p.GetCenter());
   }
@@ -42,7 +42,7 @@ int FreeFall::RunPhysicsImpl(F64 dt) {
 }
 
 void FreeFall::InitCallback() {
-  mesh_ppl_ = MeshPipeline::Builder()
+  mesh_ppl_ = MeshPipelineWithRenderPass::Builder()
                   .SetCullMode(vk::CullModeFlagBits::eNone)
                   .SetPolygonMode(vk::PolygonMode::eFill)
                   .SetIsDstPresent(false)
@@ -53,7 +53,7 @@ void FreeFall::InitCallback() {
 
 void FreeFall::CleanUpCallback() {
   ACG_DEBUG_LOG("Mesh ppl Cleanup");
-  acg::visualizer::get_vk_context().GetDevice().waitIdle();
+  acg::gui::get_vk_context().GetDevice().waitIdle();
   vertex_buffer_->Release();
   indice_buffer_->Release();
   mesh_ppl_.reset(nullptr);
@@ -62,7 +62,7 @@ void FreeFall::CleanUpCallback() {
 void FreeFall::PreRun() {
   F64 r = 3;
   for (int i = 0; i < n_; ++i) {
-    Random rand;
+    acg::utils::Random rand;
     Vec3f center((rand.next() % 1000) / 1000.0, r * sin(2.0 * i / n_ * acg::constants::pi<F32>),
                  r * cos(2.0 * i / n_ * acg::constants::pi<F32>));
     Vec3f color = 0.5f * (Vec3f::Random() + Vec3f::Ones());
@@ -80,12 +80,12 @@ void FreeFall::PreRun() {
   mass_.setOnes();
 
   RegenerateScene();
-  spdlog::info("buffersize = {} + {}", scene_.GetRequiredVertexBufferSize(),
+  ACG_INFO("buffersize = {} + {}", scene_.GetRequiredVertexBufferSize(),
                scene_.GetRequiredIndexBufferSize());
-  vertex_buffer_ = acg::visualizer::get_vk_context().CreateBuffer(
+  vertex_buffer_ = acg::gui::get_vk_context().CreateBuffer(
       scene_.GetRequiredVertexBufferSize(), vk::BufferUsageFlagBits::eVertexBuffer,
       vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
-  indice_buffer_ = acg::visualizer::get_vk_context().CreateBuffer(
+  indice_buffer_ = acg::gui::get_vk_context().CreateBuffer(
       scene_.GetRequiredIndexBufferSize(), vk::BufferUsageFlagBits::eIndexBuffer,
       vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
 
@@ -137,10 +137,10 @@ std::vector<vk::CommandBuffer> FreeFall::DrawScene() {
     update_camera_ = false;
   }
   auto [vertices, indices] = scene_.Build();
-  acg::visualizer::get_vk_context().GetDevice().waitIdle();
-  acg::visualizer::get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
+  acg::gui::get_vk_context().GetDevice().waitIdle();
+  acg::gui::get_vk_context().CopyHostToBuffer(vertices.data(), *vertex_buffer_,
                                                      vertices.size() * sizeof(Vertex));
-  acg::visualizer::get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
+  acg::gui::get_vk_context().CopyHostToBuffer(indices.data(), *indice_buffer_,
                                                      indices.size() * sizeof(indices.front()));
 
   auto cb = mesh_ppl_->BeginRender();
@@ -169,7 +169,7 @@ void FreeFall::RunUiImpl() {
 
 void FreeFall::RegenerateScene() {
   scene_.Reset();
-  for (Idx i = 0; i < n_; ++i) {
+  for (Index i = 0; i < n_; ++i) {
     scene_.AddParticle(particles_[i].Cast<F32>(), color_[i]);
   }
 }

@@ -3,21 +3,23 @@
 #include <acg_core/geometry/particle.hpp>
 #include <acg_core/geometry/mesh.hpp>
 
-#include <acg_vis/mesh_pipeline.hpp>
-#include <acg_vis/point_light.hpp>
-#include <acg_vis/scene.hpp>
-#include <acg_vis/world_controller.hpp>
-#include <acg_vis/mp_scene.hpp>
+#include <acg_gui/backend/mesh_pipeline.hpp>
+#include <acg_gui/light.hpp>
+#include <acg_gui/scene.hpp>
+#include <acg_gui/world_controller.hpp>
+#include <acg_gui/mp_scene.hpp>
 using namespace acg;
-using namespace acg::visualizer;
+using namespace acg::gui;
 
 class MassSpring : public MPWorldCtrl {
 public:
-  using Mesh = geometry::Mesh<F64>;
+  using Mesh = geometry::SimpleMesh<F64>;
 
-  explicit MassSpring(Idx n);
+  explicit MassSpring(Index n);
 
 protected:
+
+  void LocalStep(F64 dt);
 
   int RunPhysicsImpl(F64 dt) final;
 
@@ -25,20 +27,23 @@ protected:
 
   void PreRun() final;
 
-  void ApplyForce(Idx i, Idx j);
+  void ApplyForce(Index i, Index j);
 
 
 private:
   void RegenerateScene();
-  Idx n_;
+  Index n_;
   Vec3f color_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> position_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> velocity_;
   Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> acceleration_;
-  AttrVec<Idx, 2> edges_;
-  Mesh mesh_;
-  Mesh new_mesh_;
+  Field<Index, 2> edges_;
+  Field<F64, 1> original_length_;
 
+  // Slack Variable
+  Field<F64, 3> d_;
+
+  Mesh mesh_;
   float k_{10};
 };
 

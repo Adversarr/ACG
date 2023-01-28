@@ -8,17 +8,12 @@ set_warnings('allextra') -- -Wall
 
 add_rules("mode.debug", "mode.release")
 
-set_optimize('faster')
-
-
--- add_moduledirs('xmake')
-
-
+-- set_optimize('faster')
 
 includes(
   '3rdparty',
   'core',
-  'vis'
+  'gui'
 )
 
 includes('examples')
