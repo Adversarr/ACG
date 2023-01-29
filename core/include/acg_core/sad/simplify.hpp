@@ -1,7 +1,7 @@
 #pragma once
 // NOLINTBEGIN(readability-identifier-naming)
-#include "cwise.hpp"
 #include "dual.hpp"
+#include "cwise.hpp"
 #include "la.hpp"
 
 namespace acg::sad {
@@ -90,6 +90,17 @@ template <typename X, typename Z> struct Simplify<Dot<Zeros<Z>, Zeros<X>>> {
   using type = Zeros<typename Trait<Z>::Scalar>;
 };
 ///> Dot
+
+///> Inverse
+template <typename X> struct Simplify<Inverse<X>> { using type = Inverse<Simplify_t<X>>; };
+template <typename X> struct Simplify<Inverse<Inverse<X>>> { using type = Simplify_t<X>; };
+///< Inverse
+
+///> Reshape
+template <typename X, int r, int c> struct Simplify<Reshape<X, r, c>> {
+  using type = Reshape<Simplify_t<X>, r, c>;
+};
+///< Reshape
 
 ///> CwiseMul
 template <typename T, typename S> struct Simplify<CwiseMul<T, S>> {

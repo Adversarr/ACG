@@ -39,7 +39,7 @@ template <typename X> struct CwiseAbs2 : public Expr<GetRunTimeType_t<X>, X> {
 ///< CwiseAbs2
 
 ///> CwiseNanToZero
-/// TODO: Test is needed.
+/// TODO: Test needed.
 template <typename X> struct CwiseNanToZero : public Expr<typename X::type, X> {
   static double campd(double x) { return std::isfinite(x) ? x : static_cast<double>(0); }
   static float campf(float x) { return std::isfinite(x) ? x : static_cast<float>(0); }
@@ -57,7 +57,7 @@ template <typename X> struct CwiseNanToZero : public Expr<typename X::type, X> {
   // d(1/x) = - 1/x2
   template <typename, typename G> using Grad_t = CwiseNanToZero<G>;
 };
-///< CwiseInv
+///< CwiseNanToZero
 
 ///> CwiseInv
 template <typename X> struct CwiseInv : public Expr<typename X::type, X> {
@@ -72,6 +72,7 @@ template <typename X> struct CwiseInv : public Expr<typename X::type, X> {
   template <typename, typename G> using Grad_t = CwiseMul<Neg<CwiseInv<CwiseAbs2<X>>>, G>;
 };
 ///< CwiseInv
+
 ///> CwiseDiv
 template <typename L, typename R> using CwiseDiv = CwiseMul<L, CwiseInv<R>>;
 ///< CwiseDiv
@@ -85,8 +86,6 @@ template <typename X> struct CwiseSqrt : public Expr<typename X::type, X> {
       return xi.array().sqrt().matrix();
     }
   }
-
-  // 1 / 2 sqrt(x)
   template <typename, typename G> using Grad_t = CwiseMul<Half<CwiseSqrt<X>>, G>;
 };
 ///< CwiseSqrt
@@ -120,9 +119,11 @@ template <typename X> struct Norm : public Expr<Scalar_t<X>, X> {
 };
 ///< Norm
 
+
 }  // namespace details
 
 template <typename L, typename R> using CwiseMul = details::CwiseMul<L, R>;
+template <typename L, typename R> using CwiseDiv = details::CwiseDiv<L, R>;
 template <typename X> using CwiseAbs2 = details::CwiseAbs2<X>;
 template <typename X> using CwiseInv = details::CwiseInv<X>;
 template <typename X> using CwiseSqrt = details::CwiseSqrt<X>;

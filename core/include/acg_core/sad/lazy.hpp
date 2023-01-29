@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "dual.hpp"
-#include "runner.hpp"
+#include "instant.hpp"
 // NOLINTBEGIN(readability-identifier-naming)
 
 namespace acg::sad {

@@ -2,8 +2,9 @@
 
 #include <Eigen/Eigen>
 #include <acg_core/math/common.hpp>
-#include <acg_core/math/tensor_traits.hpp>
+#include <acg_core/math/traits.hpp>
 #include <acg_core/sad/all.hpp>
+#include <acg_core/sad/human.hpp>
 #include <acg_utils/god/algorithms.hpp>
 using namespace acg::utils::god;
 using namespace acg::sad;
@@ -48,13 +49,13 @@ TEST_CASE("sad-lazy") {
     }
   }
 
-  SUBCASE("vector") {
+  SUBCASE("LA-Reshape, CwiseMul") {
     using d0 = acg::sad::Dirac<acg::Vec3f, 0>;
-    Constant_expr(acg::Vec3f, d1, v.setUnit(1));
-    Constant_expr(acg::Vec3f, d2, v.setUnit(2));
+    using d1 = acg::sad::Dirac<acg::Vec3f, 1>;
+    using d2 = acg::sad::Dirac<acg::Vec3f, 2>;
     Variable(acg::Vec3f, X);
     Variable(acg::Vec3f, Y);
-    using FinalExp = Dot<Sub<X, Y>, Sub<X, Y>>;
+    using FinalExp = Sum<CwiseMul<Reshape<X, 1, 3>, Reshape<Y, 1, 3>>>;
     using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
     using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
     using Dx2 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d2>>;
@@ -65,32 +66,119 @@ TEST_CASE("sad-lazy") {
     context.Set<X>(acg::Vec3f{1, 2, 3});
     context.Set<Y>(acg::Vec3f{3, 2, 1});
     auto result = LazyResult(context);
-    std::cout << result.Get<Dy0>() << std::endl;
-    std::cout << result.Get<Dy1>() << std::endl;
-    std::cout << result.Get<Dy2>() << std::endl;
+    CHECK_EQ(result.Get<Dy0>(), 1);
+    CHECK_EQ(result.Get<Dy1>(), 2);
+    CHECK_EQ(result.Get<Dx2>(), 1);
   }
+}
 
-  SUBCASE("vector_lazy2") {
-    Constant_expr(acg::Vec3f, d0, v.y() = v.z() = 0; v.x() = 1);
-    Constant_expr(acg::Vec3f, d1, v.x() = v.z() = 0; v.y() = 1);
-    Constant_expr(acg::Vec3f, d2, v.x() = v.y() = 0; v.z() = 1);
-    Variable(acg::Vec3f, X);
-    Variable(acg::Vec3f, Y);
-    using FinalExp = Dot<Sub<X, Y>, Sub<X, Y>>;
-    using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
-    using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
-    using Dx2 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d2>>;
-    using Dy0 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d0>>;
-    using Dy1 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d1>>;
-    using Dy2 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d2>>;
-    LazyContext<List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2>> context;
-    context.Set<X>(acg::Vec3f{1, 2, 3});
-    context.Set<Y>(acg::Vec3f{3, 2, 1});
-    auto result = LazyResult2(context);
-    std::cout << result.Get<Dy0>() << std::endl;
-    std::cout << result.Get<Dy1>() << std::endl;
-    std::cout << result.Get<Dy2>() << std::endl;
-  }
+TEST_CASE("LA-Norm") {
+  using d0 = acg::sad::Dirac<acg::Vec3f, 0>;
+  using d1 = acg::sad::Dirac<acg::Vec3f, 1>;
+  using d2 = acg::sad::Dirac<acg::Vec3f, 2>;
+  Variable(acg::Vec3f, X);
+  using FinalExp = Norm<X>;
+  using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
+  using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
+  using Dx2 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d2>>;
+  LazyContext<List<FinalExp, Dx0, Dx1, Dx2>> context;
+  context.Set<X>(acg::Vec3f{2, 0, 0});
+  auto result = LazyResult(context);
+  CHECK_EQ(result.Get<Dx0>(), 1);
+}
+
+TEST_CASE("LA-Dot") {
+  using d0 = acg::sad::Dirac<acg::Vec3f, 0>;
+  Constant_expr(acg::Vec3f, d1, v.setUnit(1));
+  Constant_expr(acg::Vec3f, d2, v.setUnit(2));
+  Variable(acg::Vec3f, X);
+  Variable(acg::Vec3f, Y);
+  Node<X> x;
+  Node<Y> y;
+  auto ret = (x - y).Dot(x - y);
+  using FinalExp = decltype(ret)::type;
+  using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
+  using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
+  using Dx2 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d2>>;
+  using Dy0 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d0>>;
+  using Dy1 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d1>>;
+  using Dy2 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d2>>;
+  LazyContext<List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2>> context;
+  context.Set<X>(acg::Vec3f{1, 2, 3});
+  context.Set<Y>(acg::Vec3f{3, 2, 1});
+  auto result = LazyResult(context);
+  CHECK_EQ(result.Get<FinalExp>(), 8);
+  CHECK_EQ(result.Get<Dx0>(), -4);
+}
+
+TEST_CASE("vector_lazy2") {
+  Constant_expr(acg::Vec3f, d0, v.y() = v.z() = 0; v.x() = 1);
+  Constant_expr(acg::Vec3f, d1, v.x() = v.z() = 0; v.y() = 1);
+  Constant_expr(acg::Vec3f, d2, v.x() = v.y() = 0; v.z() = 1);
+  Variable(acg::Vec3f, X);
+  Variable(acg::Vec3f, Y);
+  using FinalExp = Dot<Sub<X, Y>, Sub<X, Y>>;
+  using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
+  using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
+  using Dx2 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d2>>;
+  using Dy0 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d0>>;
+  using Dy1 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d1>>;
+  using Dy2 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d2>>;
+  LazyContext<List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2>> context;
+  context.Set<X>(acg::Vec3f{1, 2, 3});
+  context.Set<Y>(acg::Vec3f{3, 2, 1});
+  auto result = LazyResult2(context);
+  std::cout << result.Get<Dy0>() << std::endl;
+  std::cout << result.Get<Dy1>() << std::endl;
+  std::cout << result.Get<Dy2>() << std::endl;
+}
+
+TEST_CASE("LA-Concatenate and Trace") {
+  using d0 = acg::sad::Dirac<acg::Vec3f, 0>;
+  Constant_expr(acg::Vec3f, d1, v.setUnit(1));
+  Constant_expr(acg::Vec3f, d2, v.setUnit(2));
+  Variable(acg::Vec3f, X);
+  Variable(acg::Vec3f, Y);
+  Node<X> x;
+  Node<Y> y;
+  auto ret = (x, y, y).Trace();
+  using FinalExp = decltype(ret)::type;
+  using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
+  using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
+  using Dx2 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d2>>;
+  using Dy0 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d0>>;
+  using Dy1 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d1>>;
+  using Dy2 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d2>>;
+  LazyContext<List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2>> context;
+  context.Set<X>(acg::Vec3f{1, 2, 3});
+  context.Set<Y>(acg::Vec3f{3, 2, 1});
+  auto result = LazyResult(context);
+  CHECK_EQ(result.Get<FinalExp>(), 4);
+  CHECK_EQ(result.Get<Dx0>(), 1);
+  CHECK_EQ(result.Get<Dy0>(), 0);
+}
+
+TEST_CASE("LA-Inverse") {
+  Constant_expr(acg::Vec2f, d0, v.setUnit(0));
+  Constant_expr(acg::Vec2f, d1, v.setUnit(1));
+  Variable(acg::Vec2f, X);
+  Variable(acg::Vec2f, Y);
+  Node<X> x;
+  Node<Y> y;
+  auto ret = (x, y).Inverse().Sum();
+  using FinalExp = decltype(ret)::type;
+  using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
+  using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
+  using Dy0 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d0>>;
+  using Dy1 = Simpliest_t<DirectionalDiff_t<FinalExp, Y, d1>>;
+  LazyContext<List<FinalExp, Dx0, Dx1, Dy0, Dy1>> context;
+  context.Set<X>(acg::Vec2f{1, 2});
+  context.Set<Y>(acg::Vec2f{3, 2});
+  auto result = LazyResult(context);
+  CHECK_EQ(result.Get<Dx0>(), 0);
+  CHECK_EQ(result.Get<Dx1>(), -0.125);
+  CHECK_EQ(result.Get<Dy0>(), 0);
+  CHECK_EQ(result.Get<Dy1>(), -0.125);
 }
 
 TEST_CASE("Sad Non-lazy") {

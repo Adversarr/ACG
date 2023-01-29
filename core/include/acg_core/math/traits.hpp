@@ -4,6 +4,7 @@
 
 namespace acg {
 namespace details {
+
 template <typename T> struct Trait {
   static constexpr int rows = T::RowsAtCompileTime;            // NOLINT
   static constexpr int cols = T::ColsAtCompileTime;            // NOLINT
@@ -63,7 +64,6 @@ template <> struct Trait<acg::F64> {
 }  // namespace details
 ///< Type Defines
 
-
 // Tensor Trati Meta-Programming Helper
-using details::Trait; // NOLINT
+using details::Trait;  // NOLINT
 }  // namespace acg

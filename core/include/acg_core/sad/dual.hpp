@@ -1,7 +1,7 @@
 #pragma once
 // NOLINTBEGIN(readability-identifier-naming)
 
-#include "../math/all.hpp"
+#include "../math/traits.hpp"
 #include "acg_utils/god/algorithms.hpp"
 
 namespace acg::sad {
@@ -11,19 +11,28 @@ using namespace acg::details;
 
 // Expr
 template <typename T, typename... E> struct Expr {
+  // Input expr used for evaluate this expr.
   using InputExpr = List<E...>;
+  // Input nodes: user inputs.
   using InputNodes = Unique_t<Reduce_t<Concat, List<List<>, typename E::InputNodes...>>>;
+  // evaluated expr type.
   using type = T;
+  // All the sub expr required
   using SubNodes = Unique_t<Reduce_t<Concat, List<List<E...>, typename E::SubNodes...>>>;
+
   static constexpr bool is_constant = false;
+
   static constexpr bool is_input = false;
+
+  static_assert(Trait<T>::rows != Eigen::Dynamic && Trait<T>::cols != Eigen::Dynamic, 
+      "Storage type T should be fixed-size at compile time.");
 };
 
+// Expr Helpers
 template <typename T> struct IsConstant { static constexpr bool value = T::is_constant; };
 
 template <typename T> struct IsInput { static constexpr bool value = T::is_input; };
 
-// Helper classes
 template <typename L, typename R> struct IsSubNode {
   static constexpr bool value = Has_v<L, typename R::SubNodes>;
 };
@@ -79,9 +88,7 @@ template <typename T, int... dmd> struct Dirac;
 template <typename T> struct Dirac<T> : public Ones<T> {};
 
 template <typename T, int r> struct Dirac<T, r> : public Constant<T> {
-  inline decltype(auto) operator()() const noexcept {
-    return T::Unit(r);
-  }
+  inline decltype(auto) operator()() const noexcept { return T::Unit(r); }
 };
 template <typename T, int r, int c> struct Dirac<T, r, c> : public Constant<T> {
   inline decltype(auto) operator()() const noexcept {
@@ -93,6 +100,10 @@ template <typename T, int r, int c> struct Dirac<T, r, c> : public Constant<T> {
 };
 ///< Constants
 
+/**
+ * Defininition for fundamental ops.
+ */
+
 ///> Add Operation, L::type should equals to R::type
 /// NOTE: Add is cwise.
 template <typename L, typename R> struct Add : public Expr<typename L::type, L, R> {
@@ -100,7 +111,7 @@ template <typename L, typename R> struct Add : public Expr<typename L::type, L, 
                 "Add between two different type is not permitted.");
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
-    return std::forward<Li>(l) + std::forward<Ri>(r);
+    return l + r;
   }
   template <typename X, typename DG> using Grad_t = DG;
 };
@@ -109,7 +120,7 @@ template <typename L, typename R> struct Add : public Expr<typename L::type, L, 
 ///> Neg
 template <typename X> struct Neg : public Expr<typename X::type, X> {
   template <typename XI> inline decltype(auto) operator()(XI&& in_x) const noexcept {
-    return -std::forward<XI>(in_x);
+    return -in_x;
   }
 
   template <typename, typename G> using Grad_t = Neg<G>;
@@ -139,8 +150,9 @@ template <typename L, typename R> struct Sub : public Expr<typename L::type, L, 
                 "Substract between two different type is not permitted.");
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
-    return std::forward<Li>(l) - std::forward<Ri>(r);
+    return l - r;
   }
+
   template <typename X, typename G> using Grad_t
       = std::conditional_t<std::is_same_v<L, X>, G, Neg<G>>;
 };
@@ -163,7 +175,7 @@ struct Mul<L, R,
     : public Expr<typename L::type, L, R> {
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
-    return std::forward<Li>(l) * std::forward<Ri>(r);
+    return l * r;
   }
 
   template <typename X, typename G> using Grad_t
@@ -186,7 +198,7 @@ template <typename L, typename R> struct Mul<
     : public Expr<typename R::type, L, R> {
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
-    return std::forward<Li>(l) * std::forward<Ri>(r);
+    return l * r;
   }
   template <typename X, typename G> using Grad_t
       = std::conditional_t<std::is_same_v<X, R>, Mul<L, G>, Mul<G, R>>;
@@ -198,7 +210,7 @@ template <typename L, typename R> struct Mul<
     : public Expr<typename L::type, L, R> {
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
-    return std::forward<Li>(l) * std::forward<Ri>(r);
+    return l * r;
   }
   template <typename X, typename G> using Grad_t
       = std::conditional_t<std::is_same_v<X, R>, Mul<L, G>, Mul<G, R>>;
@@ -214,7 +226,7 @@ struct Mul<L, R,
   static_assert(Trait<typename L::type>::cols == Trait<typename R::type>::rows, "L.col != R.rows");
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
-    return std::forward<Li>(l) * std::forward<Ri>(r);
+    return l * r;
   }
   template <typename X, typename G> using Grad_t
       = std::conditional_t<std::is_same_v<X, R>, Mul<L, G>, Mul<G, R>>;
@@ -227,7 +239,7 @@ struct Mul<L, L,
     : public Expr<typename L::type, L> {
   template <typename Li, typename Ri>
   inline decltype(auto) operator()(Li&& l, Ri&& r) const noexcept {
-    return std::forward<Li>(l) * std::forward<Ri>(r);
+    return l * r;
   }
   template <typename X, typename G> using Grad_t = Add<Mul<L, G>, Mul<G, L>>;
 };
