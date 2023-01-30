@@ -43,54 +43,82 @@ TEST_CASE("Field Builder") {
 }
 
 TEST_CASE("FieldGetter") {
-  using namespace acg::details;
   using namespace acg;
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
   MultiDimensionGetter<3> getter(p, q, r);
   CHECK(getter(x, y, z) == x * r * q + r * y + z);
+}
 
-  SUBCASE("Field Rvalue") {
-    Field<float, 3> ones(3, 1);
-    ones.setOnes();
-    auto acc = access((ones + ones).eval());
-    for (auto blk: acc) {
-      CHECK(blk.array().sum() == 6);
-    }
+TEST_CASE("Field Rvalue") {
+  using namespace acg;
+  Index p = 4, q = 3, r = 5;
+  MultiDimensionGetter<3> getter(p, q, r);
+  Field<float, 3> ones(3, 1);
+  ones.setOnes();
+  auto acc = access((ones + ones).eval());
+  for (auto blk : acc) {
+    CHECK(blk.array().sum() == 6);
   }
-  SUBCASE("Field accessor") {
-    Field<float, 3> field(3, p * q * r);
-    auto acc = access(field, getter);
-    acc[x * r * q + r * y + z].setOnes();
-    CHECK(acc(x, y, z).array().sum() == 3);
-  }
+}
+TEST_CASE("Field accessor") {
+  using namespace acg;
+  Index p = 4, q = 3, r = 5;
+  Index x = 1, y = 2, z = 4;
+  MultiDimensionGetter<3> getter(p, q, r);
+  Field<float, 3> field(3, p * q * r);
+  field.setOnes();
+  std::cout << field << std::endl;
+  auto acc = access(field, getter);
+  acc[x * r * q + r * y + z].setOnes();
+  CHECK(acc(x, y, z).array().sum() == 3);
+}
 
-  SUBCASE("Row") {
-    Field<float, 1> field(1, p * q * r);
-    auto acc = access(field, getter);
-    acc[x * r * q + r * y + z].setOnes();
-    CHECK(acc(x, y, z).array().sum() == 1);
-  }
+TEST_CASE("Row") {
+  using namespace acg;
+  Index p = 4, q = 3, r = 5;
+  Index x = 1, y = 2, z = 4;
+  MultiDimensionGetter<3> getter(p, q, r);
+  Field<float, 1> field(1, p * q * r);
+  auto acc = access(field, getter);
+  acc[x * r * q + r * y + z].setOnes();
+  CHECK(acc(x, y, z).array().sum() == 1);
+}
 
-  SUBCASE("Access standard iterate") {
-    Field<float, 3> field(3, p * q * r);
-    field.setOnes();
-    auto acc = access(field, getter);
-    for (auto blk: acc) {
-      blk.setZero();
-    }
-    CHECK(field.array().sum() == 0);
+TEST_CASE("Access standard iterate") {
+  using namespace acg;
+  Index p = 4, q = 3, r = 5;
+  MultiDimensionGetter<3> getter(p, q, r);
+  Field<float, 3> field(3, p * q * r);
+  field.setOnes();
+  auto acc = access(field, getter);
+  for (auto blk : acc) {
+    blk.setZero();
   }
+  CHECK(field.array().sum() == 0);
+}
 
-  SUBCASE("Default getter") {
-    Field<float, 3> field(3, p * q * r);
-    field.setOnes();
-    auto acc = access(field);
-    for (auto blk: acc) {
-      blk.setZero();
-    }
-    CHECK(field.array().sum() == 0);
+TEST_CASE("Default getter") {
+  using namespace acg;
+  Index p = 4, q = 3, r = 5;
+  MultiDimensionGetter<3> getter(p, q, r);
+  Field<float, 3> field(3, p * q * r);
+  field.setOnes();
+  auto acc = access(field);
+  for (auto blk : acc) {
+    blk.setZero();
   }
+  CHECK(field.array().sum() == 0);
+}
+
+TEST_CASE("Field Access Trasnform") {
+  using namespace acg;
+  auto field = FieldBuilder<float, 4>(3).Constant(0).eval();
+  auto acc = access<MultiDimensionGetter<1>, ReshapeTransform<2, 2>>(field);
+  auto acc1 = acc[1];
+  acc1.setOnes();
+  CHECK_EQ(acc(1).trace(), 2);
+  CHECK_EQ(acc(1).sum(), 4);
 }
 
 TEST_CASE("Kronecker") {
