@@ -172,7 +172,7 @@ void GGui::PrepareBuffers() {
     PrepareMeshBuffer(info);
   }
 
-  for (const auto& part : scene_.GetMeshParticle()) {
+  for (const auto& part : scene_.GetMeshParticles()) {
     if (part.id >= mesh_particle_render_info_.size()) {
       mesh_particle_render_info_.emplace_back();
     }

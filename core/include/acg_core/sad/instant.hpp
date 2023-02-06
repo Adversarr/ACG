@@ -1,7 +1,7 @@
 #pragma once
 // NOLINTBEGIN(readability-identifier-naming)
 
-#include "acg_core/math/tensor_traits.hpp"
+#include "acg_core/math/traits.hpp"
 #include "dual.hpp"
 #include "simplify.hpp"
 namespace acg::sad {

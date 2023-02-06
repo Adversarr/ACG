@@ -43,10 +43,10 @@ int main(int argc, char** argv) {
       ImGui::DragFloat3("Gravity", app.grav_.data(), 0.1, -3, 3);
     });
 
-    gui.GetScene().AddParticles()
+    gui.GetScene().AddMeshParticles()
       .SetPositions(app.particle_position_.cast<F32>())
       .SetUniformColor(types::Rgba(1, 0, 0, 1))
-      .SetRadius(5)
+      .SetRadius(0.01)
       .MarkUpdate();
     while (!Window::Instance().ShouldClose()) {
       glfwPollEvents();
@@ -55,14 +55,14 @@ int main(int argc, char** argv) {
       gui.UpdateScene();
       if (clear) {
         app.Init();
-        gui.GetScene().GetParticles().front()
+        gui.GetScene().GetMeshParticles().front()
           .SetPositions(app.particle_position_.cast<F32>())
           .MarkUpdate();
       }
 
       if (running) {
         app.Run();
-        gui.GetScene().GetParticles().front()
+        gui.GetScene().GetMeshParticles().front()
           .SetPositions(app.particle_position_.cast<F32>())
           .MarkUpdate();
         // running = false;
