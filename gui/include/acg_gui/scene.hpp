@@ -285,7 +285,7 @@ public:
 
   size_t GetMeshCount() const { return meshes_.size(); }
 
-  std::vector<Particles>& GetMeshParticle() { return mesh_particles_; }
+  std::vector<Particles>& GetMeshParticles() { return mesh_particles_; }
 
   Particles& GetMeshParticle(size_t i) { return mesh_particles_[i]; }
 
