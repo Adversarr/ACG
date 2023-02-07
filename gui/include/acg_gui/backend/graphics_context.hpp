@@ -1,7 +1,5 @@
 #pragma once
 
-#include <VkBootstrap.h>
-
 #include <optional>
 
 #include "acg_utils/result.hpp"

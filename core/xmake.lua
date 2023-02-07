@@ -7,7 +7,7 @@ target("acg_core")
   set_kind('static')
   set_group('library')
   add_includedirs('include', {public = true})
-  add_files('src/**.cpp')
+  add_files('source/**.cpp')
   add_packages('eigen', 'nlohmann_json', 'spdlog', {public = true})
 target_end()
 
