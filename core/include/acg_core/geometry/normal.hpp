@@ -28,7 +28,7 @@ public:
 };
 
 template <typename Scalar> Field<Scalar, 3> Normal<Scalar>::PerFace() const noexcept {
-  int n_face = triangle_list_.cols();
+  auto n_face = triangle_list_.cols();
   Field<Scalar, 3> face_normal(3, n_face);
   for (Index i = 0; i < n_face; ++i) {
     const auto& face = triangle_list_.col(i);

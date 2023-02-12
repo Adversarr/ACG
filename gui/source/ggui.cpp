@@ -752,7 +752,7 @@ void GGui::DrawDefaultUI() {
   changed |= ImGui::DragFloat("Para-Light Density", &light_.parallel_light_density_, 0.03, 0, 1);
   changed |= ImGui::ColorEdit3("Ambient Color", light_.ambient_light_color_.data(),
                                ImGuiColorEditFlags_Float);
-  changed |= ImGui::DragFloat("Ambient Density", &light_.light_density_, 0.03, 0, 1);
+  changed |= ImGui::DragFloat("Ambient Density", &light_.ambient_light_density_, 0.03, 0, 1);
 
   if (changed) {
     UpdateLightCamera();

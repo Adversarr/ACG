@@ -11,6 +11,7 @@ set_warnings('allextra') -- -Wall
 includes(
   '3rdparty',
   'core',
+  'port',
   'gui'
 )
 

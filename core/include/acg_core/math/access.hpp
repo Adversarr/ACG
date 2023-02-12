@@ -1,7 +1,8 @@
 #pragma once
+#include <acg_utils/common.hpp>
 #include <tuple>
 
-#include "common.hpp"
+#include "./common.hpp"
 
 namespace acg {
 
@@ -89,8 +90,8 @@ template <typename Type, typename Transform, typename Indexer> struct FieldAcces
 
   FieldAccessor(FieldAccessor&&) = default;
 
-  inline decltype(auto) operator[](Index i) const noexcept { return data.col(i); }
   inline decltype(auto) operator[](Index i) noexcept { return data.col(i); }
+  inline decltype(auto) operator[](Index i) const noexcept { return (*this)(i); }
 
   inline Index Size() const noexcept { return data.cols(); }
 
@@ -236,7 +237,7 @@ public:
 
   inline decltype(auto) Ones() { return Field<Scalar, dim>::Ones(dim, n_); }
 
-  inline decltype(auto) Zeros() { return Field<Scalar, dim>::Zeros(dim, n_); }
+  inline decltype(auto) Zeros() { return Field<Scalar, dim>::Zero(dim, n_).eval(); }
 
   inline decltype(auto) Constant(Scalar s) { return Field<Scalar, dim>::Constant(dim, n_, s); }
 

@@ -46,3 +46,9 @@ target('mpm-explicit')
   add_files('mpm-explicit/**.cpp')
   add_deps('acg_gui')
 target_end()
+
+target('fem-explicit')
+  add_files('fem-explicit/**.cpp')
+  add_deps("acg_gui")
+target_end()
+

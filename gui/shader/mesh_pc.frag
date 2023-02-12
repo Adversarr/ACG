@@ -55,7 +55,7 @@ vec3 get_point_light_color() {
   }
   vec3 specular = pow(specular_density, float(pc.options[1])) * plc.xyz;
 
-  return (diffuse + ambient + specular) * ubo.point_light_color.w;
+  return (diffuse + specular) * ubo.point_light_color.w + ambient;
 }
 
 vec3 get_parallel_light_color() {

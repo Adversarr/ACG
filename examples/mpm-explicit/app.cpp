@@ -6,7 +6,7 @@ MpmExplictApp::MpmExplictApp() = default;
 void MpmExplictApp::Init() {
   dx_ = simulation_range_ / n_grid_;
 
-  int grid_size = (n_grid_ + 1) * (n_grid_ + 1) * (n_grid_ + 1);
+  Index grid_size = (n_grid_ + 1) * (n_grid_ + 1) * (n_grid_ + 1);
   grid_velocity_.resize(Eigen::NoChange, grid_size);
   grid_mass_.resize(Eigen::NoChange, grid_size);
   grid_mass_.setZero();

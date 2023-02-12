@@ -2,7 +2,6 @@
 
 #include <optional>
 
-#include "acg_utils/result.hpp"
 #include "context.hpp"
 
 namespace acg::gui {

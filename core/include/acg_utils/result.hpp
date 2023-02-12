@@ -191,6 +191,7 @@ enum class Status {
   kDoNotUseReservedForFutureExpansionUseDefaultInSwitchInstead = 20
 };
 
+
 template <typename T> class Result;
 
 template <> class Result<void> {

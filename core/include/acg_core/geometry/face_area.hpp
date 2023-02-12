@@ -12,9 +12,9 @@ types::ScalarList<Scalar> face_area(const topology::TriangleList& triangles,
   types::ScalarList<Scalar> areas;
   areas.resize(1, triangles.cols());
   for (Index i = 0; i < triangles.cols(); ++i) {
-    int x = triangles(0, i);
-    int y = triangles(1, i);
-    int z = triangles(2, i);
+    auto x = triangles(0, i);
+    auto y = triangles(1, i);
+    auto z = triangles(2, i);
     auto d0 = positions.col(x) - positions.col(z);
     auto d1 = positions.col(y) - positions.col(z);
     areas(i) = d0.cross(d1).norm();

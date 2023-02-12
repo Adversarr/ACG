@@ -110,6 +110,8 @@ namespace types {
 template <typename Scalar, int dim = 3> using Position = Vec3<Scalar>;
 template <typename Scalar, int dim = 3> using PositionField = Field<Scalar, dim>;
 
+template <typename Scalar> using DynamicField = Field<Scalar, Eigen::Dynamic>;
+
 using Rgb = Vec3f;
 using RgbField = Field<F32, 3>;
 
