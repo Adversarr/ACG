@@ -24,31 +24,31 @@ acg::types::PositionField<acg::F64, 3> make_pos() {
   auto pos = acg::FieldBuilder<acg::F64, 3>(8).Placeholder();
   auto acc = acg::access(pos);
   acc(0) = acg::Vec3d(0, 0, 0);
-  acc(1) = acg::Vec3d(1, 0, 0);
+  acc(1) = acg::Vec3d(0, 1, 0);
   acc(2) = acg::Vec3d(1, 1, 0);
-  acc(3) = acg::Vec3d(0, 1, 0);
+  acc(3) = acg::Vec3d(1, 0, 0);
   acc(4) = acg::Vec3d(0, 0, 1);
-  acc(5) = acg::Vec3d(1, 0, 1);
+  acc(5) = acg::Vec3d(0, 1, 1);
   acc(6) = acg::Vec3d(1, 1, 1);
-  acc(7) = acg::Vec3d(0, 1, 1);
+  acc(7) = acg::Vec3d(1, 0, 1);
   return pos;
 }
 
 acg::geometry::topology::TriangleList make_face() {
   auto tri = acg::FieldBuilder<acg::Index, 3>(12).Placeholder();
   auto acc = acg::access(tri);
-  acc(0) = acg::Vec3Index(1, 0, 3);
-  acc(1) = acg::Vec3Index(2, 1, 3);
-  acc(2) = acg::Vec3Index(0, 4, 3);
-  acc(3) = acg::Vec3Index(4, 7, 3);
-  acc(4) = acg::Vec3Index(6, 3, 7);
-  acc(5) = acg::Vec3Index(6, 2, 3);
-  acc(6) = acg::Vec3Index(6, 1, 2);
-  acc(7) = acg::Vec3Index(5, 1, 6);
-  acc(8) = acg::Vec3Index(4, 1, 5);
-  acc(9) = acg::Vec3Index(4, 0, 1);
-  acc(10) = acg::Vec3Index(4, 5, 6);
-  acc(11) = acg::Vec3Index(4, 6, 7);
+  acc(0) = acg::Vec3Index(0, 1, 3);
+  acc(1) = acg::Vec3Index(1, 2, 3);
+  acc(2) = acg::Vec3Index(4, 0, 3);
+  acc(3) = acg::Vec3Index(7, 4, 3);
+  acc(4) = acg::Vec3Index(3, 6, 7);
+  acc(5) = acg::Vec3Index(2, 6, 3);
+  acc(6) = acg::Vec3Index(1, 6, 2);
+  acc(7) = acg::Vec3Index(1, 5, 6);
+  acc(8) = acg::Vec3Index(1, 4, 5);
+  acc(9) = acg::Vec3Index(0, 4, 1);
+  acc(10) = acg::Vec3Index( 5,4, 6);
+  acc(11) = acg::Vec3Index( 6,4, 7);
   return tri;
 }
 
@@ -77,7 +77,8 @@ int main(int argc, char** argv) {
     app.Init();
 
     bool step_once = false;
-    gui.SetUIDrawCallback([&clear, &running, &app, &step_once]() {
+    bool reset_once = false;
+    gui.SetUIDrawCallback([&clear, &running, &app, &step_once, &reset_once]() {
       ImGui::Begin("GGui User Window");
       clear = ImGui::Button("Reset Scene.");
       // running = ImGui::Button("Run Once");
@@ -85,8 +86,11 @@ int main(int argc, char** argv) {
       float avg_speed = app.velocity_.colwise().norm().mean();
 
       ImGui::InputFloat("Avg Speed", &avg_speed);
+      ImGui::InputDouble("Mu", &app.mu_);
+      ImGui::InputDouble("Lambda", &app.lambda_);
     
       step_once = ImGui::Button("Step");
+      reset_once = ImGui::Button("Reset");
     });
 
     auto indice = make_face();
@@ -106,6 +110,12 @@ int main(int argc, char** argv) {
       gui.UpdateScene();
       if (step_once || running) {
         app.Step();
+        mesh.SetVertices(app.position_.cast<acg::F32>()).MarkUpdate();
+      }
+
+      if (reset_once) {
+        app.position_ = make_pos();
+        app.Init();
         mesh.SetVertices(app.position_.cast<acg::F32>()).MarkUpdate();
       }
       acg::utils::SleepMs(30);

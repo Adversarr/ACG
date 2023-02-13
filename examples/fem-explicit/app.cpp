@@ -53,7 +53,7 @@ void FemExplicitApp::Step() {
 
     Mat3x3d p = f * (2 * mu_ * g + lambda_ * g.trace() * acg::Mat3x3d::Identity());
 
-    auto forces = (-(1.0 / 6) / dm_inv.determinant() * p * dm_inv.transpose()).eval();
+    auto forces = (-(1.0e-3 / 6) / dm_inv.determinant() * p * dm_inv.transpose()).eval();
     auto f1 = forces.col(0);
     auto f2 = forces.col(1);
     auto f3 = forces.col(2);
@@ -61,6 +61,8 @@ void FemExplicitApp::Step() {
 
     if (i == 4) {
       auto w = lambda_ * 0.5 * g.trace() * g.trace() + mu_ * (g.array().square().sum());
+      auto eigen = f.eigenvalues().eval();
+      std::cout << "Eig = " << eigen << std::endl;
       std::cout << "DmInv = " << dm_inv << std::endl;
       std::cout << "F = " << f << std::endl;
       std::cout << "g = " << g << std::endl;
@@ -80,7 +82,7 @@ void FemExplicitApp::Step() {
 
   position_ += (velocity_ + new_vel) * dt_;
 
-  velocity_ = new_vel * 0.97;
+  velocity_ = new_vel * 0.95;
 
   auto acc = acg::access(position_);
   for (auto pos : acc) {
