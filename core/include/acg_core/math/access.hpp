@@ -10,9 +10,6 @@ namespace details {
 
 // Pre transform to field accessor.
 struct IdentityTransform {
-  // template <typename T> constexpr inline T&& operator()(T&& in) const noexcept {
-  //   return static_cast<T&&>(in);
-  // }
 };
 
 template <int rows, int cols> struct ReshapeTransform {
@@ -121,6 +118,7 @@ template <typename Type, typename Transform, typename Indexer> struct FieldAcces
 using IdentityTransform = details::IdentityTransform;
 template <int r, int c> using ReshapeTransform = details::ReshapeTransform<r, c>;
 template <Index d> using MultiDimensionGetter = details::MultiDimensionGetter<d>;
+using DefaultGetter = MultiDimensionGetter<1>;
 
 // NOTE: Access Function for fields.
 
@@ -235,13 +233,13 @@ public:
 
   inline decltype(auto) Placeholder() { return Field<Scalar, dim>(dim, n_); }
 
-  inline decltype(auto) Ones() { return Field<Scalar, dim>::Ones(dim, n_); }
+  inline decltype(auto) Ones() { return Field<Scalar, dim>::Ones(dim, n_).eval(); }
 
   inline decltype(auto) Zeros() { return Field<Scalar, dim>::Zero(dim, n_).eval(); }
 
-  inline decltype(auto) Constant(Scalar s) { return Field<Scalar, dim>::Constant(dim, n_, s); }
+  inline decltype(auto) Constant(Scalar s) { return Field<Scalar, dim>::Constant(dim, n_, s).eval(); }
 
-  inline decltype(auto) Random() { return Field<Scalar, dim>::Random(dim, n_); }
+  inline decltype(auto) Random() { return Field<Scalar, dim>::Random(dim, n_).eval(); }
 
   inline decltype(auto) FromFunction(std::function<Vec<Scalar, dim>(Index i)> generator) {
     auto ph = Placeholder();

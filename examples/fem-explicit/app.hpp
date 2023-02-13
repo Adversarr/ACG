@@ -23,5 +23,5 @@ public:
 
   acg::Index num_vert_, num_tetra_;
 
-  acg::F64 mu_{2500}, lambda_{100}, dt_{0.001};
+  acg::F64 mu_{2500}, lambda_{100}, dt_{0.0001};
 };

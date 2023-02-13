@@ -33,7 +33,7 @@ void FemExplicitApp::Init() {
 void FemExplicitApp::Step() {
   auto tetra_accessor = acg::access(tetra_);
   auto position_accessor = acg::access(position_);
-  auto dm_inv_accessor = acg::access(dm_inv_);
+  auto dm_inv_accessor = acg::access<acg::DefaultGetter, acg::ReshapeTransform<3, 3>>(dm_inv_);
 
   auto acceleration = FieldBuilder<acg::F64, 3>(num_vert_).Zeros();
   auto acc_acc = acg::access(acceleration);
@@ -44,38 +44,39 @@ void FemExplicitApp::Step() {
     auto x30 = position_accessor(indices.w()) - position_accessor(indices.x());
 
     acg::Mat3x3d d;
-    auto dm_inv = dm_inv_accessor(i).reshaped(3, 3);
+    auto dm_inv = dm_inv_accessor(i);
     d << x10, x20, x30;
 
     Mat3x3d f = (d * dm_inv);
 
+    // Green Strain
     Mat3x3d g = .5 * (f.transpose() * f - acg::Mat3x3d::Identity());
 
     Mat3x3d p = f * (2 * mu_ * g + lambda_ * g.trace() * acg::Mat3x3d::Identity());
 
-    auto forces = (-(1.0e-3 / 6) / dm_inv.determinant() * p * dm_inv.transpose()).eval();
+    Mat3x3d forces = (-(1.0 / 6) / dm_inv.determinant() * p * dm_inv.transpose());
     auto f1 = forces.col(0);
     auto f2 = forces.col(1);
     auto f3 = forces.col(2);
     auto f0 = -(f1 + f2 + f3);
-
-    if (i == 4) {
-      auto w = lambda_ * 0.5 * g.trace() * g.trace() + mu_ * (g.array().square().sum());
-      auto eigen = f.eigenvalues().eval();
-      std::cout << "Eig = " << eigen << std::endl;
-      std::cout << "DmInv = " << dm_inv << std::endl;
-      std::cout << "F = " << f << std::endl;
-      std::cout << "g = " << g << std::endl;
-      std::cout << "p = " << p << std::endl;
-      std::cout << "f = " << forces << std::endl;
-      std::cout << "w = " << w << std::endl;
-    }
+    auto w = lambda_ * 0.5 * g.trace() * g.trace() + mu_ * (g.array().square().sum());
+    auto eigen = f.eigenvalues().eval();
+    std::cout << "I = " << i << std::endl;
+    std::cout << "Eig = " << std::endl << eigen << std::endl;
+    std::cout << "DmInv = " << std::endl << dm_inv << std::endl;
+    std::cout << "F = " << std::endl << f << std::endl;
+    std::cout << "g = " << std::endl << g << std::endl;
+    std::cout << "p = " << std::endl << p << std::endl;
+    std::cout << "f = " << std::endl << forces << std::endl;
+    std::cout << "w = " << std::endl << w << std::endl;
     acc_acc(indices.x()) += f0;
     acc_acc(indices.y()) += f1;
     acc_acc(indices.z()) += f2;
     acc_acc(indices.w()) += f3;
   }
 
+  std::cout << "Acceleration = " << std::endl;
+  std::cout << acceleration << std::endl;
   acceleration.row(2).array() += -9.8;
 
   auto new_vel = velocity_ + acceleration * dt_;
@@ -85,10 +86,10 @@ void FemExplicitApp::Step() {
   velocity_ = new_vel * 0.95;
 
   auto acc = acg::access(position_);
-  for (auto pos : acc) {
-    if (pos.z() < -0.1) {
-      pos.z() = -0.1;
-    }
-  }
-  std::cout << acceleration << std::endl;
+  position_.block(0, 4, 3, 4) = x_reference_.block(0, 4, 3, 4);
+
+  std::cout << "Position = " << std::endl;
+  std::cout << position_ << std::endl;
+  std::cout << "Velocity = " << std::endl;
+  std::cout << velocity_ << std::endl;
 }

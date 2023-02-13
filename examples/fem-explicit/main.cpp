@@ -47,8 +47,8 @@ acg::geometry::topology::TriangleList make_face() {
   acc(7) = acg::Vec3Index(1, 5, 6);
   acc(8) = acg::Vec3Index(1, 4, 5);
   acc(9) = acg::Vec3Index(0, 4, 1);
-  acc(10) = acg::Vec3Index( 5,4, 6);
-  acc(11) = acg::Vec3Index( 6,4, 7);
+  acc(10) = acg::Vec3Index(5, 4, 6);
+  acc(11) = acg::Vec3Index(6, 4, 7);
   return tri;
 }
 
@@ -78,7 +78,8 @@ int main(int argc, char** argv) {
 
     bool step_once = false;
     bool reset_once = false;
-    gui.SetUIDrawCallback([&clear, &running, &app, &step_once, &reset_once]() {
+    int sub_steps = 32;
+    gui.SetUIDrawCallback([&clear, &running, &app, &step_once, &reset_once, &sub_steps]() {
       ImGui::Begin("GGui User Window");
       clear = ImGui::Button("Reset Scene.");
       // running = ImGui::Button("Run Once");
@@ -88,7 +89,8 @@ int main(int argc, char** argv) {
       ImGui::InputFloat("Avg Speed", &avg_speed);
       ImGui::InputDouble("Mu", &app.mu_);
       ImGui::InputDouble("Lambda", &app.lambda_);
-    
+
+      ImGui::InputInt("SubStep Count", &sub_steps);
       step_once = ImGui::Button("Step");
       reset_once = ImGui::Button("Reset");
     });
@@ -99,17 +101,15 @@ int main(int argc, char** argv) {
                      .SetUniformColor(acg::types::Rgba(1, 0, 0, 1))
                      .SetEnableWireframe();
     mesh.MarkUpdate();
-    // auto normal = mesh.normals;
-    // acg::types::RgbaField color(4, 8);
-    // color << normal, Eigen::RowVector<acg::F32, Eigen::Dynamic>::Ones(8);
-    // mesh.SetColor(color).MarkUpdate();
     while (!Window::Instance().ShouldClose()) {
       glfwPollEvents();
       gui.Tick();
       gui.RenderOnce();
       gui.UpdateScene();
       if (step_once || running) {
-        app.Step();
+        for (int i = 0; i < sub_steps; ++i) {
+          app.Step();
+        }
         mesh.SetVertices(app.position_.cast<acg::F32>()).MarkUpdate();
       }
 
@@ -118,7 +118,6 @@ int main(int argc, char** argv) {
         app.Init();
         mesh.SetVertices(app.position_.cast<acg::F32>()).MarkUpdate();
       }
-      acg::utils::SleepMs(30);
     }
   }
   acg::clean_up();

@@ -140,3 +140,22 @@ TEST_CASE("Kronecker") {
   CHECK(bc.cols() == matb.cols() * matc.cols());
   CHECK(bc(5, 7) == 4);
 }
+
+TEST_CASE("FieldReshape") {
+  acg::Mat3x3f mat;
+  acg::Field<float, 9> field(9, 1);
+  auto acc = acg::access(field);
+
+  for (int i = 0; i < 5; ++i) {
+    mat.setRandom();
+    acc(0) = mat.reshaped();
+
+    CHECK_EQ(acc(0).reshaped(3, 3), mat);
+  }
+}
+
+TEST_CASE("Field Init") {
+  acg::Mat3x3f mat;
+  mat << acg::Vec3f::Ones(), acg::Vec3f::Zero(), acg::Vec3f::Ones();
+  CHECK_EQ(mat.col(1).array().square().sum(), 0);
+}
