@@ -1,13 +1,11 @@
 #include "acg_gui/world_controller.hpp"
-
+#include <acg_utils/log.hpp>
 #include <spdlog/spdlog.h>
 
 #include <chrono>
 #include <vector>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
-#include <acg_utils/singleton.hpp>
 #include <acg_utils/time.hpp>
 
 namespace acg::gui {
@@ -16,7 +14,7 @@ WorldCtrlUiOnly& WorldCtrlUiOnly::Run() {
   PreRun();
   is_running_ = true;
   while (is_running_) {
-    auto start = acg::utils::GetTimeUs();
+    auto start = acg::utils::get_time_us();
     // 1: Process basic keyboard input.
     ProcessInput();
     if (!is_running_) {
@@ -33,10 +31,10 @@ WorldCtrlUiOnly& WorldCtrlUiOnly::Run() {
     }
     // 4. FPS Limitation
     if (fps_limit_ > 0) {
-      loop_time_ = (acg::utils::GetTimeUs() - start) / 1000.0;
+      loop_time_ = (acg::utils::get_time_us() - start) / 1000.0;
       auto ms_sleep = 1000.0 / fps_limit_ - loop_time_;
       if (ms_sleep > 1) {
-        acg::utils::SleepMs(static_cast<uint32_t>(ms_sleep));
+        acg::utils::sleep_for_ms(static_cast<uint32_t>(ms_sleep));
       }
     }
   }

@@ -19,7 +19,6 @@ using LineStrips = Field<Index, 1>;
 
 using PointList = Field<Index, 1>;
 
-
 // @brief: 3d-Tetra-Index List
 using TetraList = Field<Index, 4>;
 

@@ -191,7 +191,6 @@ enum class Status {
   kDoNotUseReservedForFutureExpansionUseDefaultInSwitchInstead = 20
 };
 
-
 template <typename T> class Result;
 
 template <> class Result<void> {
@@ -319,3 +318,6 @@ template <typename T = void> auto make_error(Status err, std::string additional_
 }
 
 }  // namespace acg
+
+// TODO: Import Implementation
+#include "./details/result-inl.hpp"

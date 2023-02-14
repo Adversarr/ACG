@@ -1,7 +1,7 @@
 #pragma once
 #include <acg_core/geometry/common.hpp>
 #include <acg_core/geometry/mesh.hpp>
-#include <acg_core/geometry/particlesystem.hpp>
+#include <acg_core/geometry/particle.hpp>
 #include <acg_core/math/access.hpp>
 #include <memory>
 #include <optional>

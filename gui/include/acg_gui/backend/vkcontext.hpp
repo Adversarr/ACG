@@ -54,17 +54,19 @@ public:
     vk::DeviceSize size_{0};
   };
 
-  struct Builder {
+  struct Hooker {
     bool enable_validation{utils::get_build_type() == utils::BuildType::kDebug};
 
     uint32_t swapchain_size{3 /*Default for triple buffering.*/};
 
-    Builder& SetValidation(bool enable);
+    Hooker& SetValidation(bool enable);
 
-    Builder& SetSwapchainSize(uint32_t size);
+    Hooker& SetSwapchainSize(uint32_t size);
 
     // NOTE: This function will also build the singleton for Renderer
-    std::unique_ptr<VkContext> Build() const;
+    void Build() const;
+
+    void Hook() const;
   };
 
   VkContext(VkContext&&) = delete;
@@ -307,6 +309,8 @@ public:
   void CopyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size);
 
   void RecreateSwapchain();
+
+  static std::unique_ptr<VkContext>& Instance();
 
 
 private:

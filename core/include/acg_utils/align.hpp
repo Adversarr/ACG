@@ -1,3 +1,8 @@
+/**
+ * align.hpp: Support alignment and byte ops.
+ */
+
+
 #pragma once
 #include <cstddef>
 

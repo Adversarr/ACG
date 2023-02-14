@@ -1,18 +1,14 @@
+/**
+ * God is a tiny Compile Time Computation and Meta Programming Library
+ */
+
+
 #pragma once
 #include <type_traits>
 
 // NOLINTBEGIN(readability-identifier-naming)
 #include "acg_core/common.hpp"
 
-#ifndef forceinline
-#  ifdef _MSC_VER_  // for MSVC
-#    define forceinline inline __forceinline
-#  elif defined __GNUC__       // for gcc on Linux/Apple OS X
-#    define forceinline inline /* __attribute__((always_inline)) */
-#  else
-#    define forceinline inline
-#  endif
-#endif
 
 namespace acg::utils::god {
 namespace details {

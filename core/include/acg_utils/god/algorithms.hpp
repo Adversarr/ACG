@@ -1,8 +1,6 @@
 #pragma once
 
 // NOLINTBEGIN(readability-identifier-naming)
-#include <limits>
-
 #include "god.hpp"
 
 namespace acg::utils::god {

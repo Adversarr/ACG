@@ -41,6 +41,10 @@ using F64 = double;
  */
 using Float = F64;
 
+
+/**
+ * @brief Integer Types
+ */
 using I32 = std::int32_t;
 using Ui32 = std::uint32_t;
 using I64 = std::int64_t;

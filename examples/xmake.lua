@@ -42,6 +42,12 @@ target('sad_bench')
   add_packages('benchmark', 'autodiff')
 target_end()
 
+target('bench_math_utils')
+  add_files('bench_math_utils/*.cpp')
+  add_deps('acg_core')
+  add_packages('benchmark')
+target_end()
+
 target('mpm-explicit')
   add_files('mpm-explicit/**.cpp')
   add_deps('acg_gui')

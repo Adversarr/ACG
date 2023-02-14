@@ -39,7 +39,7 @@ void MpmExplictApp::P2G() {
   for (Index i = 0; i < n_particles_; ++i) {
     Vec3d xp = (particle_position_.col(i) / dx_);
     Vec3d base_f = xp.array().floor().matrix();
-    Vec3Index base = base_f.cast<Index >();
+    Vec3Index base = base_f.cast<Index>();
     // std::cout << base << std::endl;
     Vec3d fx = xp - base_f;
     // F64 stress = -dt_ * 4 * E_ * particle_vol_ * (particle_J_(i) - 1);
@@ -127,7 +127,7 @@ void MpmExplictApp::G2P() {
   for (Index i = 0; i < n_particles_; ++i) {
     Vec3d xp = (particle_position_.col(i) / dx_);
     Vec3d base_f = xp.array().floor().matrix();
-    Vec3Index base = base_f.cast<Index >();
+    Vec3Index base = base_f.cast<Index>();
     Vec3d fx = xp - base_f;
     F64 weight_sum_local = 0;
     auto blk = new_vel.col(i);
@@ -141,7 +141,6 @@ void MpmExplictApp::G2P() {
           assert(weight < 1);
           weight_sum_local += weight;
 
-          // TODO: Affine Transform.
           blk += weight * grid_velocity_.col(gid);
         }
       }

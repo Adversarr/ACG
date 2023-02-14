@@ -16,7 +16,7 @@ static void sort() {
             [](const InitHook& l, const InitHook& r) { return l.priority > r.priority; });
 }
 
-void init() {
+void init_hooks() {
   sort();
   for (const auto& hook : global_hooks) {
     if (hook.on_init) {
@@ -29,7 +29,7 @@ void init() {
   }
 }
 
-void cleanup() {
+void cleanup_hooks() {
   auto run_clean = [](const InitHook& hook) {
     if (hook.on_exit) {
       if (hook.name) std::cout << fmt::format("Execute cleanup hook: {}", hook.name) << std::endl;
@@ -44,10 +44,10 @@ void cleanup() {
 
 namespace acg {
 
-void init(int argc, char** argv) { details::init(); }
+void init(int argc, char** argv) { details::init_hooks(); }
 
 /**
  * @param
  */
-void clean_up() { details::cleanup(); }
+void clean_up() { details::cleanup_hooks(); }
 }  // namespace acg

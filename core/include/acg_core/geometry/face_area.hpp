@@ -2,6 +2,8 @@
 #include "../math/common.hpp"
 #include "common.hpp"
 
+#include <Eigen/Dense>
+
 namespace acg {
 
 namespace geometry {

@@ -1,13 +1,47 @@
 #pragma once
-#include <cstddef>
 namespace acg {
 
 namespace utils {
 
+/***************************************
+       Likely support for brancing.
+***************************************/
+#if __cplusplus >= 202003L
+#  define LIKELY [[likely]]
+#  define UNLIKELY [[unlikely]]
+#else
+#  define LIKELY
+#  define UNLIKELY
+#endif
+
+/***************************************
+ *           Force inline.
+ ***************************************/
+#ifndef forceinline
+#  ifdef _MSC_VER_  // for MSVC
+#    define forceinline inline __forceinline
+#  elif defined __GNUC__       // for gcc on Linux/Apple OS X
+#    define forceinline inline /* __attribute__((always_inline)) */
+#  else
+#    define forceinline inline
+#  endif
+#endif
+
+/***************************************
+             Debug Flags
+***************************************/
 #ifdef NDEBUG
 constexpr bool is_debug_mode = false;
 #else
 constexpr bool is_debug_mode = true;
+#endif
+
+#ifndef ACG_IS_DEBUG
+#  ifndef NDEBUG
+#    define ACG_IS_DEBUG 1
+#  else
+#    define ACG_IS_DEBUG 0
+#  endif
 #endif
 
 enum class BuildType { kRelease, kDebug };
@@ -20,6 +54,9 @@ inline constexpr BuildType get_build_type() {
   }
 }
 
+/***************************************
+             Platform Flags
+***************************************/
 enum class PlatformType : int { kApple, kWin, kLinux };
 
 inline constexpr PlatformType get_platform_type() {

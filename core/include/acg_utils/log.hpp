@@ -1,16 +1,9 @@
 #pragma once
 #include <fmt/format.h>
 #include <spdlog/common.h>
+#include <spdlog/logger.h>
+#include "acg_utils/common.hpp"
 
-#include "spdlog/logger.h"
-
-#ifndef ACG_IS_DEBUG
-#  ifndef NDEBUG
-#    define ACG_IS_DEBUG 1
-#  else
-#    define ACG_IS_DEBUG 0
-#  endif
-#endif
 namespace acg {
 namespace utils {
 namespace details {

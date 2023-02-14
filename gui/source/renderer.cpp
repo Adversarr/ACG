@@ -2,6 +2,7 @@
 #include <set>
 #include <vector>
 
+#include "acg_core/init.hpp"
 #include "acg_gui/backend/avk.hpp"
 #include "acg_gui/backend/vkcontext.hpp"
 #define GLFW_INCLUDE_VULKAN
@@ -10,99 +11,10 @@
 
 #include <acg_gui/scene.hpp>
 #include <acg_utils/log.hpp>
-#include <acg_utils/singleton.hpp>
 #include <fstream>
 #include <vulkan/vulkan_handles.hpp>
 
-// VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
-//     VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-//     const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pMessenger) {
-//   auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-//       vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
-//   if (func != nullptr) {
-//     return func(instance, pCreateInfo, pAllocator, pMessenger);
-//   } else {
-//     return VK_ERROR_EXTENSION_NOT_PRESENT;
-//   }
-// }
-
-// VKAPI_ATTR void VKAPI_CALL
-// vkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger,
-//                                 VkAllocationCallbacks const *pAllocator) {
-//   auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-//       vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
-//   if (func != nullptr) {
-//     func(instance, messenger, pAllocator);
-//   }
-// }
-// VKAPI_ATTR VkBool32 VKAPI_CALL debug_message_callback(
-//     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-//     VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-//     VkDebugUtilsMessengerCallbackDataEXT const *pCallbackData, void * /*pUserData*/) {
-//   auto cstr_to_string = [](const char *c) { return (c == nullptr) ? "Null" : std::string_view(c); };
-
-//   fmt::memory_buffer buffer;
-//   fmt::format_to(
-//       std::back_inserter(buffer),
-//       "{}: {}:\n"
-//       "messageIDName   = <{}>\n"
-//       "messageIdNumber = {}\n"
-//       "message         = <{}>\n",
-//       vk::to_string(static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(messageSeverity)),
-//       vk::to_string(static_cast<vk::DebugUtilsMessageTypeFlagsEXT>(messageTypes)),
-//       cstr_to_string(pCallbackData->pMessageIdName), pCallbackData->messageIdNumber,
-//       cstr_to_string(pCallbackData->pMessage));
-
-//   if (0 < pCallbackData->queueLabelCount) {
-//     fmt::format_to(std::back_inserter(buffer), "\tQueue Labels:\n");
-//     for (uint32_t i = 0; i < pCallbackData->queueLabelCount; i++) {
-//       fmt::format_to(std::back_inserter(buffer), "\t\tlabelName = <{}>\n",
-//                      cstr_to_string(pCallbackData->pQueueLabels[i].pLabelName));
-//     }
-//   }
-//   if (0 < pCallbackData->cmdBufLabelCount) {
-//     fmt::format_to(std::back_inserter(buffer), "\tCommandBuffer Labels:\n");
-//     for (uint32_t i = 0; i < pCallbackData->cmdBufLabelCount; i++) {
-//       fmt::format_to(std::back_inserter(buffer), "\t\tlabelName = <{}>\n",
-//                      cstr_to_string(pCallbackData->pCmdBufLabels[i].pLabelName));
-//     }
-//   }
-//   if (0 < pCallbackData->objectCount) {
-//     fmt::format_to(std::back_inserter(buffer), "\tObjects:\n");
-//     for (uint32_t i = 0; i < pCallbackData->objectCount; i++) {
-//       fmt::format_to(
-//           std::back_inserter(buffer),
-//           "\t\tObject {}\n"
-//           "\t\t\tobjectType   = {}\n"
-//           "\t\t\tobjectHandle = {}\n"
-//           "\t\t\tobjectName   = <{}>\n",
-//           i, vk::to_string(static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType)),
-//           pCallbackData->pObjects[i].objectHandle,
-//           cstr_to_string(pCallbackData->pObjects[i].pObjectName));
-//     }
-//   }
-//   auto s = fmt::to_string(buffer);
-
-//   switch (messageSeverity) {
-//     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-//       spdlog::error("{}", s);
-//       break;
-//     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-//       spdlog::warn("{}", s);
-//       break;
-//     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-//       spdlog::info("{}", s);
-//       break;
-//     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-//       spdlog::debug("{}", s);
-//       break;
-//     default:
-//       // Not valid bit.
-//       break;
-//   };
-
-//   return false;
-// }
+std::unique_ptr<acg::gui::details::VkContext> vkc_instance;
 
 namespace acg::gui {
 
@@ -381,20 +293,28 @@ void VkContext::CreateCommandPool() {
   command_pool_ = device_.createCommandPool(pool_info);
 }
 
-std::unique_ptr<VkContext> VkContext::Builder::Build() const {
-  std::unique_ptr<VkContext> inst(new VkContext);
-  inst->enable_validation_ = enable_validation;
-  inst->swapchain_size_ = swapchain_size;
-  inst->Init();
-  utils::Singleton<VkContext>::Init(std::move(inst));
-  return inst;
+void VkContext::Hooker::Hook() const {
+  acg::details::InitHook hook;
+  hook.priority = 10;
+  hook.on_init = [this]() {
+    std::unique_ptr<VkContext> inst(new VkContext);
+    inst->enable_validation_ = enable_validation;
+    inst->swapchain_size_ = swapchain_size;
+    inst->Init();
+    ::vkc_instance.swap(inst);
+  };
+
+  hook.on_exit = []() { ::vkc_instance.reset(); };
+  hook.name = "Vkcontext (deprecated.)";
+
+  acg::details::add_hook(hook);
 }
 
-VkContext::Builder &VkContext::Builder::SetValidation(bool enable) {
+VkContext::Hooker &VkContext::Hooker::SetValidation(bool enable) {
   enable_validation = enable;
   return *this;
 }
-VkContext::Builder &VkContext::Builder::SetSwapchainSize(uint32_t size) {
+VkContext::Hooker &VkContext::Hooker::SetSwapchainSize(uint32_t size) {
   if (size < 2) {
     spdlog::error("Cannot set swapchain size less than 2, set to default 3");
     size = 3;
@@ -846,6 +766,10 @@ void VkContext::BufMem::Release() {
   }
 }
 
+std::unique_ptr<VkContext>& VkContext::Instance() {
+  return ::vkc_instance;
+}
+
 }  // namespace details
-VkContext &get_vk_context() { return acg::utils::Singleton<VkContext>().GetRef(); }
+VkContext &get_vk_context() { return *VkContext::Instance(); }
 }  // namespace acg::gui

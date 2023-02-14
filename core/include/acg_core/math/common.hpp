@@ -1,5 +1,5 @@
 #pragma once
-#include <Eigen/Eigen>
+#include <Eigen/Core>
 
 #include "../common.hpp"
 namespace acg {
@@ -85,14 +85,6 @@ using Mat3x3d = Mat3x3<F64>;
 using Mat4x4f = Mat4x4<F32>;
 using Mat4x4d = Mat4x4<F64>;
 
-
-// Sparse Matrix
-template<typename Scalar, int Options = 0>
-using SpMat = Eigen::SparseMatrix<Scalar, Options, acg::Index>;
-
-// Sparse Vector
-template<typename Scalar, int Options = 0>
-using SpVec = Eigen::SparseVector<Scalar, Options, acg::Index>;
 
 
 template <typename T, int n_attrib> using Field

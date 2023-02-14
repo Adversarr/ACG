@@ -1,3 +1,7 @@
+/**
+ * Hooker for Utilities Library.
+ */
+
 #include "acg_core/init.hpp"
 #include "common.hpp"
 #include "acg_utils/log.hpp"

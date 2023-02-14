@@ -1,6 +1,6 @@
 #pragma once
-#include "common.hpp"
-#include "traits.hpp"
+#include "../common.hpp"
+#include "../traits.hpp"
 
 namespace acg {
 
@@ -62,8 +62,6 @@ class KroneckerSparseByDense {
 
   static_assert(!Trait<Lhs>::is_dense, "Lhs Should be sparse");
 public:
-
-
 };
 
 }  // namespace math

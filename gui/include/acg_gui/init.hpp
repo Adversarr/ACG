@@ -1,18 +1,11 @@
 #pragma once
 
+#include "backend/vkcontext.hpp"
+
 namespace acg::gui{
 
-namespace details {
 
-struct VkContextHooker {
-
-  /**
-  * @brief: Hook the vulkan backend context initializer and cleanuper
-  */
-  static void Hook() noexcept;
-};
-}
-
-using VkContextHooker=details::VkContextHooker;
+// Depercated API.
+using VkContextHooker=VkContext::Hooker;
 
 }

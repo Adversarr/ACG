@@ -2,11 +2,11 @@
 #include <acg_core/common.hpp>
 namespace acg::utils {
 
-I64 GetTimeUs();
-I64 GetTimeMs();
+I64 get_time_us();
+I64 get_time_ms();
 
-void SleepSec(I64 s);
+void sleep_for_seconds(I64 s);
 
-void SleepMs(I64 ms);
+void sleep_for_ms(I64 ms);
 
 }  // namespace acg::utils

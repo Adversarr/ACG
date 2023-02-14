@@ -1,5 +1,6 @@
 #include "app.hpp"
 
+#include <Eigen/Eigenvalues>
 #include <iostream>
 
 using namespace acg;

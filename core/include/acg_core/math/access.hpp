@@ -3,127 +3,21 @@
 #include <tuple>
 
 #include "./common.hpp"
+#include "acg_utils/common.hpp"
 
-namespace acg {
+#include "./details/access-inl.hpp"
 
-namespace details {
-
-// Pre transform to field accessor.
-struct IdentityTransform {
-};
-
-template <int rows, int cols> struct ReshapeTransform {
-  template <typename T> inline decltype(auto) operator()(T&& in) const noexcept {
-    return in.reshaped(rows, cols);
-  }
-};
-
-// NOTE: standard field getter
-template <Index dim> class MultiDimensionGetter;
-
-template <> class MultiDimensionGetter<0> {
-public:
-  inline Index operator()() const { return 0; }
-
-  static constexpr Index this_dim = 0;  // NOLINT
-protected:
-  static inline Index Run(Index result) { return result; }
-};
-
-template <> class MultiDimensionGetter<1> {
-public:
-  inline Index operator()(Index id) const { return id; }
-
-  explicit MultiDimensionGetter(Index this_dim = 0) : this_dim(this_dim) {}
-
-protected:
-  inline Index Run(Index result, Index this_size) const { return result * this_dim + this_size; }
-
-  Index this_dim{0};
-};
-
-template <Index dim> class MultiDimensionGetter : public MultiDimensionGetter<dim - 1> {
-public:
-  template <typename... Args> explicit MultiDimensionGetter(Index this_dim, Args... arg)
-      : MultiDimensionGetter<dim - 1>(std::forward<Args>(arg)...), this_dim(this_dim) {}
-
-  template <typename... Args> Index operator()(Args... indices) const { return Run(0, indices...); }
-
-protected:
-  template <typename... Args> Index Run(Index result, Index this_size, Args... indices) const {
-    return MultiDimensionGetter<dim - 1>::Run(result * this_dim + this_size, indices...);
-  }
-
-  Index this_dim{0};
-};
-
-// NOTE: Field Access Constructor Tags.
-struct LvalueTag {};
-struct RvalueTag {};
-struct ConstRvalueTag {};
-struct ConstLvalueTag {};
-
-// NOTE: Standard Field Accessor.
-template <typename Type, typename Transform, typename Indexer> struct FieldAccessor {
-  using type = Type;
-  using origin_type = std::remove_cv_t<Type>;
-  Type data;
-  Indexer indexer;
-  Transform transform;
-
-  inline explicit FieldAccessor(origin_type& x, Indexer getter, LvalueTag)
-      : data(x), indexer(getter) {}
-
-  inline explicit FieldAccessor(const origin_type& x, Indexer getter, ConstLvalueTag)
-      : data(x), indexer(getter) {}
-
-  inline explicit FieldAccessor(origin_type&& x, Indexer getter, RvalueTag)
-      : data(std::forward<origin_type>(x)), indexer(getter) {}
-
-  inline explicit FieldAccessor(const origin_type&& x, Indexer getter, ConstRvalueTag)
-      : data(x), indexer(getter) {}
-
-  FieldAccessor(const FieldAccessor&) = delete;
-
-  FieldAccessor(FieldAccessor&&) = default;
-
-  inline decltype(auto) operator[](Index i) noexcept { return data.col(i); }
-  inline decltype(auto) operator[](Index i) const noexcept { return (*this)(i); }
-
-  inline Index Size() const noexcept { return data.cols(); }
-
-  template <typename... Args> inline decltype(auto) operator()(Args... args) const noexcept {
-    if constexpr (std::is_same_v<Transform, IdentityTransform>) {
-      return data.col(indexer(std::forward<Args>(args)...));
-    } else {
-      return transform(data.col(indexer(std::forward<Args>(args)...)));
-    }
-  }
-  template <typename... Args> inline decltype(auto) operator()(Args... args) noexcept {
-    if constexpr (std::is_same_v<Transform, IdentityTransform>) {
-      return data.col(indexer(std::forward<Args>(args)...));
-    } else {
-      return transform(data.col(indexer(std::forward<Args>(args)...)));
-    }
-  }
-
-  inline decltype(auto) begin() const { return data.colwise().begin(); }
-
-  inline decltype(auto) end() const { return data.colwise().end(); }
-};
-
-}  // namespace details
-
+namespace acg{
 // Export Getter and Transform
 using IdentityTransform = details::IdentityTransform;
 template <int r, int c> using ReshapeTransform = details::ReshapeTransform<r, c>;
-template <Index d> using MultiDimensionGetter = details::MultiDimensionGetter<d>;
-using DefaultGetter = MultiDimensionGetter<1>;
+template <Index d> using MultiDimensionIndexer = details::MultiDimensionIndexer<d>;
+using DefaultIndexer = MultiDimensionIndexer<1>;
 
 // NOTE: Access Function for fields.
 
 // 1. For r-value.
-template <typename Indexer = details::MultiDimensionGetter<1>,
+template <typename Indexer = details::MultiDimensionIndexer<1>,
           typename Transform = details::IdentityTransform, typename Type>
 decltype(auto) access(Type&& field, Indexer getter = Indexer()) {
   auto ret = details::FieldAccessor<const std::remove_cv_t<Type>, Transform, Indexer>(
@@ -132,7 +26,7 @@ decltype(auto) access(Type&& field, Indexer getter = Indexer()) {
 }
 
 // 2. For cr-value
-template <typename Indexer = details::MultiDimensionGetter<1>,
+template <typename Indexer = details::MultiDimensionIndexer<1>,
           typename Transform = details::IdentityTransform, typename Type>
 decltype(auto) access(const Type&& field, Indexer getter = Indexer()) {
   auto ret = details::FieldAccessor<Type, Transform, Indexer>(std::forward<decltype(field)>(field),
@@ -141,7 +35,7 @@ decltype(auto) access(const Type&& field, Indexer getter = Indexer()) {
 }
 
 // 3. For cl-value
-template <typename Indexer = details::MultiDimensionGetter<1>,
+template <typename Indexer = details::MultiDimensionIndexer<1>,
           typename Transform = details::IdentityTransform, typename Type>
 decltype(auto) access(const Type& field, Indexer getter = Indexer()) {
   return details::FieldAccessor<const Type&, Transform, Indexer>(field, getter,
@@ -149,7 +43,7 @@ decltype(auto) access(const Type& field, Indexer getter = Indexer()) {
 }
 
 // 4. For l-value
-template <typename Indexer = details::MultiDimensionGetter<1>,
+template <typename Indexer = details::MultiDimensionIndexer<1>,
           typename Transform = details::IdentityTransform, typename Type>
 decltype(auto) access(Type& field, Indexer getter = Indexer()) {
   return details::FieldAccessor<Type&, Transform, Indexer>(field, getter, details::LvalueTag{});
@@ -237,7 +131,9 @@ public:
 
   inline decltype(auto) Zeros() { return Field<Scalar, dim>::Zero(dim, n_).eval(); }
 
-  inline decltype(auto) Constant(Scalar s) { return Field<Scalar, dim>::Constant(dim, n_, s).eval(); }
+  inline decltype(auto) Constant(Scalar s) {
+    return Field<Scalar, dim>::Constant(dim, n_, s).eval();
+  }
 
   inline decltype(auto) Random() { return Field<Scalar, dim>::Random(dim, n_).eval(); }
 

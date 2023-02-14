@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
   std::atomic_bool exit_child{false};
   std::thread child{[&exit_child]() {
     while (!exit_child.load()) {
-      acg::utils::SleepSec(1);
+      acg::utils::sleep_for_seconds(1);
       ACG_INFO("Hello~");
     }
     ACG_INFO("Exit child.");
@@ -262,7 +262,7 @@ int main(int argc, char** argv) {
           wf_ppl.UpdateUbo();
         }
         i += 1;
-        acg::utils::SleepMs(30);
+        acg::utils::sleep_for_ms(30);
       }
       acg::gui::VkContext2::Instance().graphics_queue_.waitIdle();
       acg::gui::VkContext2::Instance().device_.waitIdle();

@@ -159,7 +159,7 @@ public:
     return k + (n_grid_ + 1) * (j + (n_grid_ + 1) * i);
   }
 
-  Index n_grid_{48};
+  Index n_grid_{32};
   Index grid_size_;
 
   Vec3f grav_ = {0, 0, -9.8};

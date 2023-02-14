@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
 
-#include <acg_core/math/kronecker.hpp>
+#include <acg_core/math/ops/kronecker.hpp>
 #include <iostream>
 
 #include "acg_core/math/access.hpp"
@@ -46,14 +46,14 @@ TEST_CASE("FieldGetter") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   CHECK(getter(x, y, z) == x * r * q + r * y + z);
 }
 
 TEST_CASE("Field Rvalue") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   Field<float, 3> ones(3, 1);
   ones.setOnes();
   auto acc = access((ones + ones).eval());
@@ -65,7 +65,7 @@ TEST_CASE("Field accessor") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
   std::cout << field << std::endl;
@@ -78,7 +78,7 @@ TEST_CASE("Row") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   Field<float, 1> field(1, p * q * r);
   auto acc = access(field, getter);
   acc[x * r * q + r * y + z].setOnes();
@@ -88,7 +88,7 @@ TEST_CASE("Row") {
 TEST_CASE("Access standard iterate") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
   auto acc = access(field, getter);
@@ -101,7 +101,7 @@ TEST_CASE("Access standard iterate") {
 TEST_CASE("Default getter") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
   auto acc = access(field);
@@ -114,7 +114,7 @@ TEST_CASE("Default getter") {
 TEST_CASE("Field Access Trasnform") {
   using namespace acg;
   auto field = FieldBuilder<float, 4>(3).Constant(0).eval();
-  auto acc = access<MultiDimensionGetter<1>, ReshapeTransform<2, 2>>(field);
+  auto acc = access<MultiDimensionIndexer<1>, ReshapeTransform<2, 2>>(field);
   auto acc1 = acc[1];
   acc1.setOnes();
   CHECK_EQ(acc(1).trace(), 2);
