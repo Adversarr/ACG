@@ -1,9 +1,9 @@
 #include "nbody.hpp"
-#include <acg_utils/init.hpp>
+#include <autils/init.hpp>
 #include <spdlog/spdlog.h>
-#include <acg_gui/init.hpp>
+#include <agui/init.hpp>
 
-#include <acg_core/init.hpp>
+#include <acore/init.hpp>
 int main(int argc, char** argv) {
   acg::gui::VkContextHooker().Hook();
 

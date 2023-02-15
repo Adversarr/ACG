@@ -1,12 +1,12 @@
-#include "acg_gui/world_controller.hpp"
-#include <acg_utils/log.hpp>
+#include "agui/world_controller.hpp"
+#include <autils/log.hpp>
 #include <spdlog/spdlog.h>
 
 #include <chrono>
 #include <vector>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <acg_utils/time.hpp>
+#include <autils/time.hpp>
 
 namespace acg::gui {
 

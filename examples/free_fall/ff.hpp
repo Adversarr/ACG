@@ -1,11 +1,11 @@
 #pragma once
 
-#include <acg_core/geometry/particle.hpp>
+#include <acore/geometry/particle.hpp>
 
-#include <acg_gui/backend/mesh_pipeline.hpp>
-#include <acg_gui/light.hpp>
-#include <acg_gui/scene.hpp>
-#include <acg_gui/world_controller.hpp>
+#include <agui/backend/mesh_pipeline.hpp>
+#include <agui/light.hpp>
+#include <agui/scene.hpp>
+#include <agui/world_controller.hpp>
 using namespace acg;
 using namespace acg::gui;
 using namespace acg::gui::details;

@@ -1,5 +1,5 @@
-#include "acg_gui/backend/ui_pipeline.hpp"
-#include "acg_utils/log.hpp"
+#include "agui/backend/ui_pipeline.hpp"
+#include "autils/log.hpp"
 
 #include <spdlog/spdlog.h>
 

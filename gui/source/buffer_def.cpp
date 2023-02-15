@@ -1,4 +1,4 @@
-#include "acg_gui/backend/buffer_def.hpp"
+#include "agui/backend/buffer_def.hpp"
 namespace acg::gui {
 
 std::vector<vk::VertexInputBindingDescription> Vertex::GetBindingDescriptions() {

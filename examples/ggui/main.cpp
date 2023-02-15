@@ -1,16 +1,16 @@
 #include <spdlog/spdlog.h>
 
-#include <acg_core/geometry/common_models.hpp>
-#include <acg_core/init.hpp>
-#include <acg_core/math/access.hpp>
-#include <acg_core/math/constants.hpp>
-#include <acg_gui/backend/context.hpp>
-#include <acg_gui/backend/graphics_context.hpp>
-#include <acg_gui/backend/point_ppl.hpp>
-#include <acg_gui/backend/ui_pass.hpp>
-#include <acg_gui/convent.hpp>
-#include <acg_utils/init.hpp>
-#include <acg_utils/time.hpp>
+#include <acore/geometry/common_models.hpp>
+#include <acore/init.hpp>
+#include <acore/math/access.hpp>
+#include <acore/math/constants.hpp>
+#include <agui/backend/context.hpp>
+#include <agui/backend/graphics_context.hpp>
+#include <agui/backend/point_ppl.hpp>
+#include <agui/backend/ui_pass.hpp>
+#include <agui/convent.hpp>
+#include <autils/init.hpp>
+#include <autils/time.hpp>
 #include <atomic>
 #include <glm/gtx/transform.hpp>
 

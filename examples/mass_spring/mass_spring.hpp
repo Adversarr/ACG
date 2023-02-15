@@ -1,50 +1,27 @@
-#pragma once
+#include <acore/all.hpp>
+#include <acore/common.hpp>
+#include <set>
 
-#include <acg_core/geometry/particle.hpp>
-#include <acg_core/geometry/mesh.hpp>
-
-#include <acg_gui/backend/mesh_pipeline.hpp>
-#include <acg_gui/light.hpp>
-#include <acg_gui/scene.hpp>
-#include <acg_gui/world_controller.hpp>
-#include <acg_gui/mp_scene.hpp>
-using namespace acg;
-using namespace acg::gui;
-
-class MassSpring : public MPWorldCtrl {
+class App {
 public:
-  using Mesh = geometry::SimpleMesh<F64>;
+  void Init();
 
-  explicit MassSpring(Index n);
+  void Step();
 
-protected:
+  void AddSpring(acg::Index, acg::Index);
 
-  void LocalStep(F64 dt);
+  acg::Field<float, 3> position_;
+  acg::Field<float, 3> origin_position_;
 
-  int RunPhysicsImpl(F64 dt) final;
+  acg::Field<float, 3> velocity_;
 
-  void RunUiImpl() final;
+  acg::geometry::topology::TriangleList faces_;
 
-  void PreRun() final;
+  acg::Index n_grids_ = 5;
 
-  void ApplyForce(Index i, Index j);
+  std::set<std::pair<acg::Index, acg::Index>> springs_;
 
+  float dt_{0.001};
 
-private:
-  void RegenerateScene();
-  Index n_;
-  Vec3f color_;
-  Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> position_;
-  Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> velocity_;
-  Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> acceleration_;
-  Field<Index, 2> edges_;
-  Field<F64, 1> original_length_;
-
-  // Slack Variable
-  Field<F64, 3> d_;
-
-  Mesh mesh_;
-  float k_{10};
+  float k_{1000};
 };
-
-

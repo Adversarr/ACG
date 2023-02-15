@@ -1,6 +1,6 @@
-#include <acg_port/triangle/node_loader.hpp>
-#include <acg_utils/common.hpp>
-#include <acg_core/math/access.hpp>
+#include <aport/triangle/node_loader.hpp>
+#include <autils/common.hpp>
+#include <acore/math/access.hpp>
 namespace acg::port::triangle {
 
 

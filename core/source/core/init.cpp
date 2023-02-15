@@ -1,5 +1,5 @@
-#include "acg_core/init.hpp"
-#include "acg_utils/common.hpp"
+#include "acore/init.hpp"
+#include "autils/common.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -44,7 +44,9 @@ void cleanup_hooks() {
 
 namespace acg {
 
-void init(int argc, char** argv) { details::init_hooks(); }
+void init(int argc, char** argv) { 
+  details::init_hooks();
+}
 
 /**
  * @param

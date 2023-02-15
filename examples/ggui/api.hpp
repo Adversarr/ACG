@@ -1,9 +1,9 @@
 #pragma once
 
-#include <acg_gui/backend/mesh_ppl.hpp>
-#include <acg_gui/backend/wireframe_ppl.hpp>
-#include <acg_gui/scene.hpp>
-#include <acg_gui/world_controller.hpp>
+#include <agui/backend/mesh_ppl.hpp>
+#include <agui/backend/wireframe_ppl.hpp>
+#include <agui/scene.hpp>
+#include <agui/world_controller.hpp>
 
 using namespace acg::gui;
 

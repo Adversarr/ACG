@@ -1,11 +1,11 @@
 #include <doctest/doctest.h>
 
 #include <Eigen/Eigen>
-#include <acg_core/math/common.hpp>
-#include <acg_core/math/traits.hpp>
-#include <acg_core/sad/all.hpp>
-#include <acg_core/sad/human.hpp>
-#include <acg_utils/god/algorithms.hpp>
+#include <acore/math/common.hpp>
+#include <acore/math/traits.hpp>
+#include <acore/sad/all.hpp>
+#include <acore/sad/human.hpp>
+#include <autils/god/algorithms.hpp>
 using namespace acg::utils::god;
 using namespace acg::sad;
 

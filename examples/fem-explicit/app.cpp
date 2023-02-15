@@ -34,7 +34,7 @@ void FemExplicitApp::Init() {
 void FemExplicitApp::Step() {
   auto tetra_accessor = acg::access(tetra_);
   auto position_accessor = acg::access(position_);
-  auto dm_inv_accessor = acg::access<acg::DefaultGetter, acg::ReshapeTransform<3, 3>>(dm_inv_);
+  auto dm_inv_accessor = acg::access<acg::DefaultIndexer, acg::ReshapeTransform<3, 3>>(dm_inv_);
 
   auto acceleration = FieldBuilder<acg::F64, 3>(num_vert_).Zeros();
   auto acc_acc = acg::access(acceleration);
@@ -79,14 +79,9 @@ void FemExplicitApp::Step() {
   std::cout << "Acceleration = " << std::endl;
   std::cout << acceleration << std::endl;
   acceleration.row(2).array() += -9.8;
-
   auto new_vel = velocity_ + acceleration * dt_;
-
   position_ += (velocity_ + new_vel) * dt_;
-
   velocity_ = new_vel * 0.95;
-
-  auto acc = acg::access(position_);
   position_.block(0, 4, 3, 4) = x_reference_.block(0, 4, 3, 4);
 
   std::cout << "Position = " << std::endl;

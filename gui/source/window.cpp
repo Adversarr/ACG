@@ -1,11 +1,11 @@
-#include "acg_gui/backend/window.hpp"
+#include "agui/backend/window.hpp"
 
 #include <spdlog/spdlog.h>
 
-#include <acg_core/init.hpp>
-#include <acg_utils/log.hpp>
+#include <acore/init.hpp>
+#include <autils/log.hpp>
 
-#include "acg_gui/backend/avk.hpp"
+#include "agui/backend/avk.hpp"
 
 namespace acg::gui {
 

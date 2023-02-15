@@ -1,9 +1,9 @@
 #include <spdlog/spdlog.h>
 
-#include <acg_core/init.hpp>
-#include <acg_gui/init.hpp>
-#include <acg_gui/world_controller.hpp>
-#include <acg_utils/init.hpp>
+#include <acore/init.hpp>
+#include <agui/init.hpp>
+#include <agui/world_controller.hpp>
+#include <autils/init.hpp>
 
 int main(int argc, char** argv) {
   acg::gui::VkContextHooker().Hook();

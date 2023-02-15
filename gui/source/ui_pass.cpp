@@ -1,9 +1,9 @@
-#include "acg_gui/backend/ui_pass.hpp"
+#include "agui/backend/ui_pass.hpp"
 
-#include "acg_gui/backend/context.hpp"
-#include "acg_gui/backend/graphics_context.hpp"
-#include "acg_gui/backend/window.hpp"
-#include "acg_utils/log.hpp"
+#include "agui/backend/context.hpp"
+#include "agui/backend/graphics_context.hpp"
+#include "agui/backend/window.hpp"
+#include "autils/log.hpp"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 

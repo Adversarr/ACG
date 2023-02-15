@@ -1,6 +1,6 @@
-#include "acg_gui/ggui.hpp"
+#include "agui/ggui.hpp"
 
-#include <acg_core/geometry/common_models.hpp>
+#include <acore/geometry/common_models.hpp>
 
 #include "glm/gtc/type_ptr.hpp"
 

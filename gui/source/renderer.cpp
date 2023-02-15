@@ -2,15 +2,15 @@
 #include <set>
 #include <vector>
 
-#include "acg_core/init.hpp"
-#include "acg_gui/backend/avk.hpp"
-#include "acg_gui/backend/vkcontext.hpp"
+#include "acore/init.hpp"
+#include "agui/backend/avk.hpp"
+#include "agui/backend/vkcontext.hpp"
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
-#include <acg_gui/scene.hpp>
-#include <acg_utils/log.hpp>
+#include <agui/scene.hpp>
+#include <autils/log.hpp>
 #include <fstream>
 #include <vulkan/vulkan_handles.hpp>
 

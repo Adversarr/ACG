@@ -1,7 +1,7 @@
 #include "api.hpp"
 
-#include <acg_core/math/common.hpp>
-#include <acg_utils/align.hpp>
+#include <acore/math/common.hpp>
+#include <autils/align.hpp>
 using namespace acg;
 
 // void Api::CleanUpCallback() {

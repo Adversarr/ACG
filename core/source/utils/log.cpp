@@ -1,9 +1,9 @@
-#include "acg_utils/log.hpp"
+#include "autils/log.hpp"
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-#include "acg_utils/common.hpp"
+#include "autils/common.hpp"
 
 namespace acg {
 namespace utils {

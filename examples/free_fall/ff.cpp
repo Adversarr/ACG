@@ -1,12 +1,12 @@
 #include "ff.hpp"
 
-#include <acg_core/geometry/common_models.hpp>
-#include <acg_core/math/common.hpp>
-#include <acg_core/math/constants.hpp>
-#include <acg_utils/log.hpp>
+#include <acore/geometry/common_models.hpp>
+#include <acore/math/common.hpp>
+#include <acore/math/constants.hpp>
+#include <autils/log.hpp>
 #include <cmath>
 
-#include <acg_utils/random.hpp>
+#include <autils/random.hpp>
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 

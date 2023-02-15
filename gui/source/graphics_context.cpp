@@ -1,9 +1,9 @@
-#include "acg_gui/backend/graphics_context.hpp"
+#include "agui/backend/graphics_context.hpp"
 
-#include "acg_core/init.hpp"
-#include "acg_gui/backend/context.hpp"
-#include "acg_gui/backend/window.hpp"
-#include "acg_utils/log.hpp"
+#include "acore/init.hpp"
+#include "agui/backend/context.hpp"
+#include "agui/backend/window.hpp"
+#include "autils/log.hpp"
 namespace acg::gui {
 
 std::unique_ptr<VkGraphicsContext> graphics_context_instance;

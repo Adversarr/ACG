@@ -1,10 +1,10 @@
 #include "nbody.hpp"
 
-#include <acg_core/geometry/common_models.hpp>
-#include <acg_core/math/common.hpp>
-#include <acg_core/math/constants.hpp>
-#include <acg_utils/log.hpp>
-#include <acg_utils/random.hpp>
+#include <acore/geometry/common_models.hpp>
+#include <acore/math/common.hpp>
+#include <acore/math/constants.hpp>
+#include <autils/log.hpp>
+#include <autils/random.hpp>
 #include <cmath>
 
 

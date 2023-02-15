@@ -1,6 +1,6 @@
-#include "acg_utils/init.hpp"
+#include "autils/init.hpp"
 
-#include "acg_core/init.hpp"
+#include "acore/init.hpp"
 void acg::utils::UtilsHooker::Hook() {
   acg::details::InitHook hook;
   hook.name = "Logger";

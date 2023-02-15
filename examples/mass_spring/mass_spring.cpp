@@ -1,6 +1,10 @@
-#include "mass_spring.hpp"
-#include <acg_core/math/access.hpp>
-#include <acg_core/math/constants.hpp>
+#include <acore/math/access.hpp>
+#include <acore/math/constants.hpp>
+#include <acore/geometry/common.hpp>
+#include <acore/geometry/common_models.hpp>
+
+#include "./mass_spring.hpp"
+using namespace acg;
 
 geometry::SimpleMesh<F64> make_plane_xy(Index n) {
   // z = 0, xy in [0, 1]
@@ -25,187 +29,58 @@ geometry::SimpleMesh<F64> make_plane_xy(Index n) {
       Index lb = (i + 1) * n + j;
       Index rb = (i + 1) * n + j + 1;
 
-      faces.col(idx) = Vec3Index (lt, lb, rt);
-      faces.col(idx + 1) = Vec3Index (rt, lb, rb);
+      faces.col(idx) = Vec3Index(lt, lb, rt);
+      faces.col(idx + 1) = Vec3Index(rt, lb, rb);
     }
   }
   return {vertices, faces};
 }
 
-MassSpring::MassSpring(Index n) : n_(n), mesh_(make_plane_xy(n)) {
-  ACG_DEBUG_LOG("#faces = {}, #vert = {}", mesh_.GetNumFaces(), mesh_.GetNumVertices());
-  position_ = mesh_.GetVertices();
-  edges_.resize(2, (n_ - 1) * n_ * 2 + 2 * (n_ - 1) * (n_ - 1));
-  original_length_.resize(1, edges_.cols());
-  Index idx = 0;
-  for (Index i = 0; i < n_ - 1; ++i) {
-    for (Index j = 0; j < n_ - 1; ++j) {
-      Index lt = i * n_ + j;
-      Index rt = i * n_ + j + 1;
-      Index lb = (i + 1) * n_ + j;
-      Index rb = (i + 1) * n_ + j + 1;
-      edges_(0, idx) = lt;
-      edges_(1, idx) = rt;
-      original_length_(idx) = 1.0 / n_;
-      idx++;
-
-      edges_(0, idx) = lt;
-      edges_(1, idx) = lb;
-      original_length_(idx) = 1.0 / n_;
-      idx++;
-
-      edges_(0, idx) = lt;
-      edges_(1, idx) = rb;
-      original_length_(idx) = acg::constants::sqrt2<F64> / n_;
-      idx++;
-
-      edges_(0, idx) = rt;
-      edges_(1, idx) = lb;
-      original_length_(idx) = acg::constants::sqrt2<F64> / n_;
-      idx++;
-    }
-    Index r_tail = n_ * (i + 1) - 1;
-    Index bottom = n_ * (n_ - 1) + i;
-    edges_(0, idx) = r_tail;
-    edges_(1, idx) = r_tail + n_;
-    original_length_(idx) = 1.0 / n_;
-    idx++;
-    edges_(0, idx) = bottom;
-    edges_(1, idx) = bottom + 1;
-    original_length_(idx) = 1.0 / n_;
-    idx++;
-  }
-}
-
-/* Semi Implicit Method
-  acceleration_.setZero();
-  for (Index i = 0; i < n_ * n_; ++i) {
-    acceleration_.col(i) += Vec3d(0, 0, -1);
-  }
-  for (Index i = 0; i < n_ - 1; ++i) {
-    for (Index j = 0; j < n_ - 1; ++j) {
-      Index lt = i * n_ + j;
-      Index rt = i * n_ + j + 1;
-      Index lb = (i + 1) * n_ + j;
-      Index rb = (i + 1) * n_ + j + 1;
-
-      ApplyForce(lt, rt);
-      ApplyForce(lt, lb);
-      ApplyForce(rt, rb);
-      ApplyForce(lb, rb);
-      ApplyForce(lt, rb);
-      ApplyForce(rt, lb);
-    }
-  }
-
-  for (Index i = 0; i < n_; ++i) {
-    acceleration_.col(i).setZero();
-  }
-  auto new_velocity = velocity_ + acceleration_ * dt;
-  Field<F64, 3> position = mesh_.GetVertices() + (velocity_ + new_velocity) * 0.5 * dt;
-  velocity_ = new_velocity * .96;
-
-  mesh_ = Mesh(position, mesh_.GetFaces());
-*/
-
-int MassSpring::RunPhysicsImpl(F64 dt) {
-  LocalStep(dt);
-  RegenerateScene();
-  return 0;
-}
-
-void MassSpring::LocalStep(F64 dt) {
-  d_.resize(3, (n_ - 1) * n_ * 2 + 2 * (n_ - 1) * (n_ - 1));
-  d_.setZero();
-  for (auto [i, edge]: acg::FieldEnumerate(edges_)) {
-    auto dx = position_.col(edge.x()) - position_.col(edge.y());
-    d_.col(i) = dx.normalized() * original_length_(i);
-  }
-}
-
-void MassSpring::RunUiImpl() {
-  ImGui::Begin("Control Panel");
-  {
-    ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
-    ImGui::Checkbox("Physics Running", &is_physics_running_);
-    ImGui::SliderFloat3("Camera Position", reinterpret_cast<float*>(&(camera_.GetPosition())),
-                        -10.0, 10.0);
-    ImGui::SliderFloat3("Camera Front", reinterpret_cast<float*>(&(camera_.GetFront())), -10.0,
-                        10.0);
-    ImGui::SliderFloat3("Camera Up", reinterpret_cast<float*>(&(camera_.GetUp())), -10.0, 10.0);
-
-    ImGui::SliderFloat("K", &k_, 0, 100);
-    if (ImGui::Button("Update Camera!", button_size)) {
-      update_camera_ = true;
-    }
-  }
-  ImGui::End();
-}
-
-void MassSpring::PreRun() {
-  color_ = Vec3f(.7, .7, .7);
-  RegenerateScene();
-  RefitBuffers();
-
-  velocity_.resize(3, n_ * n_);
+void App::Init() {
+  auto mesh = make_plane_xy(n_grids_);
+  position_ = mesh.GetVertices().cast<float>();
+  origin_position_ = position_;
+  faces_ = mesh.GetFaces();
+  velocity_.resizeLike(position_);
   velocity_.setZero();
-  acceleration_.resize(3, n_ * n_);
-  camera_.SetPosition(glm::vec3(1, 1, 1));
-  camera_.SetFront(glm::vec3(-1, -1, -1));
-  light_.light_position_ = Vec3f(2, 1, 3);
-  light_.ambient_light_color_ = Vec3f(1, 1, 1);
-  light_.ambient_light_density_ = 0.5;
-  light_.light_color_ = Vec3f(.5, .5, .5);
-  mesh_ppl_->SetUbo(&camera_, &light_, true);
 
-  keyboard_callbacks_.insert({GLFW_KEY_W, [this]() {
-                                this->camera_.Move(this->camera_.GetFront(),
-                                                   1.0 / this->fps_limit_);
-                                this->update_camera_ = true;
-                                return true;
-                              }});
-  keyboard_callbacks_.insert({GLFW_KEY_S, [this]() {
-                                this->camera_.Move(-this->camera_.GetFront(),
-                                                   1.0 / this->fps_limit_);
-                                this->update_camera_ = true;
-                                return true;
-                              }});
-
-  keyboard_callbacks_.insert({GLFW_KEY_A, [this]() {
-                                this->camera_.Move(
-                                    -this->camera_.GetFront().cross(this->camera_.GetUp()),
-                                    1.0 / this->fps_limit_);
-                                this->update_camera_ = true;
-                                return true;
-                              }});
-  keyboard_callbacks_.insert({GLFW_KEY_D, [this]() {
-                                this->camera_.Move(
-                                    this->camera_.GetFront().cross(this->camera_.GetUp()),
-                                    1.0 / this->fps_limit_);
-                                this->update_camera_ = true;
-                                return true;
-                              }});
+  for (auto tri: access(faces_)) {
+    AddSpring(tri.x(), tri.y());
+    AddSpring(tri.y(), tri.z());
+    AddSpring(tri.z(), tri.x());
+  }
 }
 
-void MassSpring::RegenerateScene() {
-  scene_.Reset();
-  // for (int i = 0; i < n_; ++i) {
-  //   for (int j = 0; j < n_; ++j) {
-  //     scene_.AddParticle(
-  //         geometry::Particle<F32>(mesh_.GetVertices().col(i * n_ + j).cast<F32>(), 0.1), color_);
-  //   }
-  // }
-  scene_.AddMesh(mesh_.Cast<F32>(), std::nullopt, color_);
+void App::AddSpring(acg::Index i, acg::Index j) {
+  auto spring = std::make_pair(std::min(i, j), std::max(i, j));
+  springs_.insert(spring);
 }
 
-void MassSpring::ApplyForce(Index i, Index j) {
-  auto dij = mesh_.GetVertices().col(i) - mesh_.GetVertices().col(j);
-  F64 original_length = 1.0 / (n_ - 1);
+void App::Step() {
+  auto acceleration = acg::FieldBuilder<float, 3>(position_.cols()).Zeros();
+  auto p_acc = access(position_);
+  auto o_acc = access(origin_position_);
+  auto a_acc = access(acceleration);
+  for (auto sp: springs_) {
+    auto [i, j] = sp;
+    auto xij = (p_acc(i) - p_acc(j)).eval();
+    auto origin_length = (o_acc(i) - o_acc(j)).norm();
+    auto length = xij.norm();
 
-  F64 length = dij.norm();
+    auto force_amp = length - origin_length;
 
-  F64 force_length = k_ * (length - original_length);
+    auto fij = - (force_amp * xij.normalized()).eval();
 
-  acceleration_.col(i) -= dij.normalized() * force_length;
-  acceleration_.col(j) += dij.normalized() * force_length;
+    a_acc(i) += fij;
+    a_acc(j) -= fij;
+  }
+
+  acceleration.array() *= k_;
+  acceleration.row(2).array() -= 9.8;
+  velocity_ += acceleration * dt_ * 0.99;
+  position_ += velocity_ * dt_;
+
+  for (Index i = 0; i < n_grids_; ++i) {
+    p_acc(i) = o_acc(i);
+  }
 }

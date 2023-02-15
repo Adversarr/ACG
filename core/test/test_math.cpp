@@ -1,9 +1,9 @@
 #include <doctest/doctest.h>
 
-#include <acg_core/math/ops/kronecker.hpp>
+#include <acore/math/ops/kronecker.hpp>
 #include <iostream>
 
-#include "acg_core/math/access.hpp"
+#include "acore/math/access.hpp"
 
 TEST_CASE("Check Col copy status") {
   acg::Field<acg::F32, 3> positions;

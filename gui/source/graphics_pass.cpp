@@ -1,10 +1,10 @@
-#include "acg_gui/backend/graphics_pass.hpp"
+#include "agui/backend/graphics_pass.hpp"
 
 #include <fstream>
 
-#include "acg_gui/backend/context.hpp"
-#include "acg_gui/backend/graphics_context.hpp"
-#include "acg_gui/convent.hpp"
+#include "agui/backend/context.hpp"
+#include "agui/backend/graphics_context.hpp"
+#include "agui/convent.hpp"
 
 namespace acg::gui::details {
 

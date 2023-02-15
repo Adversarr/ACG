@@ -1,9 +1,9 @@
-#include "acg_gui/backend/wireframe_ppl.hpp"
+#include "agui/backend/wireframe_ppl.hpp"
 
-#include "acg_gui/backend/context.hpp"
-#include "acg_gui/backend/graphics_context.hpp"
-#include "acg_gui/convent.hpp"
-#include "acg_utils/raw_fileio.hpp"
+#include "agui/backend/context.hpp"
+#include "agui/backend/graphics_context.hpp"
+#include "agui/convent.hpp"
+#include "autils/raw_fileio.hpp"
 
 namespace acg::gui::details {
 

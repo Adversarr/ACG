@@ -1,10 +1,10 @@
-#include "acg_gui/mp_scene.hpp"
+#include "agui/mp_scene.hpp"
 
-#include <acg_core/geometry/common_models.hpp>
-#include <acg_core/math/all.hpp>
-#include <acg_utils/log.hpp>
+#include <acore/geometry/common_models.hpp>
+#include <acore/math/all.hpp>
+#include <autils/log.hpp>
 #include <cmath>
-#include <acg_utils/align.hpp>
+#include <autils/align.hpp>
 
 
 namespace acg::gui::details {

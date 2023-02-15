@@ -1,7 +1,7 @@
 #pragma once
-#include <acg_core/geometry/common.hpp>
-#include <acg_core/math/access.hpp>
-#include <acg_core/math/common.hpp>
+#include <acore/geometry/common.hpp>
+#include <acore/math/access.hpp>
+#include <acore/math/common.hpp>
 
 class FemExplicitApp {
 public:
