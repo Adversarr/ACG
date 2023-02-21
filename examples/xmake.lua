@@ -18,10 +18,13 @@ target('test_eigen_mp')
   add_files('test_eigen_mp/**.cpp')
   add_deps('acg_core')
   add_packages("openmp")
+target_end()
  
+add_requires('taskflow')
 target('mass-spring')
   add_files('mass_spring/**.cpp')
   add_deps('acg_gui', 'acg_core')
+  add_packages('taskflow')
 target_end()
 
 target('ggui')

@@ -53,8 +53,8 @@ using Ui64 = std::uint64_t;
 /**
  * @brief Index & Size type for mesh, particle system, rendering(index buffer), etc.
  */
-using Index = I64;
-using UIndex = Ui64;
+using Index = std::ptrdiff_t;
+
 
 
 }  // namespace acg

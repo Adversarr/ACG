@@ -20,11 +20,11 @@ int main(int argc, char** argv) {
   vkctx_hooker.Hook();
   VkGraphicsContext::Hooker().Hook();
   acg::init(argc, argv);
-  GGui::Config config;
+  Gui::Config config;
   config.init_default_scene = true;
   config.enable_blending = true;
   {
-    GGui gui(config);
+    Gui gui(config);
     bool clear = false;
     gui.SetUIDrawCallback([& clear]() {
       ImGui::Begin("GGui User Window");

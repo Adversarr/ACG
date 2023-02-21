@@ -4,7 +4,7 @@
 #include "../common.hpp"
 namespace acg {
 
-template <typename T, int dim> 
+template <typename T, int dim = Eigen::Dynamic> 
 using Vec = Eigen::Vector<T, dim>;
 ///> Type defines
 template <typename T> using Vec2 = Eigen::Vector2<T>;
@@ -32,7 +32,7 @@ using Vec3Index = Eigen::Vector3<Index>;
 using Vec4Index = Eigen::Vector4<Index>;
 
 // Matrix Alias for Eigen
-template <typename Scalar, int Rows, int Cols,
+template <typename Scalar, int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic,
           int Options
           = Eigen::AutoAlign | ((Rows == 1 && Cols != 1) ? Eigen::RowMajor : Eigen::ColMajor),
           int MaxRows = Rows, int MaxCols = Cols>

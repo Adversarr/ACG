@@ -259,6 +259,7 @@ void MeshPipeline::BeginPipeline(vk::CommandBuffer &current_command_buffer) {
   current_command_buffer.bindDescriptorSets(
       vk::PipelineBindPoint::eGraphics, pipeline_layout_, 0,
       ubo_descriptor_sets_[VkGraphicsContext::Instance().current_frame_], {});
+    ACG_DEBUG_LOG("sizeof ubo={}", sizeof(ubo_));
 }
 
 void MeshPipeline::EndPipeline(vk::CommandBuffer & /* current_command_buffer */) {

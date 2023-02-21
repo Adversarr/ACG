@@ -1,17 +1,39 @@
 #include "agui/ggui.hpp"
 
 #include <acore/geometry/common_models.hpp>
+#include <acore/init.hpp>
+#include <memory>
 
 #include "glm/gtc/type_ptr.hpp"
 
+static std::unique_ptr<acg::gui::details::Gui> gui_instance;
 namespace acg::gui::details {
+
+Gui& Gui::Instance() {
+  ACG_CHECK(gui_instance.get() != nullptr, "Access to uninitialized gui");
+  return *gui_instance;
+}
+
+void Gui::Config::Hook() const {
+  acg::InitHook hook;
+  hook.on_init = [this] (){
+    ACG_CHECK(::gui_instance.get() == nullptr,
+        "Double Init to Gui.");
+    gui_instance = std::make_unique<Gui>(*this);
+  };
+
+  hook.on_exit = [](){ ::gui_instance.reset(); };
+  hook.priority = 5;
+  hook.name = "Gui Init";
+  acg::details::add_hook(hook);
+}
 
 static auto get_default_ball() {
   static auto mesh = geometry::sphere_20({0, 0, 0}, 1);
   return std::make_pair(mesh.GetFaces(), mesh.GetVertices());
 }
 
-GGui::GGui(const GGui::Config& config)
+Gui::Gui(const Gui::Config& config)
     : staging_buffer_(VkContext2::Instance().CreateBufferWithMemory(
         config.staging_buffer_size, vk::BufferUsageFlagBits::eTransferSrc,
         vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible)) {
@@ -44,7 +66,7 @@ GGui::GGui(const GGui::Config& config)
   UpdateLightCamera();
 }
 
-void GGui::InitDefaultScene(bool init_default_scene) {
+void Gui::InitDefaultScene(bool init_default_scene) {
   scene_.Clear();
   if (init_default_scene) {
     auto [i, v] = get_default_ball();
@@ -83,13 +105,13 @@ void GGui::InitDefaultScene(bool init_default_scene) {
 
   xy_plane_info_.color = Vec4f(.7, .7, 0, 1);
   xy_plane_info_.update_flag = true;
-  xy_plane_info_.density = Vec2Index (10, 10);
+  xy_plane_info_.density = Vec2Index(10, 10);
   xy_plane_info_.range = Vec2f(10, 10);
   xy_plane_info_.enable = true;
   xy_plane_info_.height = 0.0;
 }
 
-GGui::~GGui() {
+Gui::~Gui() {
   VkContext2::Instance().device_.waitIdle();
 
   for (auto& buffer : allocated_buffers_) {
@@ -105,18 +127,18 @@ GGui::~GGui() {
   graphics_pass_.reset();
 }
 
-void GGui::InitStagingBuffer() {
+void Gui::InitStagingBuffer() {
   auto* p_data = VkContext2::Instance().device_.mapMemory(staging_buffer_.GetMemory(), 0,
                                                           staging_buffer_.GetSize());
   staging_buffer_.SetMappedMemory(p_data);
 }
 
-void GGui::DestroyStagingBuffer() {
+void Gui::DestroyStagingBuffer() {
   VkContext2::Instance().device_.unmapMemory(staging_buffer_.GetMemory());
   VkContext2::Instance().DestroyBufferWithMemory(staging_buffer_);
 }
 
-void GGui::ReserveBuffer(vk::DeviceSize size, BufferID id) {
+void Gui::ReserveBuffer(vk::DeviceSize size, BufferID id) {
   auto& buffer = GetAllocatedBuffer(id);
   if (buffer.GetSize() >= size) {
     return;
@@ -125,7 +147,7 @@ void GGui::ReserveBuffer(vk::DeviceSize size, BufferID id) {
   buffer = VkContext2::Instance().CreateBufferWithMemory(size, buffer.usage_, buffer.properties_);
 }
 
-BufferID GGui::CreateVertexBuffer(vk::DeviceSize size) {
+BufferID Gui::CreateVertexBuffer(vk::DeviceSize size) {
   auto id = allocated_buffers_.size();
   auto buffer = VkContext2::Instance().CreateBufferWithMemory(
       size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
@@ -135,7 +157,7 @@ BufferID GGui::CreateVertexBuffer(vk::DeviceSize size) {
   return id;
 }
 
-BufferID GGui::CreateIndexBuffer(vk::DeviceSize size) {
+BufferID Gui::CreateIndexBuffer(vk::DeviceSize size) {
   auto id = allocated_buffers_.size();
   auto buffer = VkContext2::Instance().CreateBufferWithMemory(
       size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
@@ -145,15 +167,15 @@ BufferID GGui::CreateIndexBuffer(vk::DeviceSize size) {
   return id;
 }
 
-BufferID GGui::CreateInstanceBuffer(vk::DeviceSize size) { return CreateVertexBuffer(size); }
+BufferID Gui::CreateInstanceBuffer(vk::DeviceSize size) { return CreateVertexBuffer(size); }
 
-void GGui::UpdateScene(bool force) {
+void Gui::UpdateScene(bool force) {
   VkContext2::Instance().device_.waitIdle();
   PrepareBuffers();
   FillBuffers(force);
 }
 
-void GGui::PrepareBuffers() {
+void Gui::PrepareBuffers() {
   for (const auto& mesh : scene_.GetMesh()) {
     // collect info
     if (mesh.id >= mesh_render_info_.size()) {
@@ -221,7 +243,7 @@ void GGui::PrepareBuffers() {
   PrepareXyPlaneBuffer();
 }
 
-void GGui::PrepareXyPlaneBuffer() {
+void Gui::PrepareXyPlaneBuffer() {
   if (!xy_plane_info_.enable) {
     return;
   }
@@ -239,7 +261,7 @@ void GGui::PrepareXyPlaneBuffer() {
   PrepareVertexBufferHelper(sizeof(WireframePoint) * vert_count, xy_plane_render_info_.vertex);
 }
 
-Status GGui::FlushStagingBuffer() {
+Status Gui::FlushStagingBuffer() {
   if (staging_upd_info_.empty()) {
     ACG_DEBUG_LOG("Nothing to flush for staging buffer.");
     return Status::kOk;
@@ -263,7 +285,7 @@ Status GGui::FlushStagingBuffer() {
   return Status::kOk;
 }
 
-Status GGui::TryCommitDeferred(StagingUpdateInfo info, void* data) {
+Status Gui::TryCommitDeferred(StagingUpdateInfo info, void* data) {
   auto status = CommitStagingBuffer(info, data, false);
   if (status == Status::kOk) {
     return status;
@@ -279,7 +301,7 @@ Status GGui::TryCommitDeferred(StagingUpdateInfo info, void* data) {
   return Status::kCancelled;
 }
 
-Status GGui::CommitStagingBuffer(StagingUpdateInfo info, void* data, bool flush_immediately) {
+Status Gui::CommitStagingBuffer(StagingUpdateInfo info, void* data, bool flush_immediately) {
   // Recompute info.
   if (!staging_upd_info_.empty()) {
     info.offset = staging_upd_info_.back().offset + staging_upd_info_.back().size;
@@ -308,7 +330,7 @@ Status GGui::CommitStagingBuffer(StagingUpdateInfo info, void* data, bool flush_
   }
 }
 
-void GGui::FillBuffers(bool force) {
+void Gui::FillBuffers(bool force) {
   for (size_t i = 0; i < scene_.GetMeshCount(); ++i) {
     auto& mesh = scene_.GetMesh(i);
     if (mesh.update_flag | force) {
@@ -352,7 +374,7 @@ void GGui::FillBuffers(bool force) {
   }
 }
 
-void GGui::FillXyPlaneBuffers() {
+void Gui::FillXyPlaneBuffers() {
   std::vector<WireframePoint> vert(xy_plane_render_info_.vertex_count);
   std::vector<uint32_t> inde;
   Index rows = xy_plane_info_.density.y();
@@ -392,7 +414,7 @@ void GGui::FillXyPlaneBuffers() {
   TryCommitDeferred({xy_plane_render_info_.index, inde.size() * sizeof(uint32_t)}, inde.data());
 }
 
-void GGui::RenderOnce(bool verbose) {
+void Gui::RenderOnce(bool verbose) {
   auto result = acg::gui::VkGraphicsContext::Instance().BeginDraw();
   while (!result) {
     RecreateSwapchain();
@@ -498,14 +520,14 @@ void GGui::RenderOnce(bool verbose) {
   }
 }
 
-void GGui::RecreateSwapchain() {
+void Gui::RecreateSwapchain() {
   VkGraphicsContext::Instance().RecreateSwapchain();
   graphics_pass_->RecreateSwapchain();
   ui_pass_->RecreateSwapchain();
   UpdateLightCamera();
 }
 
-void GGui::UpdateLightCamera() {
+void Gui::UpdateLightCamera() {
   mesh_pipeline_->SetLight(light_);
   mesh_pipeline_->SetCamera(camera_);
   mesh_pipeline_->UpdateUbo();
@@ -517,7 +539,7 @@ void GGui::UpdateLightCamera() {
   point_pipeline_->UpdateUbo();
 }
 
-void GGui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) {
+void Gui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) {
   auto vert_count = acg::access(mesh.vertices).Size();
   auto face_count = acg::access(mesh.faces).Size();
   auto instance_count = mesh.instance_count;
@@ -599,16 +621,16 @@ void GGui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) 
   }
 }
 
-void GGui::PrepareParticleBuffer(ParticleRenderInfo& info) {
+void Gui::PrepareParticleBuffer(ParticleRenderInfo& info) {
   PrepareVertexBufferHelper(sizeof(PointVertex) * info.vertex_count, info.vertex);
 }
 
-void GGui::PrepareWireframeBuffer(WireframeRenderInfo& info) {
+void Gui::PrepareWireframeBuffer(WireframeRenderInfo& info) {
   PrepareVertexBufferHelper(sizeof(WireframePoint) * info.vertex_count, info.vertex);
   PrepareVertexBufferHelper(sizeof(uint32_t) * info.index_count, info.index);
 }
 
-void GGui::PrepareMeshBuffer(MeshRenderInfo& info) {
+void Gui::PrepareMeshBuffer(MeshRenderInfo& info) {
   PrepareVertexBufferHelper(sizeof(MeshVertex) * info.vertex_count, info.vertex);
   PrepareVertexBufferHelper(sizeof(MeshInstance) * info.instance_count, info.instance);
   PrepareIndexBufferHelper(sizeof(uint32_t) * info.index_count, info.index);
@@ -619,7 +641,7 @@ void GGui::PrepareMeshBuffer(MeshRenderInfo& info) {
   }
 }
 
-void GGui::PrepareVertexBufferHelper(vk::DeviceSize size, BufferID& id) {
+void Gui::PrepareVertexBufferHelper(vk::DeviceSize size, BufferID& id) {
   if (id == invalid_buffer) {
     id = CreateVertexBuffer(size);
   } else {
@@ -627,7 +649,7 @@ void GGui::PrepareVertexBufferHelper(vk::DeviceSize size, BufferID& id) {
   }
 }
 
-void GGui::PrepareIndexBufferHelper(vk::DeviceSize size, BufferID& id) {
+void Gui::PrepareIndexBufferHelper(vk::DeviceSize size, BufferID& id) {
   if (id == invalid_buffer) {
     id = CreateIndexBuffer(size);
   } else {
@@ -635,7 +657,7 @@ void GGui::PrepareIndexBufferHelper(vk::DeviceSize size, BufferID& id) {
   }
 }
 
-void GGui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshRenderInfo& info) {
+void Gui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshRenderInfo& info) {
   auto [ind, v] = get_default_ball();
   auto vert_count = access(v).Size();
   auto face_count = access(ind).Size();
@@ -680,7 +702,7 @@ void GGui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshR
                       instance_buffer_content.data());
 }
 
-void GGui::FillParticleBuffer(const Scene2::Particles& particle, const ParticleRenderInfo& info) {
+void Gui::FillParticleBuffer(const Scene2::Particles& particle, const ParticleRenderInfo& info) {
   std::vector<PointVertex> vert(particle.positions.cols());
   for (const auto& [i, p] : FieldCEnumerate{particle.positions}) {
     auto& v = vert[i];
@@ -692,7 +714,7 @@ void GGui::FillParticleBuffer(const Scene2::Particles& particle, const ParticleR
       StagingUpdateInfo(info.vertex, sizeof(PointVertex) * vert.size()), vert.data()));
 }
 
-void GGui::FillWireframeBuffer(const Scene2::Wireframe& wireframe,
+void Gui::FillWireframeBuffer(const Scene2::Wireframe& wireframe,
                                const WireframeRenderInfo& info) {
   std::vector<WireframePoint> vert(wireframe.positions.cols());
   for (const auto& [i, p] : FieldCEnumerate{wireframe.positions}) {
@@ -714,7 +736,7 @@ void GGui::FillWireframeBuffer(const Scene2::Wireframe& wireframe,
       StagingUpdateInfo(info.index, indi.size() * sizeof(indi.front())), indi.data()));
 }
 
-void GGui::DrawDefaultUI() {
+void Gui::DrawDefaultUI() {
   ImGui::SetNextWindowPos(ImVec2(0, 0));
   auto extent = VkGraphicsContext::Instance().swapchain_extent_;
   ImGui::SetNextWindowSize(ImVec2(360, extent.height * .5), ImGuiCond_Once);
@@ -769,7 +791,7 @@ void GGui::DrawDefaultUI() {
   ImGui::End();
 }
 
-void GGui::Tick() {
+void Gui::Tick() {
   auto cur_time = std::chrono::steady_clock::now();
   dt = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(cur_time - last_time);
   last_time = cur_time;
@@ -777,7 +799,7 @@ void GGui::Tick() {
   render_index_ = render_index_ % 32;
   ProcessCamera();
 }
-void GGui::ProcessCamera() {
+void Gui::ProcessCamera() {
   Vec3f camera_velocity = Vec3f::Zero();
   float rot_hori = 0;
   float rot_vert = 0;
@@ -854,7 +876,7 @@ void GGui::ProcessCamera() {
   }
 }
 
-void GGui::ClearScene() {
+void Gui::ClearScene() {
   scene_.Clear();
   std::vector<BufferWithMemory> remapped;
   // Register old buffers.

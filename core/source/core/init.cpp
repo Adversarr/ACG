@@ -1,15 +1,19 @@
 #include "acore/init.hpp"
 #include "autils/common.hpp"
-
+#include <autils/log.hpp>
 #include <spdlog/spdlog.h>
-
 #include <iostream>
 
 namespace acg::details {
 
 std::vector<InitHook> global_hooks;
 
-void add_hook(const InitHook& hook) { global_hooks.push_back(hook); }
+bool acg_initialized;
+
+void add_hook(const InitHook& hook) { 
+  global_hooks.push_back(hook);
+
+}
 
 static void sort() {
   std::sort(global_hooks.begin(), global_hooks.end(),
@@ -45,11 +49,22 @@ void cleanup_hooks() {
 namespace acg {
 
 void init(int argc, char** argv) { 
+  ACG_CHECK(!details::acg_initialized, "ACG has been initialized.");
+  utils::details::do_nothing(argc, argv);
   details::init_hooks();
+  details::acg_initialized = true;
+}
+
+bool is_inited() {
+  return details::acg_initialized;
 }
 
 /**
  * @param
  */
-void clean_up() { details::cleanup_hooks(); }
+void clean_up() { 
+  ACG_CHECK(acg::is_inited(), "ACG has not been initialize.");
+  details::cleanup_hooks(); 
+  details::acg_initialized = false;
+}
 }  // namespace acg

@@ -22,11 +22,11 @@ int main(int argc, char** argv) {
   vkctx_hooker.Hook();
   VkGraphicsContext::Hooker().Hook();
   acg::init(argc, argv);
-  GGui::Config config;
+  Gui::Config config;
   config.init_default_scene = false;
   config.enable_blending = true;
   {
-    GGui gui(config);
+    Gui gui(config);
     bool clear = false;
     bool running = false;
     MpmExplictApp app;

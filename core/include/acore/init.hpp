@@ -10,6 +10,8 @@ namespace acg {
 void init(int argc, char** argv);
 
 
+bool is_inited();
+
 /**
  * @brief Cleanup for the system.
  */

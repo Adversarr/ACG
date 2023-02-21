@@ -102,16 +102,15 @@ struct StagingUpdateInfo {
 };
 
 // TODO: add torch light support
-class GGui {
+class Gui {
 public:
   struct Config {
     vk::DeviceSize staging_buffer_size = 16 * 1024 * 1024;
     bool enable_blending = false;
     bool init_default_scene = false;
-    
     void Hook() const;
   };
-  static GGui& Instance();
+  static Gui& Instance();
 
   Scene2& GetScene() { return scene_; }
 
@@ -131,11 +130,11 @@ public:
 
   void DrawDefaultUI();
 
-  explicit GGui(const Config& config);
+  explicit Gui(const Config& config);
 
   void Tick();
 
-  ~GGui();
+  ~Gui();
 
 private:
   void ProcessCamera();
@@ -224,5 +223,5 @@ private:
 };
 
 }  // namespace details
-using details::GGui;  // NOLINT
+using details::Gui;  // NOLINT
 }  // namespace acg::gui
