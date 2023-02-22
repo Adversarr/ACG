@@ -11,7 +11,7 @@
 #include <agui/backend/graphics_context.hpp>
 #include <agui/backend/window.hpp>
 #include <agui/ggui.hpp>
-#include <agui/init.hpp>
+#include <agui/utils.hpp>
 #include <autils/init.hpp>
 
 #include "mass_spring.hpp"
@@ -19,17 +19,10 @@ using namespace acg;
 
 int main(int argc, char** argv) {
   using namespace gui;
-  auto utils_hooker = acg::utils::UtilsHooker();
-  utils_hooker.Hook();
-  Window::Hooker{"MassSpring"}.Hook();
-  auto vkctx_hooker = acg::gui::VkContext2Hooker{};
-  vkctx_hooker.app_name = "MassSpring";
-  vkctx_hooker.enable_validation = false;
-  vkctx_hooker.Hook();
-  VkGraphicsContext::Hooker().Hook();
-  Gui::Config config;
-  config.Hook();
+  acg::utils::hook_default_utils_environment();
+  acg::gui::hook_default_gui_environment("MASS");
   acg::init(argc, argv);
+
   App app;
   app.n_grids_ = 100;
   app.Init();

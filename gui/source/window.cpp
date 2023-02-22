@@ -11,13 +11,14 @@ namespace acg::gui {
 
 std::unique_ptr<Window> window_instance;
 
-Window::Window(std::string_view title) noexcept : title_(title) {
+Window::Window(std::string title) noexcept : title_(title) {
   ACG_CHECK(glfwInit() == GLFW_TRUE, "Failed to init GLFW.");
   glfwInit();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
   window_ = glfwCreateWindow(width_, height_, title_.c_str(), nullptr, nullptr);
   ACG_CHECK(window_ != nullptr, "Failed to create window.");
+  ACG_INFO("Window Title: {}", title_, title);
   glfwSetWindowUserPointer(window_, this);
   glfwSetFramebufferSizeCallback(window_, WindowResizeCallback);
   glfwSetCursorPosCallback(window_, CursurCallback);
@@ -65,7 +66,7 @@ bool Window::IsKeyPressed(int glfw_key) const {
 
 Window& Window::Instance() noexcept { return *window_instance; }
 
-void Window::Init(const std::string& title) {
+void Window::Init(std::string title) {
   ACG_CHECK(window_instance.get() == nullptr, "Glfw Window Double Initialization");
   window_instance = std::make_unique<Window>(title);
 }
@@ -74,7 +75,7 @@ void Window::Destroy() { window_instance.reset(); }
 
 void Window::Hooker::Hook() const {
   acg::details::InitHook hook;
-  hook.on_init = [this]() { Window::Init(name_); };
+  hook.on_init = [*this] { Window::Init(name_); };
   hook.on_exit = []() { Window::Destroy(); };
   hook.name = "GLFW window";
   hook.priority = 20;

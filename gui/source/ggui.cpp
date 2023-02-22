@@ -16,7 +16,7 @@ Gui& Gui::Instance() {
 
 void Gui::Config::Hook() const {
   acg::InitHook hook;
-  hook.on_init = [this] (){
+  hook.on_init = [*this] (){
     ACG_CHECK(::gui_instance.get() == nullptr,
         "Double Init to Gui.");
     gui_instance = std::make_unique<Gui>(*this);
@@ -740,7 +740,7 @@ void Gui::DrawDefaultUI() {
   ImGui::SetNextWindowPos(ImVec2(0, 0));
   auto extent = VkGraphicsContext::Instance().swapchain_extent_;
   ImGui::SetNextWindowSize(ImVec2(360, extent.height * .5), ImGuiCond_Once);
-  ImGui::Begin("GGui Control", nullptr, ImGuiWindowFlags_NoMove);
+  ImGui::Begin("Gui Control", nullptr, ImGuiWindowFlags_NoMove);
   ImGui::Text("Background Color");
   ImGui::ColorEdit3("Clear Color", graphics_pass_->GetBackgroundColor().float32,
                     ImGuiColorEditFlags_Float);

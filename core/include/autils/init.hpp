@@ -18,4 +18,6 @@ struct UtilsHooker {
   void Hook();
 };
 
+void hook_default_utils_environment();
+
 }  // namespace acg::utils

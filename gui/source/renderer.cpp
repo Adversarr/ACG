@@ -296,7 +296,7 @@ void VkContext::CreateCommandPool() {
 void VkContext::Hooker::Hook() const {
   acg::details::InitHook hook;
   hook.priority = 10;
-  hook.on_init = [this]() {
+  hook.on_init = [*this]() {
     std::unique_ptr<VkContext> inst(new VkContext);
     inst->enable_validation_ = enable_validation;
     inst->swapchain_size_ = swapchain_size;

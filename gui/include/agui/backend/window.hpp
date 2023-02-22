@@ -16,7 +16,7 @@ public:
 
   static constexpr int DEFAULT_HEIGHT_ = 600;
 
-  explicit Window(std::string_view title) noexcept;
+  explicit Window(std::string title) noexcept;
 
   Window(Window&&) = delete;
 
@@ -63,7 +63,7 @@ private:
 public:
   static Window& Instance() noexcept;
 
-  static void Init(const std::string& title);
+  static void Init(std::string title);
 
   static void Destroy();
   struct Hooker {

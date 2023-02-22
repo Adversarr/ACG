@@ -279,7 +279,7 @@ void VkGraphicsContext::CopyBufferToBuffer(vk::Buffer src, vk::Buffer dst,
 
 void VkGraphicsContext::Hooker::Hook() {
   acg::details::InitHook hook;
-  hook.on_init = [this]() { graphics_context_instance.reset(new VkGraphicsContext(*this)); };
+  hook.on_init = [*this]() { graphics_context_instance.reset(new VkGraphicsContext(*this)); };
   hook.on_exit = []() { graphics_context_instance.reset(); };
   hook.name = "Vk Graphics Context Init";
   hook.priority = 8;

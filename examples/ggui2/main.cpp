@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   auto utils_hooker = acg::utils::UtilsHooker();
   utils_hooker.default_logging_level = spdlog::level::debug;
   utils_hooker.Hook();
-  acg::gui::Window::Hooker{"ggui"}.Hook();
+  acg::gui::Window::Hooker{"GGui"}.Hook();
   auto vkctx_hooker = acg::gui::VkContext2Hooker{};
   vkctx_hooker.app_name = "GGui";
   vkctx_hooker.enable_validation = true;

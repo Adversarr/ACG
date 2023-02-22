@@ -81,8 +81,8 @@ void FemExplicitApp::Step() {
   acceleration.row(2).array() += -9.8;
   auto new_vel = velocity_ + acceleration * dt_;
   position_ += (velocity_ + new_vel) * dt_;
-  velocity_ = new_vel * 0.95;
-  position_.block(0, 4, 3, 4) = x_reference_.block(0, 4, 3, 4);
+  velocity_ = new_vel * 0.999;
+  position_accessor(3) = x_reference_.col(3);
 
   std::cout << "Position = " << std::endl;
   std::cout << position_ << std::endl;
