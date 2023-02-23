@@ -68,5 +68,10 @@ inline constexpr PlatformType get_platform_type() {
   return PlatformType::kLinux;
 #endif
 }
+
+
+// @brief do_nothing function avoid compiler warns 'unused-variable'
+template <typename... Args> inline void do_nothing(Args&&... ) {}
+
 }  // namespace utils
 }  // namespace acg

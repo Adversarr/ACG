@@ -8,6 +8,12 @@
 
 namespace acg::gui {
 
+
+/****************************************
+ *
+ * WARN: Deprecated.
+ *
+ ****************************************/
 class WorldCtrlUiOnly {
   using KeyType = int;
 

@@ -3,7 +3,7 @@
 #include <acore/math/ops/kronecker.hpp>
 #include <iostream>
 
-#include "acore/math/access.hpp"
+#include "acore/access.hpp"
 
 TEST_CASE("Check Col copy status") {
   acg::Field<acg::F32, 3> positions;
@@ -158,4 +158,46 @@ TEST_CASE("Field Init") {
   acg::Mat3x3f mat;
   mat << acg::Vec3f::Ones(), acg::Vec3f::Zero(), acg::Vec3f::Ones();
   CHECK_EQ(mat.col(1).array().square().sum(), 0);
+}
+
+struct Iter2D {
+  constexpr Iter2D(int n, int m, int i, int j) : i(i), j(j), n(n), m(m) {}
+
+  constexpr auto operator*() const { return std::make_tuple(i, j); }
+
+  constexpr bool operator==(const Iter2D& another) const {
+    return i == another.i && j == another.j && n == another.n && m == another.m;
+  }
+
+  constexpr bool operator!=(const Iter2D& another) const { return !(*this == another); }
+
+  Iter2D& operator++() {
+    if (j == m - 1) {
+      i += 1;
+      j = 0;
+    } else {
+      j += 1;
+    }
+    return *this;
+  }
+
+  int i, j;
+  const int n;
+  const int m;
+};
+
+struct Iter2DWrapper {
+  Iter2D begin() const { return Iter2D(n, m, 0, 0); }
+
+  Iter2D end() const { return Iter2D(n, m, n, 0); }
+
+  int n, m;
+  constexpr Iter2DWrapper(int n, int m) : n(n), m(m) {}
+};
+
+TEST_CASE("Iter2d") {
+  Iter2DWrapper itw(3, 3);
+  for (auto [i, j] : itw) {
+    std::cout << i << j << std::endl;
+  }
 }

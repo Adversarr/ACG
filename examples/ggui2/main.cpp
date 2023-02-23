@@ -2,7 +2,7 @@
 #include <agui/backend/context.hpp>
 #include <agui/backend/graphics_context.hpp>
 #include <agui/backend/window.hpp>
-#include <agui/ggui.hpp>
+#include <agui/gui.hpp>
 #include <autils/init.hpp>
 #include <autils/time.hpp>
 

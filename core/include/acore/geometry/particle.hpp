@@ -1,7 +1,4 @@
 #pragma once
-
-#include <Eigen/Eigen>
-
 #include "../math/common.hpp"
 
 namespace acg::geometry {

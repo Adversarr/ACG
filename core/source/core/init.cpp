@@ -50,7 +50,7 @@ namespace acg {
 
 void init(int argc, char** argv) { 
   ACG_CHECK(!details::acg_initialized, "ACG has been initialized.");
-  utils::details::do_nothing(argc, argv);
+  utils::do_nothing(argc, argv);
   details::init_hooks();
   details::acg_initialized = true;
 }

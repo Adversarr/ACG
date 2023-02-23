@@ -104,15 +104,11 @@ template <typename Type, typename Transform, typename Indexer> struct FieldAcces
 
   inline decltype(auto) operator[](Index i) const noexcept { return (*this)(i); }
 
-
   template <typename... Args> inline decltype(auto) operator()(Args... args) const noexcept {
     return this->operator()(std::forward<Args>(args)...);
   }
 
   template <typename... Args> inline decltype(auto) operator()(Args... args) noexcept {
-    // if constexpr (std::is_same_v<Transform, IdentityTransform>) {
-    //   return data.col(indexer(std::forward<Args>(args)...));
-    // } else {
     auto transformed = transform(data.col(indexer(std::forward<Args>(args)...)));
     return transformed;
   }

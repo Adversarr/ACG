@@ -1,6 +1,7 @@
 #include <benchmark/benchmark.h>
-
-#include <acore/math/access.hpp>
+#include "iter.hpp"
+#include <acore/access.hpp>
+#include <iostream>
 using namespace acg;
 
 static void origin_identity(benchmark::State& state) {
@@ -74,7 +75,62 @@ static void acc_transform_2d(benchmark::State& state) {
     }
   }
 }
+
+int rows = 1024;
+int cols = 1024;
+
+void iter1d_origin(benchmark::State& state) {
+  Field<float, 2> pos(2, rows);
+  for (auto _ : state) {
+    auto acc = access(pos);
+    for (int i = 0; i < rows; ++i) {
+      benchmark::DoNotOptimize(acc(i).norm());
+    }
+  }
+}
+
+void iter1d_iter(benchmark::State& state) {
+  Field<float, 2> pos(2, rows);
+  for (auto _ : state) {
+    auto acc = access(pos);
+    for (auto i : Iter1DWrapper(rows)) {
+      benchmark::DoNotOptimize(acc(i).norm());
+    }
+  }
+}
+
+void iter2d_origin(benchmark::State& state) {
+  Field<float, 4> pos(4, rows * cols);
+  for (auto _ : state) {
+    int rows_local = rows;
+    int cols_local = cols;
+    benchmark::DoNotOptimize(rows_local);
+    benchmark::DoNotOptimize(cols_local);
+    auto acc = access(pos, acg::MultiDimensionIndexer<2>{rows_local, cols_local});
+    for (int i = 0; i < rows; i++) {
+      for (int j = 0; j < cols; ++j) {
+        benchmark::DoNotOptimize(acc(i, j).sum());
+      }
+    }
+  }
+}
+
+void iter2d_iter(benchmark::State& state) {
+  Field<float, 4> pos(4, rows * cols);
+  auto acc = access(pos, acg::MultiDimensionIndexer<2>{rows, cols});
+  for (auto _ : state) {
+    Iter2DWrapper wrap(rows, cols);
+    for (auto it = wrap.begin(), end = wrap.end(); it != end; ++it) {
+      auto [i, j] = *it;
+      benchmark::DoNotOptimize(acc(i, j).sum());
+    }
+  }
+}
 // Register the function as a benchmark
+BENCHMARK(iter1d_origin);
+BENCHMARK(iter1d_iter);
+BENCHMARK(iter2d_origin);
+BENCHMARK(iter2d_iter);
 BENCHMARK(origin_identity);
 BENCHMARK(acc_identity);
 
@@ -85,3 +141,4 @@ BENCHMARK(origin_transform_2d);
 BENCHMARK(acc_transform_2d);
 // Run the benchmark
 BENCHMARK_MAIN();
+

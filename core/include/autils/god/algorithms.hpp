@@ -2,6 +2,7 @@
 
 // NOLINTBEGIN(readability-identifier-naming)
 #include "god.hpp"
+#include <limits>
 
 namespace acg::utils::god {
 

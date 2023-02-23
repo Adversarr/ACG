@@ -1,11 +1,7 @@
 #pragma once
+#include <string>
+namespace acg::gui {
 
-#include "backend/vkcontext.hpp"
+void hook_default_gui_environment(std::string app_name);
 
-namespace acg::gui{
-
-
-// Depercated API.
-using VkContextHooker=VkContext::Hooker;
-
-}
+}  // namespace acg::gui

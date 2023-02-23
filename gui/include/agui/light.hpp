@@ -1,6 +1,5 @@
 #pragma once
-
-#include "acore/math/common.hpp"
+#include <acore/math/common.hpp>
 
 namespace acg::gui {
 struct Light {

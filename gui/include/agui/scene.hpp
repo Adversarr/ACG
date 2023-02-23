@@ -2,7 +2,7 @@
 #include <acore/geometry/common.hpp>
 #include <acore/geometry/mesh.hpp>
 #include <acore/geometry/particle.hpp>
-#include <acore/math/access.hpp>
+#include <acore/access.hpp>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -65,6 +65,10 @@ private:
   std::vector<Vec3f> particles_colors_;
 };
 
+
+/**
+ * NOTE: Use this as default.
+ */
 class Scene2 {
 public:
   Scene2() = default;

@@ -20,9 +20,6 @@ void init_logger(spdlog::level::level_enum default_level, bool use_spdlog_defaul
                  std::string pattern);
 
 void cleanup_logger();
-
-template <typename... Args> inline void do_nothing(Args&&... ) {}
-
 }  // namespace details
 
 bool is_logger_inited();
@@ -53,7 +50,7 @@ inline void set_default_log_level(LogLevel lvl) { get_default_logger()->set_leve
       ACG_LOG(spdlog::source_loc(__FILE__, __LINE__, static_cast<const char*>(__FUNCTION__)), \
               spdlog::level::level_enum::debug, __VA_ARGS__)
 #  else
-#    define ACG_DEBUG_LOG(...) acg::utils::details::do_nothing();
+#    define ACG_DEBUG_LOG(...) acg::utils::do_nothing(__VA_ARGS__);
 #  endif
 #endif
 
@@ -84,6 +81,6 @@ inline void set_default_log_level(LogLevel lvl) { get_default_logger()->set_leve
 #  if ACG_IS_DEBUG
 #    define ACG_DEBUG_CHECK(condition, ...) ACG_CHECK(condition, __VA_ARGS__)
 #  else
-#    define ACG_DEBUG_CHECK(condition, message, ...) acg::utils::details::do_nothing();
+#    define ACG_DEBUG_CHECK(condition, message, ...) acg::utils::do_nothing();
 #  endif
 #endif

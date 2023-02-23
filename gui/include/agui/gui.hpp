@@ -223,5 +223,5 @@ private:
 };
 
 }  // namespace details
-using details::Gui;  // NOLINT
+using details::Gui;
 }  // namespace acg::gui

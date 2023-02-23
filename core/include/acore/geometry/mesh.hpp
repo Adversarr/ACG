@@ -19,7 +19,7 @@ public:
 
   using VerticesType = types::PositionField<T, 3>;
 
-  using FaceType = Vec3Index ;
+  using FaceType = Vec3Index;
 
   using FacesType = geometry::topology::TriangleList;
 

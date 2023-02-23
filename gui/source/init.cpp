@@ -1,8 +1,8 @@
-#include <agui/utils.hpp>
+#include <agui/init.hpp>
 #include <agui/backend/context.hpp>
 #include <agui/backend/graphics_context.hpp>
 #include <agui/backend/window.hpp>
-#include <agui/ggui.hpp>
+#include <agui/gui.hpp>
 
 namespace acg::gui {
 void hook_default_gui_environment(std::string app_name) {

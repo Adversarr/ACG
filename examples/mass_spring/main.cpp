@@ -6,12 +6,8 @@
 
 
 #include <acore/geometry/normal.hpp>
-#include <acore/init.hpp>
-#include <agui/backend/context.hpp>
-#include <agui/backend/graphics_context.hpp>
-#include <agui/backend/window.hpp>
-#include <agui/ggui.hpp>
-#include <agui/utils.hpp>
+#include <agui/gui.hpp>
+#include <agui/init.hpp>
 #include <autils/init.hpp>
 
 #include "mass_spring.hpp"

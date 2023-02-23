@@ -1,5 +1,6 @@
 #pragma once
 #include <spdlog/spdlog.h>
+#include "log.hpp"
 namespace acg::utils {
 
 // TODO: do not use standard spdlog.
@@ -11,7 +12,7 @@ private:
 public:
   inline explicit FunctionDeferredLogger(const char* fname, const char* file, const int line)
       : function_name_{fname} {
-    spdlog::debug("Function Call: <{}> at {}:{}", fname, file, line);
+    ACG_DEBUG_LOG("Function Call: <{}> at {}:{}", fname, file, line);
   }
 
   inline ~FunctionDeferredLogger() { spdlog::debug("Function Exiting. <{}>", function_name_); }

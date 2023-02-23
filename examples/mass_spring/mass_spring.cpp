@@ -4,7 +4,7 @@
 #include <Eigen/SparseQR>
 #include <acore/geometry/common.hpp>
 #include <acore/geometry/common_models.hpp>
-#include <acore/math/access.hpp>
+#include <acore/access.hpp>
 #include <acore/math/constants.hpp>
 
 using namespace acg;
@@ -149,7 +149,6 @@ void App::StepImplicit() {
     auto p_acc = access(current_solution);
     //
     tf::Taskflow tf;
-    std::atomic_int sp_id_atom{0};
     tf.for_each_index(static_cast<int>(0), static_cast<int>(springs_vec_.size()), 1,
                       [&d_acc, &p_acc, &o_acc, this](int sp_id) {
                         auto [i, j] = springs_vec_[sp_id];

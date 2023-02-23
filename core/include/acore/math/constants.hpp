@@ -1,3 +1,9 @@
+/****************************************
+ *
+ * @brief: Common Constants for graphics use.
+ *
+ ****************************************/
+
 #pragma once
 #include "common.hpp"
 

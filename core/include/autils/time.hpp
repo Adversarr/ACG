@@ -3,6 +3,7 @@
 namespace acg::utils {
 
 I64 get_time_us();
+
 I64 get_time_ms();
 
 void sleep_for_seconds(I64 s);

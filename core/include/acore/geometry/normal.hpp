@@ -7,10 +7,10 @@
 namespace acg::geometry {
 
 enum class NormalPerVertexMode { kArea, kAngle, kUniform };
-
 // NOTE: Normal can only computed with Dimension == 3
 //
 // NOTE: Normal computing relies on the index sequence in tlist.
+//   for x0, x1, x2, computes: (x1 - x0) x (x2 - x0) for normal of face.
 template <typename Scalar> class Normal {
 private:
   const topology::TriangleList& triangle_list_;

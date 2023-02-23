@@ -2,7 +2,7 @@
 
 #include <acore/geometry/common_models.hpp>
 #include <acore/init.hpp>
-#include <acore/math/access.hpp>
+#include <acore/access.hpp>
 #include <acore/math/constants.hpp>
 #include <agui/backend/context.hpp>
 #include <agui/backend/graphics_context.hpp>

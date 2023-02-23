@@ -7,6 +7,7 @@
 
 namespace acg::geometry {
 
+
 struct FVTransform {
   const topology::TriangleList& triangle_list_;
   const Index n_vertices_;

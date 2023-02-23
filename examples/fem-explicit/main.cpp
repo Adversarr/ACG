@@ -1,6 +1,6 @@
 #include <acore/init.hpp>
-#include <agui/ggui.hpp>
-#include <agui/utils.hpp>
+#include <agui/gui.hpp>
+#include <agui/init.hpp>
 #include <autils/init.hpp>
 #include <autils/time.hpp>
 

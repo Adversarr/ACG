@@ -61,3 +61,9 @@ target('fem-explicit')
   add_deps("acg_gui")
 target_end()
 
+target('fem-implicit') 
+  add_files('fem-implicit/**.cpp')
+  add_deps('acg_gui')
+target_end()
+
+
