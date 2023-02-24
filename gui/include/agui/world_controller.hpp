@@ -1,13 +1,12 @@
 #pragma once
 
 #include <acore/common.hpp>
-#include <map>
 #include <functional>
+#include <map>
 
 #include "backend/ui_pipeline.hpp"
 
 namespace acg::gui {
-
 
 /****************************************
  *
@@ -65,7 +64,7 @@ protected:
   virtual void InitCallback();
 
 public:
-  WorldCtrlUiOnly();
+  [[deprecated("This class has deprecated. Use acg::gui::Gui instead!")]] WorldCtrlUiOnly();
 
   ~WorldCtrlUiOnly();
 
@@ -76,6 +75,7 @@ public:
   void RunAsync();
 
   WorldCtrlUiOnly& Init();
+
 protected:
   /**
    * @brief Recreate Swapchain.
@@ -84,7 +84,7 @@ protected:
   void RecreateSwapchain();
 
   void RunPhysics();
-  
+
   void RunDraw();
 
   vk::CommandBuffer DrawUI();
@@ -92,9 +92,8 @@ protected:
   void ProcessInput();
 
   virtual void ProcessInputImpl();
+
 private:
-
-
 protected:
   // Ui Pipeline is the only pipeline.
   bool ui_only_mode_{true};

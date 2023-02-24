@@ -19,29 +19,27 @@ int main(int argc, char** argv) {
   vkctx_hooker.enable_validation = true;
   vkctx_hooker.Hook();
   VkGraphicsContext::Hooker().Hook();
-  acg::init(argc, argv);
   Gui::Config config;
   config.init_default_scene = true;
   config.enable_blending = true;
-  {
-    Gui gui(config);
-    bool clear = false;
-    gui.SetUIDrawCallback([& clear]() {
-      ImGui::Begin("GGui User Window");
-      ImGui::Text("Hello world!");
-      clear =ImGui::Button("Clear Scene!");
-    });
-    while (!Window::Instance().ShouldClose()) {
-      glfwPollEvents();
-      gui.Tick();
-      gui.RenderOnce();
-      gui.UpdateScene();
-      if (clear) {
-        gui.ClearScene();
-      }
+  config.Hook();
+  acg::init(argc, argv);
+  auto& gui = Gui::Instance();
+  bool clear = false;
+  gui.SetUIDrawCallback([&clear]() {
+    ImGui::Begin("GGui User Window");
+    ImGui::Text("Hello world!");
+    clear = ImGui::Button("Clear Scene!");
+  });
+  while (!Window::Instance().ShouldClose()) {
+    glfwPollEvents();
+    gui.Tick();
+    gui.RenderOnce();
+    gui.UpdateScene();
+    if (clear) {
+      gui.ClearScene();
     }
   }
-
   acg::clean_up();
   return EXIT_SUCCESS;
 }

@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
 
   App app;
-  app.n_grids_ = 100;
+  app.n_grids_ = 50;
   app.Init();
   auto& gui = Gui::Instance();
   bool running = false;
@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
     init_once |= ImGui::Button("Reset Scene.");
     run_once = ImGui::Button("Run Once");
     ImGui::Checkbox("Run", &running);
+    ImGui::InputInt("Max Iterate Count",&app.steps_);
     init_once |= ImGui::InputFloat("Spring K", &app.k_);
   });
 

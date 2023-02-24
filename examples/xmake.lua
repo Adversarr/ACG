@@ -1,25 +1,4 @@
 set_group('examples')
-
-target('ui_only_world')
-  add_files('ui_only_world/**.cpp')
-  add_deps('acg_gui')
-
-target('nbody')
-  add_files('nbody/**.cpp')
-  add_deps('acg_gui', 'acg_core')
-
-target('free-fall')
-  add_files('free_fall/**.cpp')
-  add_deps('acg_gui', 'acg_core')
-target_end()
-
-add_requires('openmp')
-target('test_eigen_mp')
-  add_files('test_eigen_mp/**.cpp')
-  add_deps('acg_core')
-  add_packages("openmp")
-target_end()
- 
 add_requires('taskflow')
 target('mass-spring')
   add_files('mass_spring/**.cpp')
@@ -37,10 +16,9 @@ target('ggui2')
   add_deps('acg_gui', 'acg_core')
 target_end()
 
-
 add_requires('benchmark', 'autodiff')
-target('sad_bench')
-  add_files('sad_bench/*.cpp')
+target('bench_sad')
+  add_files('bench_sad/*.cpp')
   add_deps('acg_core')
   add_packages('benchmark', 'autodiff')
 target_end()
