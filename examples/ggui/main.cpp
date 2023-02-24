@@ -1,16 +1,16 @@
 #include <spdlog/spdlog.h>
 
-#include <acg_core/geometry/common_models.hpp>
-#include <acg_core/init.hpp>
-#include <acg_core/math/access.hpp>
-#include <acg_core/math/constants.hpp>
-#include <acg_gui/backend/context.hpp>
-#include <acg_gui/backend/graphics_context.hpp>
-#include <acg_gui/backend/point_ppl.hpp>
-#include <acg_gui/backend/ui_pass.hpp>
-#include <acg_gui/convent.hpp>
-#include <acg_utils/init.hpp>
-#include <acg_utils/time.hpp>
+#include <acore/geometry/common_models.hpp>
+#include <acore/init.hpp>
+#include <acore/access.hpp>
+#include <acore/math/constants.hpp>
+#include <agui/backend/context.hpp>
+#include <agui/backend/graphics_context.hpp>
+#include <agui/backend/point_ppl.hpp>
+#include <agui/backend/ui_pass.hpp>
+#include <agui/convent.hpp>
+#include <autils/init.hpp>
+#include <autils/time.hpp>
 #include <atomic>
 #include <glm/gtx/transform.hpp>
 
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
   std::atomic_bool exit_child{false};
   std::thread child{[&exit_child]() {
     while (!exit_child.load()) {
-      acg::utils::SleepSec(1);
+      acg::utils::sleep_for_seconds(1);
       ACG_INFO("Hello~");
     }
     ACG_INFO("Exit child.");
@@ -262,7 +262,7 @@ int main(int argc, char** argv) {
           wf_ppl.UpdateUbo();
         }
         i += 1;
-        acg::utils::SleepMs(30);
+        acg::utils::sleep_for_ms(30);
       }
       acg::gui::VkContext2::Instance().graphics_queue_.waitIdle();
       acg::gui::VkContext2::Instance().device_.waitIdle();

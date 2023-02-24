@@ -1,7 +1,7 @@
 #include <doctest/doctest.h>
 
-#include <acg_core/geometry/fv_transform.hpp>
-#include <acg_core/geometry/normal.hpp>
+#include <acore/geometry/fv_transform.hpp>
+#include <acore/geometry/normal.hpp>
 #include <iostream>
 
 TEST_CASE("FVTransform") {

@@ -1,8 +1,8 @@
-#include "acg_gui/backend/point_ppl.hpp"
+#include "agui/backend/point_ppl.hpp"
 
-#include <acg_utils/raw_fileio.hpp>
+#include <autils/raw_fileio.hpp>
 
-#include "acg_gui/convent.hpp"
+#include "agui/convent.hpp"
 
 namespace acg::gui::details {
 

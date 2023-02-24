@@ -1,5 +1,5 @@
-#include "acg_core/geometry/common_models.hpp"
-#include "acg_core/math/constants.hpp"
+#include "acore/geometry/common_models.hpp"
+#include "acore/math/constants.hpp"
 namespace acg::geometry {
 
 SimpleMesh<F32> sphere_uv(Vec3f center, F32 radius, Index n_stacks, Index n_slices) {

@@ -1,22 +1,26 @@
-#include "acg_core/init.hpp"
-#include "acg_utils/common.hpp"
-
+#include "acore/init.hpp"
+#include "autils/common.hpp"
+#include <autils/log.hpp>
 #include <spdlog/spdlog.h>
-
 #include <iostream>
 
 namespace acg::details {
 
 std::vector<InitHook> global_hooks;
 
-void add_hook(const InitHook& hook) { global_hooks.push_back(hook); }
+bool acg_initialized;
+
+void add_hook(const InitHook& hook) { 
+  global_hooks.push_back(hook);
+
+}
 
 static void sort() {
   std::sort(global_hooks.begin(), global_hooks.end(),
             [](const InitHook& l, const InitHook& r) { return l.priority > r.priority; });
 }
 
-void init() {
+void init_hooks() {
   sort();
   for (const auto& hook : global_hooks) {
     if (hook.on_init) {
@@ -29,7 +33,7 @@ void init() {
   }
 }
 
-void cleanup() {
+void cleanup_hooks() {
   auto run_clean = [](const InitHook& hook) {
     if (hook.on_exit) {
       if (hook.name) std::cout << fmt::format("Execute cleanup hook: {}", hook.name) << std::endl;
@@ -44,10 +48,23 @@ void cleanup() {
 
 namespace acg {
 
-void init(int argc, char** argv) { details::init(); }
+void init(int argc, char** argv) { 
+  ACG_CHECK(!details::acg_initialized, "ACG has been initialized.");
+  utils::do_nothing(argc, argv);
+  details::init_hooks();
+  details::acg_initialized = true;
+}
+
+bool is_inited() {
+  return details::acg_initialized;
+}
 
 /**
  * @param
  */
-void clean_up() { details::cleanup(); }
+void clean_up() { 
+  ACG_CHECK(acg::is_inited(), "ACG has not been initialize.");
+  details::cleanup_hooks(); 
+  details::acg_initialized = false;
+}
 }  // namespace acg

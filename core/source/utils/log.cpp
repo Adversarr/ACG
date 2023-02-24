@@ -1,9 +1,9 @@
-#include "acg_utils/log.hpp"
+#include "autils/log.hpp"
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-#include "acg_utils/common.hpp"
+#include "autils/common.hpp"
 
 namespace acg {
 namespace utils {
@@ -36,7 +36,7 @@ void init_logger(spdlog::level::level_enum default_level, bool use_spdlog_defaul
   }
 
   if (pattern.empty()) {
-    default_logger->set_pattern("[%H:%M:%S:%e] [%^%L%$] [T:%t] %v");
+    default_logger->set_pattern("[%H:%M:%S:%e] [%^%L%$] [T:%t] [%@]:%v");
   } else {
     default_logger->set_pattern(pattern);
   }

@@ -1,50 +1,45 @@
-#pragma once
-
-#include <acg_core/geometry/particle.hpp>
-#include <acg_core/geometry/mesh.hpp>
-
-#include <acg_gui/backend/mesh_pipeline.hpp>
-#include <acg_gui/light.hpp>
-#include <acg_gui/scene.hpp>
-#include <acg_gui/world_controller.hpp>
-#include <acg_gui/mp_scene.hpp>
-using namespace acg;
-using namespace acg::gui;
-
-class MassSpring : public MPWorldCtrl {
+#include <Eigen/Sparse>
+#include <acore/all.hpp>
+#include <acore/common.hpp>
+#include <acore/math/sparse.hpp>
+#include <set>
+#include <taskflow/taskflow.hpp>
+class App {
 public:
-  using Mesh = geometry::SimpleMesh<F64>;
+  void Init();
 
-  explicit MassSpring(Index n);
+  void Step();
 
-protected:
+  void StepImplicit();
+  void AddSpring(acg::Index, acg::Index);
 
-  void LocalStep(F64 dt);
+  acg::Field<float, 3> position_;
+  acg::Field<float, 3> origin_position_;
 
-  int RunPhysicsImpl(F64 dt) final;
+  acg::Field<float, 3> velocity_;
+  acg::Field<float, 3> d_;
 
-  void RunUiImpl() final;
+  acg::geometry::topology::TriangleList faces_;
 
-  void PreRun() final;
+  acg::Index n_grids_ = 5;
+  acg::Index n_vertices_;
 
-  void ApplyForce(Index i, Index j);
+  std::set<std::pair<acg::Index, acg::Index>> springs_;
+
+  std::vector<std::pair<acg::Index, acg::Index>> springs_vec_;
 
 
-private:
-  void RegenerateScene();
-  Index n_;
-  Vec3f color_;
-  Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> position_;
-  Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> velocity_;
-  Eigen::Matrix<F64, 3, Eigen::Dynamic, Eigen::ColMajor> acceleration_;
-  Field<Index, 2> edges_;
-  Field<F64, 1> original_length_;
+  float dt_{0.005};
 
-  // Slack Variable
-  Field<F64, 3> d_;
+  float k_{1000};
 
-  Mesh mesh_;
-  float k_{10};
+  float mass_{0.01};
+
+  acg::SpMat<float> hessian_;
+
+  Eigen::SimplicialLDLT<acg::SpMat<float>> splu_;
+
+  int steps_{30};
+
+  tf::Executor executor_{8};
 };
-
-

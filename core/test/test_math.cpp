@@ -1,9 +1,9 @@
 #include <doctest/doctest.h>
 
-#include <acg_core/math/kronecker.hpp>
+#include <acore/math/ops/kronecker.hpp>
 #include <iostream>
 
-#include "acg_core/math/access.hpp"
+#include "acore/access.hpp"
 
 TEST_CASE("Check Col copy status") {
   acg::Field<acg::F32, 3> positions;
@@ -46,14 +46,14 @@ TEST_CASE("FieldGetter") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   CHECK(getter(x, y, z) == x * r * q + r * y + z);
 }
 
 TEST_CASE("Field Rvalue") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   Field<float, 3> ones(3, 1);
   ones.setOnes();
   auto acc = access((ones + ones).eval());
@@ -65,7 +65,7 @@ TEST_CASE("Field accessor") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
   std::cout << field << std::endl;
@@ -78,7 +78,7 @@ TEST_CASE("Row") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   Field<float, 1> field(1, p * q * r);
   auto acc = access(field, getter);
   acc[x * r * q + r * y + z].setOnes();
@@ -88,7 +88,7 @@ TEST_CASE("Row") {
 TEST_CASE("Access standard iterate") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
   auto acc = access(field, getter);
@@ -101,7 +101,7 @@ TEST_CASE("Access standard iterate") {
 TEST_CASE("Default getter") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
-  MultiDimensionGetter<3> getter(p, q, r);
+  MultiDimensionIndexer<3> getter(p, q, r);
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
   auto acc = access(field);
@@ -114,7 +114,7 @@ TEST_CASE("Default getter") {
 TEST_CASE("Field Access Trasnform") {
   using namespace acg;
   auto field = FieldBuilder<float, 4>(3).Constant(0).eval();
-  auto acc = access<MultiDimensionGetter<1>, ReshapeTransform<2, 2>>(field);
+  auto acc = access<MultiDimensionIndexer<1>, ReshapeTransform<2, 2>>(field);
   auto acc1 = acc[1];
   acc1.setOnes();
   CHECK_EQ(acc(1).trace(), 2);
@@ -139,4 +139,65 @@ TEST_CASE("Kronecker") {
   CHECK(bc.rows() == matb.rows() * matc.rows());
   CHECK(bc.cols() == matb.cols() * matc.cols());
   CHECK(bc(5, 7) == 4);
+}
+
+TEST_CASE("FieldReshape") {
+  acg::Mat3x3f mat;
+  acg::Field<float, 9> field(9, 1);
+  auto acc = acg::access(field);
+
+  for (int i = 0; i < 5; ++i) {
+    mat.setRandom();
+    acc(0) = mat.reshaped();
+
+    CHECK_EQ(acc(0).reshaped(3, 3), mat);
+  }
+}
+
+TEST_CASE("Field Init") {
+  acg::Mat3x3f mat;
+  mat << acg::Vec3f::Ones(), acg::Vec3f::Zero(), acg::Vec3f::Ones();
+  CHECK_EQ(mat.col(1).array().square().sum(), 0);
+}
+
+struct Iter2D {
+  constexpr Iter2D(int n, int m, int i, int j) : i(i), j(j), n(n), m(m) {}
+
+  constexpr auto operator*() const { return std::make_tuple(i, j); }
+
+  constexpr bool operator==(const Iter2D& another) const {
+    return i == another.i && j == another.j && n == another.n && m == another.m;
+  }
+
+  constexpr bool operator!=(const Iter2D& another) const { return !(*this == another); }
+
+  Iter2D& operator++() {
+    if (j == m - 1) {
+      i += 1;
+      j = 0;
+    } else {
+      j += 1;
+    }
+    return *this;
+  }
+
+  int i, j;
+  const int n;
+  const int m;
+};
+
+struct Iter2DWrapper {
+  Iter2D begin() const { return Iter2D(n, m, 0, 0); }
+
+  Iter2D end() const { return Iter2D(n, m, n, 0); }
+
+  int n, m;
+  constexpr Iter2DWrapper(int n, int m) : n(n), m(m) {}
+};
+
+TEST_CASE("Iter2d") {
+  Iter2DWrapper itw(3, 3);
+  for (auto [i, j] : itw) {
+    std::cout << i << j << std::endl;
+  }
 }

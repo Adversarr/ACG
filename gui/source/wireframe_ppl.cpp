@@ -1,9 +1,9 @@
-#include "acg_gui/backend/wireframe_ppl.hpp"
+#include "agui/backend/wireframe_ppl.hpp"
 
-#include "acg_gui/backend/context.hpp"
-#include "acg_gui/backend/graphics_context.hpp"
-#include "acg_gui/convent.hpp"
-#include "acg_utils/raw_fileio.hpp"
+#include "agui/backend/context.hpp"
+#include "agui/backend/graphics_context.hpp"
+#include "agui/convent.hpp"
+#include "autils/raw_fileio.hpp"
 
 namespace acg::gui::details {
 
@@ -67,7 +67,7 @@ void WireframePipeline::CleanUp() {
 WireframePipeline::~WireframePipeline() { CleanUp(); }
 
 void WireframePipeline::CreateUniformBuffers() {
-  auto buffer_size = static_cast<vk::DeviceSize>(sizeof(Ubo));
+  auto buffer_size = static_cast<vk::DeviceSize>(sizeof(ubo_));
   uniform_buffers_.clear();
   for (size_t i = 0; i < VkGraphicsContext::Instance().swapchain_size_; ++i) {
     auto buffer = VkContext2::Instance().CreateBufferWithMemory(
@@ -236,7 +236,7 @@ void WireframePipeline::CreateDescriptorSets(const GraphicsRenderPass &pass) {
 
   for (size_t i = 0; i < swapchain_size; ++i) {
     vk::DescriptorBufferInfo buffer_info;
-    buffer_info.setBuffer(uniform_buffers_[i].GetBuffer()).setOffset(0).setRange(sizeof(Ubo));
+    buffer_info.setBuffer(uniform_buffers_[i].GetBuffer()).setOffset(0).setRange(sizeof(ubo_));
     vk::WriteDescriptorSet desc_write;
     desc_write.setDstSet(ubo_descriptor_sets_[i])
         .setDstBinding(0)

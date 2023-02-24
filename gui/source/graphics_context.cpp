@@ -1,9 +1,9 @@
-#include "acg_gui/backend/graphics_context.hpp"
+#include "agui/backend/graphics_context.hpp"
 
-#include "acg_core/init.hpp"
-#include "acg_gui/backend/context.hpp"
-#include "acg_gui/backend/window.hpp"
-#include "acg_utils/log.hpp"
+#include "acore/init.hpp"
+#include "agui/backend/context.hpp"
+#include "agui/backend/window.hpp"
+#include "autils/log.hpp"
 namespace acg::gui {
 
 std::unique_ptr<VkGraphicsContext> graphics_context_instance;
@@ -279,7 +279,7 @@ void VkGraphicsContext::CopyBufferToBuffer(vk::Buffer src, vk::Buffer dst,
 
 void VkGraphicsContext::Hooker::Hook() {
   acg::details::InitHook hook;
-  hook.on_init = [this]() { graphics_context_instance.reset(new VkGraphicsContext(*this)); };
+  hook.on_init = [*this]() { graphics_context_instance.reset(new VkGraphicsContext(*this)); };
   hook.on_exit = []() { graphics_context_instance.reset(); };
   hook.name = "Vk Graphics Context Init";
   hook.priority = 8;

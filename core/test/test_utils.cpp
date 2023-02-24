@@ -1,8 +1,8 @@
 #include <doctest/doctest.h>
 
-#include <acg_utils/god/algorithms.hpp>
-#include <acg_utils/god/god.hpp>
-#include <acg_utils/result.hpp>
+#include <autils/god/algorithms.hpp>
+#include <autils/god/god.hpp>
+#include <autils/result.hpp>
 #include <cassert>
 #include <iostream>
 #include <vector>

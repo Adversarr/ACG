@@ -1,7 +1,6 @@
-#include "acg_gui/backend/ui_pipeline.hpp"
-#include "acg_utils/log.hpp"
+#include "agui/backend/ui_pipeline.hpp"
+#include "autils/log.hpp"
 
-#include <acg_utils/singleton.hpp>
 #include <spdlog/spdlog.h>
 
 static void check_vk_result(VkResult err) {
@@ -11,7 +10,7 @@ static void check_vk_result(VkResult err) {
 namespace acg::gui::details {
 
 UiPipeline::UiPipeline():
-  renderer_(utils::Singleton<VkContext>{}.GetRef()) {}
+  renderer_(get_vk_context()) {}
 
 void UiPipeline::Init() {
   if (is_inited_) {

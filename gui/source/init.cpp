@@ -1,21 +1,19 @@
-#include <acg_core/init.hpp>
-#include <acg_utils/singleton.hpp>
-#include "acg_gui/init.hpp"
-#include "acg_gui/backend/vkcontext.hpp"
+#include <agui/init.hpp>
+#include <agui/backend/context.hpp>
+#include <agui/backend/graphics_context.hpp>
+#include <agui/backend/window.hpp>
+#include <agui/gui.hpp>
 
-namespace acg::gui::details {
-void VkContextHooker::Hook() noexcept {
-  static bool is_hooked{false};
-  if (is_hooked) {
-    return;
-  }
-  is_hooked = true;
+namespace acg::gui {
+void hook_default_gui_environment(std::string app_name) {
+  Window::Hooker(app_name).Hook();
+  auto vkctx_hooker = acg::gui::VkContext2Hooker{};
+  vkctx_hooker.app_name = app_name;
+  vkctx_hooker.enable_validation = true;
+  vkctx_hooker.Hook();
+  VkGraphicsContext::Hooker().Hook();
+  Gui::Config config;
+  config.Hook();
+}
 
-  acg::details::InitHook hook;
-  hook.priority = 10;
-  hook.on_init = []() { acg::gui::details::VkContext::Builder().Build(); };
-  hook.on_exit = []() { acg::utils::Singleton<acg::gui::details::VkContext>::Release(); };
-  hook.name = "VkContext";
-  acg::details::add_hook(hook);
-};
-}  // namespace acg::gui::details
+}  // namespace acg::gui

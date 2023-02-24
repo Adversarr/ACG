@@ -1,10 +1,10 @@
-#include <acg_core/init.hpp>
-#include <acg_gui/backend/context.hpp>
-#include <acg_gui/backend/graphics_context.hpp>
-#include <acg_gui/backend/window.hpp>
-#include <acg_gui/ggui.hpp>
-#include <acg_utils/init.hpp>
-#include <acg_utils/time.hpp>
+#include <acore/init.hpp>
+#include <agui/backend/context.hpp>
+#include <agui/backend/graphics_context.hpp>
+#include <agui/backend/window.hpp>
+#include <agui/gui.hpp>
+#include <autils/init.hpp>
+#include <autils/time.hpp>
 
 #include "app.hpp"
 
@@ -22,11 +22,11 @@ int main(int argc, char** argv) {
   vkctx_hooker.Hook();
   VkGraphicsContext::Hooker().Hook();
   acg::init(argc, argv);
-  GGui::Config config;
+  Gui::Config config;
   config.init_default_scene = false;
   config.enable_blending = true;
   {
-    GGui gui(config);
+    Gui gui(config);
     bool clear = false;
     bool running = false;
     MpmExplictApp app;
