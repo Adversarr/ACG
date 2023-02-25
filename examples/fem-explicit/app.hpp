@@ -9,6 +9,10 @@ public:
 
   void Step();
 
+  void StepProjDynMF();
+
+  int steps_;
+
   acg::geometry::topology::TetraList tetra_;
 
   acg::types::PositionField<acg::F64, 3> position_;

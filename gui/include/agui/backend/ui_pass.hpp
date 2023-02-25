@@ -1,5 +1,6 @@
 #pragma once
 #include <imgui.h>
+#include <optional>
 
 #include <vulkan/vulkan.hpp>
 
@@ -11,6 +12,8 @@ class UiPass {
 public:
   struct Config {
     bool is_ui_only;
+
+    std::optional<std::function<void()> > call_on_init{std::nullopt};
 
     void Hook();
   };
@@ -26,10 +29,11 @@ public:
 
 private:
   void CreateFramebuffers();
+
   void DestroyFramebuffers();
 
   void CleanupSwapchain();
-  
+
   void Cleanup();
 
   vk::CommandPool command_pool_;

@@ -76,54 +76,58 @@ static void acc_transform_2d(benchmark::State& state) {
   }
 }
 
-int rows = 1024;
-int cols = 1024;
+
+std::tuple<int, int> rc(2000, 2000);
 
 void iter1d_origin(benchmark::State& state) {
-  Field<float, 2> pos(2, rows);
+  Field<float, 2> pos(2, std::get<0>(rc));
   for (auto _ : state) {
     auto acc = access(pos);
-    for (int i = 0; i < rows; ++i) {
+    for (int i = 0; i < std::get<0>(rc); ++i) {
       benchmark::DoNotOptimize(acc(i).norm());
     }
   }
 }
 
 void iter1d_iter(benchmark::State& state) {
-  Field<float, 2> pos(2, rows);
+  Field<float, 2> pos(2, std::get<0>(rc));
   for (auto _ : state) {
     auto acc = access(pos);
-    for (auto i : Iter1DWrapper(rows)) {
+    for (auto i : Iter1DWrapper(std::get<0>(rc))) {
       benchmark::DoNotOptimize(acc(i).norm());
     }
   }
 }
 
 void iter2d_origin(benchmark::State& state) {
-  Field<float, 4> pos(4, rows * cols);
+  Field<float, 4> pos(4, std::get<0>(rc) * std::get<1>(rc));
+  pos.setRandom();
   for (auto _ : state) {
-    int rows_local = rows;
-    int cols_local = cols;
-    benchmark::DoNotOptimize(rows_local);
-    benchmark::DoNotOptimize(cols_local);
-    auto acc = access(pos, acg::MultiDimensionIndexer<2>{rows_local, cols_local});
+    benchmark::DoNotOptimize(std::get<0>(rc));
+    benchmark::DoNotOptimize(std::get<1>(rc));
+    float csum = 0;
+    auto acc = access(pos, acg::MultiDimensionIndexer<2>{std::get<0>(rc), std::get<1>(rc)});
+    const auto rows = std::get<0>(rc), cols = std::get<1>(rc);
     for (int i = 0; i < rows; i++) {
       for (int j = 0; j < cols; ++j) {
-        benchmark::DoNotOptimize(acc(i, j).sum());
+        csum += acc(i, j).norm();
       }
     }
+    benchmark::DoNotOptimize(csum);
   }
 }
 
 void iter2d_iter(benchmark::State& state) {
-  Field<float, 4> pos(4, rows * cols);
-  auto acc = access(pos, acg::MultiDimensionIndexer<2>{rows, cols});
+  Field<float, 4> pos(4, std::get<0>(rc) * std::get<1>(rc));
+  pos.setRandom();
+  auto acc = access(pos, acg::MultiDimensionIndexer<2>{std::get<0>(rc), std::get<1>(rc)});
   for (auto _ : state) {
-    Iter2DWrapper wrap(rows, cols);
-    for (auto it = wrap.begin(), end = wrap.end(); it != end; ++it) {
-      auto [i, j] = *it;
-      benchmark::DoNotOptimize(acc(i, j).sum());
+    float csum = 0;
+    Iter2DWrapper wrap(std::get<0>(rc), std::get<1>(rc));
+    for (auto&& [i, j] : wrap) {
+       csum += acc(i, j).norm();
     }
+    benchmark::DoNotOptimize(csum);
   }
 }
 // Register the function as a benchmark

@@ -2,9 +2,9 @@
 
 #include <Eigen/SparseCholesky>
 #include <Eigen/SparseQR>
+#include <acore/access.hpp>
 #include <acore/geometry/common.hpp>
 #include <acore/geometry/common_models.hpp>
-#include <acore/access.hpp>
 #include <acore/math/constants.hpp>
 
 using namespace acg;
@@ -127,12 +127,10 @@ void App::Step() {
   }
 }
 
-void App::StepImplicit() {
+void App::StepProjDyn() {
   auto o_acc = access(origin_position_);
   auto d_acc = access(d_);
   d_.resize(Eigen::NoChange, springs_.size());
-  auto p_acc = access(position_);
-
   Vec<float> x_tilde(n_vertices_ * 3);
   x_tilde.setZero();
   auto xn = position_.reshaped();
@@ -140,7 +138,7 @@ void App::StepImplicit() {
   x_tilde += xn + dt_ * vn;
   x_tilde.reshaped(3, n_vertices_).array().row(2) -= 9.8 * dt_ * dt_;
   auto m_x_tilde = mass_ * x_tilde;
-  auto current_solution = position_.eval();
+  auto current_solution = x_tilde.reshaped(3, n_vertices_).eval();
   for (int i = 0; i < steps_; ++i) {
     /****************************************
       Step Local
@@ -173,13 +171,6 @@ void App::StepImplicit() {
     auto rhs = (m_x_tilde + sdt.reshaped());
     Vec<float> solution = splu_.solve(rhs).eval();
     ACG_CHECK(splu_.info() == Eigen::Success, "Splu Solver failed.");
-
-    auto err = (current_solution.reshaped() - solution).norm();
-    if (err < 0.01 / n_grids_) {
-      current_solution = solution.reshaped(3, n_vertices_);
-      ACG_INFO("Early Terminate because step size is small enough. #Iter = {} err = {}", i, err);
-      break;
-    }
     current_solution = solution.reshaped(3, n_vertices_);
     for (Index i = 0; i < n_grids_; ++i) {
       p_acc(i) = o_acc(i);
@@ -190,7 +181,65 @@ void App::StepImplicit() {
   ****************************************/
   velocity_ = (current_solution.reshaped(3, n_vertices_) - position_) / dt_;
   position_ = current_solution.reshaped(3, n_vertices_);
-  for (Index i = 0; i < n_grids_; ++i) {
-    p_acc(i) = o_acc(i);
+}
+
+void App::StepProjDynMf() {
+  auto o_acc = access(origin_position_);
+  auto d_acc = access(d_);
+  d_.resize(Eigen::NoChange, springs_.size());
+  auto x_tilde = (position_ + velocity_ * dt_).eval();
+  x_tilde.array().row(2) -= 9.8 * dt_ * dt_;
+  auto current_solution = x_tilde.eval();
+
+  for (int i = 0; i < steps_; ++i) {
+    /****************************************
+      Step Local
+    ****************************************/
+    auto p_acc = access(current_solution);
+    tf::Taskflow tf;
+    tf.for_each_index(static_cast<int>(0), static_cast<int>(springs_vec_.size()), 1,
+                      [&d_acc, &p_acc, &o_acc, this](int sp_id) {
+                        auto [i, j] = springs_vec_[sp_id];
+                        auto xij = (p_acc(i) - p_acc(j)).normalized();
+                        auto origin_length = (o_acc(i) - o_acc(j)).norm();
+                        d_acc(sp_id) = xij * origin_length;
+                        sp_id += 1;
+                      });
+    executor_.run(tf).wait();
+
+    /****************************************
+     *
+     * Step Global
+     *
+     ****************************************/
+    Vec<float> weight(n_vertices_);
+    weight.setConstant(mass_);
+    auto expected_position = (x_tilde * mass_).eval();
+    auto expected_position_acc = access(expected_position);
+    auto constraint_weight = k_ * dt_ * dt_;
+    for (size_t c = 0; c < springs_vec_.size(); ++c) {
+      auto [i, j] = springs_vec_[c];
+      weight(i) += constraint_weight;
+      weight(j) += constraint_weight;
+
+      auto x = p_acc(i);
+      auto y = p_acc(j);
+      auto d = d_acc(c);
+      expected_position_acc(i) += constraint_weight * (y + d);
+      expected_position_acc(j) += constraint_weight * (x - d);
+    }
+    for (Index i = 0; i < n_vertices_; ++i) {
+      expected_position_acc(i) /= weight[i];
+    }
+    current_solution = expected_position;
+    for (Index i = 0; i < n_grids_; ++i) {
+      p_acc(i) = o_acc(i);
+    }
   }
+
+  /****************************************
+    Step Update
+  ****************************************/
+  velocity_ = (current_solution - position_) / dt_;
+  position_ = current_solution;
 }

@@ -10,7 +10,11 @@ public:
 
   void Step();
 
-  void StepImplicit();
+
+  void StepProjDyn();
+
+  void StepProjDynMf();
+
   void AddSpring(acg::Index, acg::Index);
 
   acg::Field<float, 3> position_;
@@ -28,7 +32,6 @@ public:
 
   std::vector<std::pair<acg::Index, acg::Index>> springs_vec_;
 
-
   float dt_{0.005};
 
   float k_{1000};
@@ -37,7 +40,7 @@ public:
 
   acg::SpMat<float> hessian_;
 
-  Eigen::SimplicialLDLT<acg::SpMat<float>> splu_;
+  Eigen::SparseLU<acg::SpMat<float>> splu_;
 
   int steps_{30};
 

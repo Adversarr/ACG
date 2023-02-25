@@ -1,9 +1,7 @@
 /****************************************
-  Mass spring Simulator. 
+  Mass spring Simulator.
   algorithm: Fast Mass Spring (PD)
  ****************************************/
-
-
 
 #include <acore/geometry/normal.hpp>
 #include <agui/gui.hpp>
@@ -20,19 +18,23 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
 
   App app;
-  app.n_grids_ = 50;
+  app.n_grids_ = 160;
   app.Init();
   auto& gui = Gui::Instance();
   bool running = false;
   bool run_once = false;
   bool init_once = false;
-  gui.SetUIDrawCallback([&init_once, &running, &run_once, &app]() {
+  bool matfree = false;
+  bool checking_mode = false;
+  gui.SetUIDrawCallback([&init_once, &running, &run_once, &app, &matfree, &checking_mode]() {
     init_once = false;
     ImGui::Begin("GGui User Window");
     init_once |= ImGui::Button("Reset Scene.");
     run_once = ImGui::Button("Run Once");
     ImGui::Checkbox("Run", &running);
-    ImGui::InputInt("Max Iterate Count",&app.steps_);
+    ImGui::InputInt("Max Iterate Count", &app.steps_);
+    ImGui::Checkbox("Matrix Free Solver", &matfree);
+    ImGui::Checkbox("Check result of MF", &checking_mode);
     init_once |= ImGui::InputFloat("Spring K", &app.k_);
   });
 
@@ -59,7 +61,31 @@ int main(int argc, char** argv) {
     gui.RenderOnce();
     gui.UpdateScene();
     if (running || run_once) {
-      app.StepImplicit();
+      if (!checking_mode) {
+        if (matfree) {
+          app.StepProjDynMf();
+        } else {
+          app.StepProjDyn();
+        }
+      } else {
+        auto backup_position = app.position_.eval();
+        auto backup_velocity = app.velocity_.eval();
+        app.StepProjDyn();
+        auto position_pd = app.position_.eval();
+        auto velocity_pd = app.velocity_.eval();
+        auto d_pd = app.d_.eval();
+
+        app.position_ = backup_position;
+        app.velocity_ = backup_velocity;
+        app.StepProjDynMf();
+
+        auto err_position = (app.position_ - position_pd).array().abs().maxCoeff();
+        auto err_velocity = (app.velocity_ - velocity_pd).array().abs().maxCoeff();
+        auto err_d = (app.d_ - d_pd).array().abs().maxCoeff();
+        ACG_INFO("Error of Position = {}", err_position);
+        ACG_INFO("Error of Velocity = {}", err_velocity);
+        ACG_INFO("Error of d = {}", err_d);
+      }
       update_mesh();
     }
 

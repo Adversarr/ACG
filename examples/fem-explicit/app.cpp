@@ -89,3 +89,41 @@ void FemExplicitApp::Step() {
   std::cout << "Velocity = " << std::endl;
   std::cout << velocity_ << std::endl;
 }
+void FemExplicitApp::StepProjDynMF() {
+  auto tetra_accessor = acg::access(tetra_);
+  auto x_tilde = (position_ + velocity_ * dt_).eval();
+  x_tilde.array().col(2) -= 9.8 * dt_ * dt_;
+  auto current_solution = x_tilde.eval();
+  auto dm_inv_accessor = acg::access<acg::DefaultIndexer, acg::ReshapeTransform<3, 3>>(dm_inv_);
+  for (Index _ = 0; _ < steps_; ++_) {
+    auto acceleration = FieldBuilder<acg::F64, 3>(num_vert_).Zeros();
+    auto acc_acc = acg::access(acceleration);
+  auto position_accessor = acg::access(current_solution);
+    for (Index i = 0; i < num_tetra_; ++i) {
+      auto indices = tetra_accessor(i);
+      auto x10 = position_accessor(indices.y()) - position_accessor(indices.x());
+      auto x20 = position_accessor(indices.z()) - position_accessor(indices.x());
+      auto x30 = position_accessor(indices.w()) - position_accessor(indices.x());
+
+      acg::Mat3x3d d;
+      auto dm_inv = dm_inv_accessor(i);
+      d << x10, x20, x30;
+      Mat3x3d f = (d * dm_inv);
+      Mat3x3d g = .5 * (f.transpose() * f - acg::Mat3x3d::Identity());
+      Mat3x3d p = f * (2 * mu_ * g + lambda_ * g.trace() * acg::Mat3x3d::Identity());
+
+      Mat3x3d forces = (-(1.0 / 6) / dm_inv.determinant() * p * dm_inv.transpose());
+      auto f1 = forces.col(0);
+      auto f2 = forces.col(1);
+      auto f3 = forces.col(2);
+      auto f0 = -(f1 + f2 + f3);
+      auto eigen = f.eigenvalues().eval();
+      acc_acc(indices.x()) += f0;
+      acc_acc(indices.y()) += f1;
+      acc_acc(indices.z()) += f2;
+      acc_acc(indices.w()) += f3;
+    }
+  }
+    velocity_ = (current_solution - position_) / dt_;
+    position_ = current_solution;
+}
