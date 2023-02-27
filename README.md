@@ -1,12 +1,19 @@
-NOTE: This project is highly expremental.
-
 # Adversarr's Computer Graphics toolbox
 
-ACG is the toolbox designed for study use (mainly about Physical Simulation, not Rendering).
+NOTE: This project is highly expremental.
 
+ACG is a toolbox designed for study use mainly about Physical Simulation, but not Rendering.
 
+## Why yet another Computer Graphics Tool?
 
-**Project Structure**: 
+Although we have seen a huge number of libraries designed for CG, (and in many areas):
+
+1. libigl: designed for geometry processing, the header-only coding style just leads to long compile time. The types of objects that igl-viewer can render is limitted.
+2. Taichi: GPU-based Parallel computing library, designed for Physical Simulation. Taichi is originally a community-driven project, and lacks **Debugger** support, and exception support.
+
+> On my macbook with Apple's Silicon, Taichi's crash will leads to OS's crash.
+
+## Project Structure 
 
 1. Core:
    1. General Utilities:
@@ -25,6 +32,7 @@ ACG is the toolbox designed for study use (mainly about Physical Simulation, not
    - (Finished) Scene visualization: Support Mesh(including instancing), Particles, and Wireframe.
    - (Finished) ImGUI & Vulkan based. high performance
    - (Finished) ImGUI based User Interface, and User Callback.
+   - (Finished) Perspective/Ortho projection modes. (for 2D data-visualization, similar to Unity2d's design.)
    - Scene Editing/Storaging/...
 3. Port: Data import module.
 4. Plugins (not implemented)
@@ -42,29 +50,11 @@ mass-spring system based on Projective Dynamics. Refer to "Fast mass spring" by 
 
 ![image-20230224132002368](./media//image-20230224132002368.png)
 
+and this provides an bonus solver, which applies a single step of Jacobi method on PD, which leads to real-time simulation of traditional mass-spring at about 30fps (on my laptop).
+
 ### Other Stuffs
 
 1. `fem-explict`: first-order explicit integrator. StVK FEM Soft Body Simulation.
 2. `mpm-explicit`: PIC-Fluid simulation, toy P2G and G2P process, weakly-compressible.
 
-
-
-## Todo Lists
-
-### Build System
-
-- [x] Transfer everything to `xmake`
-
-### Core
-
-- [ ] import some function from libigl
-- [ ] Half Edge data structure for high performance neighbour query.
-- [ ] Spatial Data structure
-- [ ] Math libraries
-- [ ] SAD: working in progress, static-auto-diff
-- [x] Tensor Iterator Support
-
-### Gui
-
-- [ ] Gui: Non blocking when performing compute – almost impossible (everything of glfw should be processed in MAIN thread.)
 
