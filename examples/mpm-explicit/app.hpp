@@ -166,22 +166,22 @@ public:
 
   Index steps_{32};
 
-  F64 simulation_range_{1};
-  F64 dx_;
-  F64 dt_ = 4e-3;
+  Float64 simulation_range_{1};
+  Float64 dx_;
+  Float64 dt_ = 4e-3;
 
-  F64 rho_ = 1e3;
-  F64 particle_mass_;
-  F64 particle_vol_;
-  F64 E_ = 4;
-  F64 weight_sum;
+  Float64 rho_ = 1e3;
+  Float64 particle_mass_;
+  Float64 particle_vol_;
+  Float64 E_ = 4;
+  Float64 weight_sum;
 
   Index n_particles_;
-  Field<F64, 3> grid_velocity_;
-  Field<F64, 1> grid_mass_;
+  Field<Float64, 3> grid_velocity_;
+  Field<Float64, 1> grid_mass_;
 
-  Field<F64, 9> particle_C_;
-  Field<F64, 1> particle_J_;
-  Field<F64, 3> particle_position_;
-  Field<F64, 3> particle_velocity_;
+  Field<Float64, 9> particle_C_;
+  Field<Float64, 1> particle_J_;
+  Field<Float64, 3> particle_position_;
+  Field<Float64, 3> particle_velocity_;
 };

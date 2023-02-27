@@ -6,7 +6,7 @@
 #include <vector>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <autils/time.hpp>
+#include <autils/time/time.hpp>
 
 namespace acg::gui {
 
@@ -127,7 +127,7 @@ void WorldCtrlUiOnly::InitCallback() {
   // DO NOTHING
 }
 
-int WorldCtrlUiOnly::RunPhysicsImpl(F64 /*dt*/) { return 0; }
+int WorldCtrlUiOnly::RunPhysicsImpl(Float64 /*dt*/) { return 0; }
 
 void WorldCtrlUiOnly::RunUiImpl() {
   ImGui::ShowUserGuide();

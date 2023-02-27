@@ -22,7 +22,7 @@ template <typename T> struct Trait {
   static constexpr bool is_dense = true;
 };
 
-template <> struct Trait<acg::F32> {
+template <> struct Trait<acg::Float32> {
   static constexpr int rows = 1;
   static constexpr int cols = 1;
   static constexpr int dim = rows * cols;
@@ -31,11 +31,11 @@ template <> struct Trait<acg::F32> {
   static constexpr bool is_col_major = !is_row_major;
   static constexpr bool is_scalar = true;
   static constexpr bool is_dense = true;
-  using Scalar = acg::F32;
-  using type = acg::F32;
+  using Scalar = acg::Float32;
+  using type = acg::Float32;
   using transpose = type;
 };
-template <> struct Trait<acg::F64> {
+template <> struct Trait<acg::Float64> {
   static constexpr int rows = 1;
   static constexpr int cols = 1;
   static constexpr bool is_vector = false;
@@ -44,8 +44,8 @@ template <> struct Trait<acg::F64> {
   static constexpr bool is_col_major = !is_row_major;
   static constexpr bool is_scalar = true;
   static constexpr bool is_dense = true;
-  using Scalar = acg::F64;
-  using type = acg::F64;
+  using Scalar = acg::Float64;
+  using type = acg::Float64;
   using transpose = type;
 };
 

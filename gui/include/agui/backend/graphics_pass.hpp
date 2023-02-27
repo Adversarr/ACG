@@ -35,7 +35,7 @@ public:
 
   void SetBackgroundColor(acg::types::Rgba color);
 
-  void SetDepthStencilValue(F32 depth);
+  void SetDepthStencilValue(Float32 depth);
 
   inline vk::ClearColorValue& GetBackgroundColor() { return background_color_;}
 
@@ -86,11 +86,11 @@ public:
 };
 
 inline void GraphicsRenderPass::SetBackgroundColor(acg::types::Rgba color) {
-  background_color_.setFloat32(std::array<F32, 4>{color.x(), color.y(), color.z(), color.w()});
+  background_color_.setFloat32(std::array<Float32, 4>{color.x(), color.y(), color.z(), color.w()});
 }
 
 
-inline void GraphicsRenderPass::SetDepthStencilValue(F32 depth) {
+inline void GraphicsRenderPass::SetDepthStencilValue(Float32 depth) {
   depth_stencil_value_.setDepth(depth);
 }
 

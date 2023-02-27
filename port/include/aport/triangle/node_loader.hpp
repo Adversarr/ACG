@@ -25,14 +25,14 @@ public:
 
   Status GetStatus() const;
 
-  const types::DynamicField<F64>& GetData() const;
+  const types::DynamicField<Float64>& GetData() const;
 
 private:
   std::istream& input_stream_;
 
   Status status_;
 
-  types::DynamicField<F64> nodes_;
+  types::DynamicField<Float64> nodes_;
 
 public:
   Index num_points_;

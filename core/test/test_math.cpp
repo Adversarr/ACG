@@ -3,10 +3,10 @@
 #include <acore/math/ops/kronecker.hpp>
 #include <iostream>
 
-#include "acore/access.hpp"
+#include "acore/math/access.hpp"
 
 TEST_CASE("Check Col copy status") {
-  acg::Field<acg::F32, 3> positions;
+  acg::Field<acg::Float32, 3> positions;
   positions.setRandom(3, 5);
   auto col0 = positions.col(0);
   col0(0) = 1;
@@ -17,7 +17,7 @@ TEST_CASE("Check Col copy status") {
 }
 
 TEST_CASE("Field Enumerate") {
-  acg::Field<acg::F32, 3> positions(3, 4);
+  acg::Field<acg::Float32, 3> positions(3, 4);
   acg::FieldEnumerate enumerator(positions);
   positions.setOnes();
   for (auto v : enumerator) {
@@ -33,11 +33,11 @@ TEST_CASE("Field Enumerate") {
 }
 
 TEST_CASE("Field Builder") {
-  auto ones = acg::FieldBuilder<acg::F32, 2>(2).Ones();
+  auto ones = acg::FieldBuilder<acg::Float32, 2>(2).Ones();
   CHECK(ones.cwiseEqual(1).all());
 
   auto func = [](acg::Index i) { return acg::Vec2f::Constant(static_cast<float>(i)); };
-  auto generated = acg::FieldBuilder<acg::F32, 2>(2).FromFunction(func);
+  auto generated = acg::FieldBuilder<acg::Float32, 2>(2).FromFunction(func);
   CHECK(acg::access(generated)[0](0) == 0);
   CHECK(acg::access(generated)[1](0) == 1);
 }

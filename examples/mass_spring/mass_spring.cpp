@@ -2,20 +2,20 @@
 
 #include <Eigen/SparseCholesky>
 #include <Eigen/SparseQR>
-#include <acore/access.hpp>
+#include <acore/math/access.hpp>
 #include <acore/geometry/common.hpp>
 #include <acore/geometry/common_models.hpp>
 #include <acore/math/constants.hpp>
 
 using namespace acg;
 
-geometry::SimpleMesh<F64> make_plane_xy(Index n) {
+geometry::SimpleMesh<Float64> make_plane_xy(Index n) {
   // z = 0, xy in [0, 1]
   // 3x3 => x = 0, 0.5, 1
   //        y = 0, 0.5, 1
   //        z = 0.
-  Field<F64, 3> vertices(3, n * n);
-  geometry::SimpleMesh<F64>::FacesType faces(3, 2 * (n - 1) * (n - 1));
+  Field<Float64, 3> vertices(3, n * n);
+  geometry::SimpleMesh<Float64>::FacesType faces(3, 2 * (n - 1) * (n - 1));
   for (Index i = 0; i < n; ++i) {
     for (Index j = 0; j < n; ++j) {
       Index idx = i * n + j;
@@ -190,6 +190,7 @@ void App::StepProjDynMf() {
   auto x_tilde = (position_ + velocity_ * dt_).eval();
   x_tilde.array().row(2) -= 9.8 * dt_ * dt_;
   auto current_solution = x_tilde.eval();
+  record_.Reset();
 
   for (int i = 0; i < steps_; ++i) {
     /****************************************
@@ -235,6 +236,36 @@ void App::StepProjDynMf() {
     for (Index i = 0; i < n_grids_; ++i) {
       p_acc(i) = o_acc(i);
     }
+
+    /****************************************
+     * Evaluate the error
+     ****************************************/
+    auto force = FieldBuilder<Float32, 3>(n_vertices_).Zeros();
+    auto facc = access(force);
+    for (auto sp : springs_) {
+      auto [i, j] = sp;
+      auto xij = (p_acc(i) - p_acc(j)).eval();
+      auto origin_length = (o_acc(i) - o_acc(j)).norm();
+      auto length = xij.norm();
+
+      auto force_amp = k_* (length - origin_length);
+
+      auto fij = -(force_amp * xij.normalized()).eval();
+
+      facc(i) += fij;
+      facc(j) -= fij;
+    }
+    auto acceleration_implicit = (force / mass_).eval();
+    acceleration_implicit.array().row(2) -= 9.8;
+
+    auto expected_velocity = acceleration_implicit * dt_ + velocity_;
+    auto expected_original_position = (current_solution - expected_velocity * dt_).eval();
+    for (Index i = 0; i < n_grids_; ++i) {
+      expected_original_position.col(i) = o_acc(i);
+    }
+    auto error_term = (expected_original_position - position_).cwiseAbs2().sum();
+    record_.Record(error_term);
+    // ACG_INFO("Iteration {}: error = {}", i, error_term);
   }
 
   /****************************************

@@ -24,7 +24,7 @@ protected:
    *
    * @param dt world time change.
    */
-  virtual int RunPhysicsImpl(F64 dt);
+  virtual int RunPhysicsImpl(Float64 dt);
 
   /**
    * @brief UI Interactor
@@ -102,7 +102,7 @@ protected:
   uint32_t fps_limit_{30};
 
   // Physical Time step in second.
-  F64 time_step_{.01};
+  Float64 time_step_{.01};
 
   std::unique_ptr<details::UiPipeline> ui_ppl_{nullptr};
 
@@ -119,7 +119,7 @@ protected:
   // Hooks for keyboard callback.
   std::map<KeyType, KeyboardCallback> keyboard_callbacks_;
 
-  F64 loop_time_{0};
+  Float64 loop_time_{0};
 };
 
 }  // namespace acg::gui

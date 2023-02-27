@@ -90,20 +90,20 @@ std::pair<std::vector<Vertex>, std::vector<GuiIndex >> Scene::Build() const {
   return {std::move(vertices), std::move(indices)};
 }
 
-Scene& Scene::AddParticle(const geometry::Particle<F32>& particle, const Vec3f& color) {
+Scene& Scene::AddParticle(const geometry::Particle<Float32>& particle, const Vec3f& color) {
   particles_.push_back(particle);
   particles_colors_.push_back(color);
   return *this;
 }
 
-Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Field<F32, 3>> opt_normals,
-                      Field<F32, 3> colors) {
+Scene& Scene::AddMesh(geometry::SimpleMesh<Float32> mesh, std::optional<Field<Float32, 3>> opt_normals,
+                      Field<Float32, 3> colors) {
   // normals_.emplace_back(acg::geometry::Normal<F32>{mesh.GetFaces(),
   // mesh.GetVertices()}.PerVertex());
   if (!opt_normals.has_value()) {
     const auto& face = mesh.GetFaces();
     const auto& vert = mesh.GetVertices();
-    acg::geometry::Normal<F32> normal_compute(face, vert);
+    acg::geometry::Normal<Float32> normal_compute(face, vert);
     auto normal = normal_compute.PerVertex(geometry::NormalPerVertexMode::kArea);
     normals_.push_back(normal);
   } else {
@@ -127,7 +127,7 @@ Scene2::Mesh& Scene2::AddMesh(const geometry::topology::TriangleList& indices,
   if (opt_normals.has_value()) {
     mesh.SetNormals(opt_normals.value());
   } else {
-    acg::geometry::Normal<F32> kern_normal(indices, positions);
+    acg::geometry::Normal<Float32> kern_normal(indices, positions);
     auto normal = kern_normal.PerVertex(geometry::NormalPerVertexMode::kArea);
     mesh.SetNormals(normal);
   }
@@ -141,7 +141,7 @@ Scene2::Particles& Scene2::AddMeshParticles() {
 }
 
 Scene2::Particles& Scene2::AddMeshParticles(const types::PositionField<float, 3>& positions,
-                                            F32 radius) {
+                                            Float32 radius) {
   return AddMeshParticles().SetPositions(positions).SetRadius(radius);
 }
 
@@ -156,7 +156,7 @@ Scene2::Particles& Scene2::AddParticles() {
 }
 
 Scene2::Particles& Scene2::AddParticles(const types::PositionField<float, 3>& positions,
-                                        F32 radius) {
+                                        Float32 radius) {
   return AddParticles().SetPositions(positions).SetRadius(radius);
 }
 
@@ -296,7 +296,7 @@ Scene2::Particles& Scene2::Particles::SetUniformColor(types::Rgba color) {
   colors.col(0) = color;
   return *this;
 }
-Scene2::Particles& Scene2::Particles::SetRadius(F32 r) {
+Scene2::Particles& Scene2::Particles::SetRadius(Float32 r) {
   radius = r;
   return *this;
 }

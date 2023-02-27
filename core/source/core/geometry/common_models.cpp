@@ -2,11 +2,11 @@
 #include "acore/math/constants.hpp"
 namespace acg::geometry {
 
-SimpleMesh<F32> sphere_uv(Vec3f center, F32 radius, Index n_stacks, Index n_slices) {
+SimpleMesh<Float32> sphere_uv(Vec3f center, Float32 radius, Index n_stacks, Index n_slices) {
   auto n_faces = 2 * n_slices * n_stacks;
   auto n_vertices = 2 + n_slices * n_stacks;
-  SimpleMesh<F32>::VerticesType vertices(3, n_vertices);
-  SimpleMesh<F32>::FacesType indices(3, n_faces);
+  SimpleMesh<Float32>::VerticesType vertices(3, n_vertices);
+  SimpleMesh<Float32>::FacesType indices(3, n_faces);
 
   // 1. fill the vertices
   // north pole
@@ -14,12 +14,12 @@ SimpleMesh<F32> sphere_uv(Vec3f center, F32 radius, Index n_stacks, Index n_slic
   // south pole
   vertices.col(n_vertices - 1) = center - Vec3f(0, 0, radius);
   // crossing points
-  F32 d_theta = constants::pi<F32> / static_cast<F32>(n_stacks + 1);
-  F32 d_phi = 2 * constants::pi<F32> / static_cast<F32>(n_slices);
+  Float32 d_theta = constants::pi<Float32> / static_cast<Float32>(n_stacks + 1);
+  Float32 d_phi = 2 * constants::pi<Float32> / static_cast<Float32>(n_slices);
   for (Index i = 1; i <= n_stacks; ++i) {
-    F32 theta = d_theta * i;
+    Float32 theta = d_theta * i;
     for (Index j = 0; j < n_slices; ++j) {
-      F32 phi = d_phi * j;
+      Float32 phi = d_phi * j;
       Index idx = (i - 1) * n_slices + j + 1;
       Vec3f pos = {sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)};
       vertices.col(idx) = pos * radius + center;
@@ -52,15 +52,15 @@ SimpleMesh<F32> sphere_uv(Vec3f center, F32 radius, Index n_stacks, Index n_slic
       indices.col(face_idx++) = Vec3Index {left_bottom, right_bottom, right_top};
     }
   }
-  return SimpleMesh<F32>{vertices, indices};
+  return SimpleMesh<Float32>{vertices, indices};
 }
 
-SimpleMesh<F32> sphere_20(Vec3f center, F32 radius) {
-  SimpleMesh<F32>::VerticesType vertices(3, 12);
-  SimpleMesh<F32>::FacesType indices(3, 20);
-  F32 x = .525731112119133606;
-  F32 z = .850650808352039932;
-  vertices = AttrTrans<F32, 3>{{-x, 0.0, z}, {x, 0.0, z},  {-x, 0.0, -z}, {x, 0.0, -z},
+SimpleMesh<Float32> sphere_20(Vec3f center, Float32 radius) {
+  SimpleMesh<Float32>::VerticesType vertices(3, 12);
+  SimpleMesh<Float32>::FacesType indices(3, 20);
+  Float32 x = .525731112119133606;
+  Float32 z = .850650808352039932;
+  vertices = AttrTrans<Float32, 3>{{-x, 0.0, z}, {x, 0.0, z},  {-x, 0.0, -z}, {x, 0.0, -z},
                                   {0.0, z, x},  {0.0, z, -x}, {0.0, -z, x},  {0.0, -z, -x},
                                   {z, x, 0.0},  {-z, x, 0.0}, {z, -x, 0.0},  {-z, -x, 0.0}}
                  .transpose();

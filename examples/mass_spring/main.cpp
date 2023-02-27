@@ -7,6 +7,7 @@
 #include <agui/gui.hpp>
 #include <agui/init.hpp>
 #include <autils/init.hpp>
+#include <autils/time/timer.hpp>
 
 #include "mass_spring.hpp"
 using namespace acg;
@@ -14,11 +15,11 @@ using namespace acg;
 int main(int argc, char** argv) {
   using namespace gui;
   acg::utils::hook_default_utils_environment();
-  acg::gui::hook_default_gui_environment("MASS");
+  acg::gui::hook_default_gui_environment("Mass Spring");
   acg::init(argc, argv);
 
   App app;
-  app.n_grids_ = 160;
+  app.n_grids_ = 100;
   app.Init();
   auto& gui = Gui::Instance();
   bool running = false;
@@ -35,6 +36,11 @@ int main(int argc, char** argv) {
     ImGui::InputInt("Max Iterate Count", &app.steps_);
     ImGui::Checkbox("Matrix Free Solver", &matfree);
     ImGui::Checkbox("Check result of MF", &checking_mode);
+    ImGui::PlotHistogram("Error Term", app.record_.Ptr(), app.steps_, 0, nullptr, FLT_MAX, FLT_MAX,
+                         ImVec2(0, 80));
+    ImGui::Text("Error Mean = %f, Max = %f", app.record_.Mean(),
+                app.record_.Reduce(0, [](float a, float b) { return std::max(a, b); }));
+    ImGui::Text("Error Last = %f", app.record_.Last());
     init_once |= ImGui::InputFloat("Spring K", &app.k_);
   });
 
@@ -43,7 +49,7 @@ int main(int argc, char** argv) {
   auto update_mesh = [&render_mesh, &app]() {
     auto indices = app.faces_;
     auto positions = app.position_;
-    acg::geometry::Normal<F32> kern_normal(indices, positions);
+    acg::geometry::Normal<Float32> kern_normal(indices, positions);
     auto normal = kern_normal.PerVertex(geometry::NormalPerVertexMode::kArea);
     render_mesh.SetVertices(app.position_)
         .SetUniformColor(acg::types::Rgba{.7, .7, .3, 1})
@@ -60,7 +66,9 @@ int main(int argc, char** argv) {
     gui.Tick();
     gui.RenderOnce();
     gui.UpdateScene();
+    acg::utils::Timer timer;
     if (running || run_once) {
+      timer.TickBegin();
       if (!checking_mode) {
         if (matfree) {
           app.StepProjDynMf();
@@ -86,8 +94,15 @@ int main(int argc, char** argv) {
         ACG_INFO("Error of Velocity = {}", err_velocity);
         ACG_INFO("Error of d = {}", err_d);
       }
+      timer.TickEnd();
       update_mesh();
     }
+
+    std::cout << 1000
+                     / std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(
+                           timer.GetLastPeriod())
+                           .count()
+              << std::endl;
 
     if (init_once) {
       app.Init();

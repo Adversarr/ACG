@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <acore/access.hpp>
+#include <acore/math/access.hpp>
 
 namespace acg {
 

@@ -13,7 +13,7 @@ namespace acg::geometry {
  *
  * @tparam T the float point number in use. default = float (32-bit)
  */
-template <typename T = F32> class SimpleMesh {
+template <typename T = Float32> class SimpleMesh {
 public:
   using VertexType = types::Position<T>;
 

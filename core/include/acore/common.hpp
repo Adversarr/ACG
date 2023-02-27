@@ -28,33 +28,30 @@ using size_t = std::size_t;
  * @brief 32-bit Float point number.
  *
  */
-using F32 = float;
+using Float32 = float;
 
 /**
  * @brief 64-bit Float point number.
  *
  */
-using F64 = double;
+using Float64 = double;
 
 /**
  * @brief Default floating-point type is Float 64, aka double.
  */
-using Float = F64;
-
+using Float = Float64;
 
 /**
  * @brief Integer Types
  */
-using I32 = std::int32_t;
-using Ui32 = std::uint32_t;
-using I64 = std::int64_t;
-using Ui64 = std::uint64_t;
+using Int32 = std::int32_t;
+using UInt32 = std::uint32_t;
+using Int64 = std::int64_t;
+using UInt64 = std::uint64_t;
 
 /**
  * @brief Index & Size type for mesh, particle system, rendering(index buffer), etc.
  */
 using Index = std::ptrdiff_t;
-
-
 
 }  // namespace acg

@@ -2,7 +2,7 @@
 #include <acore/geometry/common.hpp>
 #include <acore/geometry/mesh.hpp>
 #include <acore/geometry/particle.hpp>
-#include <acore/access.hpp>
+#include <acore/math/access.hpp>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -26,7 +26,7 @@ public:
    * @param particle: contains the position and radius
    * @param color: the particle's color, in RGB (r, g, b \in [0, 1])
    */
-  Scene& AddParticle(const geometry::Particle<F32>& particle, const Vec3f& color);
+  Scene& AddParticle(const geometry::Particle<Float32>& particle, const Vec3f& color);
 
   /**
    * @brief Add a triangle mesh to the scene.
@@ -44,8 +44,8 @@ public:
    *     scene_.AddMesh(mesh, AttrVecTrans<F32, 3>{{1, 0, 0}, {1, 0, 0}, {1, 0, 0}}.transpose(),
    * Vec3f(.5, .6, .7));
    */
-  Scene& AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Field<F32, 3>> opt_normals,
-                 Field<F32, 3> colors);
+  Scene& AddMesh(geometry::SimpleMesh<Float32> mesh, std::optional<Field<Float32, 3>> opt_normals,
+                 Field<Float32, 3> colors);
 
   vk::DeviceSize GetRequiredVertexBufferSize() const;
 
@@ -54,13 +54,13 @@ public:
   std::pair<std::vector<Vertex>, std::vector<GuiIndex >> Build() const;
 
 private:
-  std::vector<geometry::SimpleMesh<F32>> meshes_;
+  std::vector<geometry::SimpleMesh<Float32>> meshes_;
 
-  std::vector<std::optional<Field<F32, 3>>> normals_;
+  std::vector<std::optional<Field<Float32, 3>>> normals_;
 
-  std::vector<Field<F32, 3>> mesh_colors_;
+  std::vector<Field<Float32, 3>> mesh_colors_;
 
-  std::vector<geometry::Particle<F32>> particles_;
+  std::vector<geometry::Particle<Float32>> particles_;
 
   std::vector<Vec3f> particles_colors_;
 };
@@ -112,7 +112,7 @@ public:
    * @brief Add a mesh-based particle using instancing rendering.
    */
   Particles& AddMeshParticles();
-  Particles& AddMeshParticles(const types::PositionField<float, 3>& positions, F32 radius = 1.0f);
+  Particles& AddMeshParticles(const types::PositionField<float, 3>& positions, Float32 radius = 1.0f);
 
   std::vector<Particles>& GetMeshParticles();
 
@@ -127,7 +127,7 @@ public:
   /**
    * @brief add a group of particles into scene.
    */
-  Particles& AddParticles(const types::PositionField<float, 3>& positions, F32 radius = 1.0f);
+  Particles& AddParticles(const types::PositionField<float, 3>& positions, Float32 radius = 1.0f);
 
   Particles& AddParticles();
 
@@ -246,7 +246,7 @@ struct Scene2::Particles  {
   types::PositionField<float, 3> positions;
   types::RgbaField colors;
   bool use_uniform_color = true;
-  F32 radius = 1.0f;
+  Float32 radius = 1.0f;
   bool use_instance_rendering = false;
   
   Particles(const Particles&) = default;
@@ -263,7 +263,7 @@ struct Scene2::Particles  {
 
   Particles& SetUniformColor(types::Rgba color);
 
-  Particles& SetRadius(F32 r);
+  Particles& SetRadius(Float32 r);
 
   void MarkUpdate();
 };

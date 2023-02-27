@@ -2,35 +2,52 @@
 #include <agui/gui.hpp>
 #include <agui/init.hpp>
 #include <autils/init.hpp>
-#include <autils/time.hpp>
+#include <autils/time/time.hpp>
 
 #include "app.hpp"
 using namespace acg::gui;
 
+
 acg::geometry::topology::TetraList make_tetra() {
-  acg::geometry::topology::TetraList tetra(4, 1);
+  acg::geometry::topology::TetraList tetra(4, 5);
   auto acc = acg::access(tetra);
-  acc(0) = acg::Vec4Index{0, 1, 2, 3};
+  acc(0) = acg::Vec4Index{0, 4, 1, 3};
+  acc(1) = acg::Vec4Index{2, 1, 6, 3};
+  acc(2) = acg::Vec4Index{7, 6, 4, 3};
+  acc(3) = acg::Vec4Index{5, 4, 6, 1};
+  acc(4) = acg::Vec4Index{3, 4, 6, 1};
   return tetra;
 }
 
-acg::types::PositionField<acg::F64, 3> make_pos() {
-  auto pos = acg::FieldBuilder<acg::F64, 3>(4).Placeholder();
+acg::types::PositionField<acg::Float64, 3> make_pos() {
+  auto pos = acg::FieldBuilder<acg::Float64, 3>(8).Placeholder();
   auto acc = acg::access(pos);
   acc(0) = acg::Vec3d(0, 0, 0);
-  acc(1) = acg::Vec3d(1, 0, 0);
-  acc(2) = acg::Vec3d(0, 1, 0);
-  acc(3) = acg::Vec3d(0, 0, 1);
+  acc(1) = acg::Vec3d(0, 1, 0);
+  acc(2) = acg::Vec3d(1, 1, 0);
+  acc(3) = acg::Vec3d(1, 0, 0);
+  acc(4) = acg::Vec3d(0, 0, 1);
+  acc(5) = acg::Vec3d(0, 1, 1);
+  acc(6) = acg::Vec3d(1, 1, 1);
+  acc(7) = acg::Vec3d(1, 0, 1);
   return pos;
 }
 
 acg::geometry::topology::TriangleList make_face() {
-  auto tri = acg::FieldBuilder<acg::Index, 3>(4).Placeholder();
+  auto tri = acg::FieldBuilder<acg::Index, 3>(12).Placeholder();
   auto acc = acg::access(tri);
   acc(0) = acg::Vec3Index(0, 1, 3);
-  acc(1) = acg::Vec3Index(0, 2, 1);
-  acc(2) = acg::Vec3Index(0, 3, 2);
-  acc(3) = acg::Vec3Index(1, 2, 3);
+  acc(1) = acg::Vec3Index(1, 2, 3);
+  acc(2) = acg::Vec3Index(4, 0, 3);
+  acc(3) = acg::Vec3Index(7, 4, 3);
+  acc(4) = acg::Vec3Index(3, 6, 7);
+  acc(5) = acg::Vec3Index(2, 6, 3);
+  acc(6) = acg::Vec3Index(1, 6, 2);
+  acc(7) = acg::Vec3Index(1, 5, 6);
+  acc(8) = acg::Vec3Index(1, 4, 5);
+  acc(9) = acg::Vec3Index(0, 4, 1);
+  acc(10) = acg::Vec3Index(5, 4, 6);
+  acc(11) = acg::Vec3Index(6, 4, 7);
   return tri;
 }
 
@@ -68,7 +85,7 @@ int main(int argc, char** argv) {
 
   auto indices = make_face();
   auto& mesh = gui.GetScene()
-                   .AddMesh(indices, app.position_.cast<acg::F32>())
+                   .AddMesh(indices, app.position_.cast<acg::Float32>())
                    .SetUniformColor(acg::types::Rgba(1, 0, 0, 1))
                    .SetEnableWireframe();
   mesh.MarkUpdate();
@@ -78,16 +95,14 @@ int main(int argc, char** argv) {
     gui.RenderOnce();
     gui.UpdateScene();
     if (step_once || running) {
-      for (int i = 0; i < sub_steps; ++i) {
-        app.Step();
-      }
-      mesh.SetVertices(app.position_.cast<acg::F32>()).MarkUpdate();
+      app.StepProjDynMF();
+      mesh.SetVertices(app.position_.cast<acg::Float32>()).MarkUpdate();
     }
 
     if (reset_once) {
       app.position_ = make_pos();
       app.Init();
-      mesh.SetVertices(app.position_.cast<acg::F32>()).MarkUpdate();
+      mesh.SetVertices(app.position_.cast<acg::Float32>()).MarkUpdate();
     }
   }
 

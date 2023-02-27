@@ -2,6 +2,7 @@
 #include <acore/all.hpp>
 #include <acore/common.hpp>
 #include <acore/math/sparse.hpp>
+#include <autils/record/roting_record.hpp>
 #include <set>
 #include <taskflow/taskflow.hpp>
 class App {
@@ -9,7 +10,6 @@ public:
   void Init();
 
   void Step();
-
 
   void StepProjDyn();
 
@@ -45,4 +45,5 @@ public:
   int steps_{30};
 
   tf::Executor executor_{8};
+  acg::utils::RotingRecord<float, 128> record_;
 };

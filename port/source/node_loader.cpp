@@ -1,4 +1,4 @@
-#include <acore/access.hpp>
+#include <acore/math/access.hpp>
 #include <aport/triangle/node_loader.hpp>
 #include <autils/common.hpp>
 namespace acg::port::triangle {
@@ -8,7 +8,7 @@ NodeLoader::NodeLoader(std::istream& input_stream)
 
 Status NodeLoader::GetStatus() const { return status_; }
 
-const types::DynamicField<F64>& NodeLoader::GetData() const {
+const types::DynamicField<Float64>& NodeLoader::GetData() const {
   ACG_DEBUG_CHECK(status_ == Status::kOk, "Access to unavailable data. status code = {}",
                   static_cast<int>(status_));
   return nodes_;

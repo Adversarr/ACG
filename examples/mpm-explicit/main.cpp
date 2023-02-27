@@ -4,7 +4,7 @@
 #include <agui/backend/window.hpp>
 #include <agui/gui.hpp>
 #include <autils/init.hpp>
-#include <autils/time.hpp>
+#include <autils/time/time.hpp>
 
 #include "app.hpp"
 
@@ -36,15 +36,15 @@ int main(int argc, char** argv) {
       clear = ImGui::Button("Reset Scene.");
       // running = ImGui::Button("Run Once");
       ImGui::Checkbox("Run", &running);
-      acg::F64 vel_eng = app.particle_velocity_.array().square().sum();
-      Vec3f pos = app.particle_position_.rowwise().mean().cast<F32>();
+      acg::Float64 vel_eng = app.particle_velocity_.array().square().sum();
+      Vec3f pos = app.particle_position_.rowwise().mean().cast<Float32>();
       ImGui::Text("Velocity Energy = %lf, Weight %lf", vel_eng, app.weight_sum);
       ImGui::InputFloat3("Position", pos.data());
       ImGui::DragFloat3("Gravity", app.grav_.data(), 0.1, -3, 3);
     });
 
     gui.GetScene().AddMeshParticles()
-      .SetPositions(app.particle_position_.cast<F32>())
+      .SetPositions(app.particle_position_.cast<Float32>())
       .SetUniformColor(types::Rgba(1, 0, 0, 1))
       .SetRadius(0.01)
       .MarkUpdate();
@@ -56,14 +56,14 @@ int main(int argc, char** argv) {
       if (clear) {
         app.Init();
         gui.GetScene().GetMeshParticles().front()
-          .SetPositions(app.particle_position_.cast<F32>())
+          .SetPositions(app.particle_position_.cast<Float32>())
           .MarkUpdate();
       }
 
       if (running) {
         app.Run();
         gui.GetScene().GetMeshParticles().front()
-          .SetPositions(app.particle_position_.cast<F32>())
+          .SetPositions(app.particle_position_.cast<Float32>())
           .MarkUpdate();
         // running = false;
         // acg::utils::SleepMs(500);

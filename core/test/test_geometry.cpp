@@ -25,7 +25,7 @@ TEST_CASE("Normal") {
   Eigen::MatrixX3f positions_transpose(4, 3);
   positions_transpose << 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0;
   acg::types::PositionField<float> position = positions_transpose.transpose();
-  acg::geometry::Normal<acg::F32> normal(triangle_list, position);
+  acg::geometry::Normal<acg::Float32> normal(triangle_list, position);
   auto per_face = normal.PerFace();
   CHECK_EQ(per_face(0, 1), -1);
   auto per_vertex = normal.PerVertex();
