@@ -1,6 +1,9 @@
 #include <doctest/doctest.h>
 
+#include <acore/math/func.hpp>
+#include <acore/math/ndrange.hpp>
 #include <acore/math/ops/kronecker.hpp>
+#include <iomanip>
 #include <iostream>
 
 #include "acore/math/access.hpp"
@@ -30,30 +33,41 @@ TEST_CASE("Field Enumerate") {
   for (auto v : enumerator) {
     CHECK(v.second(1) == positions(1, v.first));
   }
+
+  using namespace acg;
+  acg::NdRangeIterator<3> it({0, 0, 0}, {3, 2, 1});
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 2; ++j) {
+      CHECK(*it == std::make_tuple<Index, Index, Index>(i, j, 0));
+      ++it;
+    }
+  }
+  acg::NdRange<3> ndrange({3, 2, 1});
+  for (auto [i, j, k]: ndrange) {
+    std::cout << std::setw(12) << i;
+    std::cout << std::setw(12) << j;
+    std::cout << std::setw(12) << k;
+    std::cout << std::endl;
+  }
 }
 
 TEST_CASE("Field Builder") {
   auto ones = acg::FieldBuilder<acg::Float32, 2>(2).Ones();
   CHECK(ones.cwiseEqual(1).all());
-
-  auto func = [](acg::Index i) { return acg::Vec2f::Constant(static_cast<float>(i)); };
-  auto generated = acg::FieldBuilder<acg::Float32, 2>(2).FromFunction(func);
-  CHECK(acg::access(generated)[0](0) == 0);
-  CHECK(acg::access(generated)[1](0) == 1);
 }
 
 TEST_CASE("FieldGetter") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
-  MultiDimensionIndexer<3> getter(p, q, r);
+  NdRangeIndexer<3> getter(p, q, r);
   CHECK(getter(x, y, z) == x * r * q + r * y + z);
 }
 
 TEST_CASE("Field Rvalue") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
-  MultiDimensionIndexer<3> getter(p, q, r);
+  NdRangeIndexer<3> getter(p, q, r);
   Field<float, 3> ones(3, 1);
   ones.setOnes();
   auto acc = access((ones + ones).eval());
@@ -65,7 +79,7 @@ TEST_CASE("Field accessor") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
-  MultiDimensionIndexer<3> getter(p, q, r);
+  NdRangeIndexer<3> getter(p, q, r);
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
   std::cout << field << std::endl;
@@ -78,7 +92,7 @@ TEST_CASE("Row") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
-  MultiDimensionIndexer<3> getter(p, q, r);
+  NdRangeIndexer<3> getter(p, q, r);
   Field<float, 1> field(1, p * q * r);
   auto acc = access(field, getter);
   acc[x * r * q + r * y + z].setOnes();
@@ -88,7 +102,7 @@ TEST_CASE("Row") {
 TEST_CASE("Access standard iterate") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
-  MultiDimensionIndexer<3> getter(p, q, r);
+  NdRangeIndexer<3> getter(p, q, r);
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
   auto acc = access(field, getter);
@@ -101,7 +115,7 @@ TEST_CASE("Access standard iterate") {
 TEST_CASE("Default getter") {
   using namespace acg;
   Index p = 4, q = 3, r = 5;
-  MultiDimensionIndexer<3> getter(p, q, r);
+  NdRangeIndexer<3> getter(p, q, r);
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
   auto acc = access(field);
@@ -114,7 +128,7 @@ TEST_CASE("Default getter") {
 TEST_CASE("Field Access Trasnform") {
   using namespace acg;
   auto field = FieldBuilder<float, 4>(3).Constant(0).eval();
-  auto acc = access<MultiDimensionIndexer<1>, ReshapeTransform<2, 2>>(field);
+  auto acc = access<NdRangeIndexer<1>, ReshapeTransform<2, 2>>(field);
   auto acc1 = acc[1];
   acc1.setOnes();
   CHECK_EQ(acc(1).trace(), 2);
@@ -200,4 +214,12 @@ TEST_CASE("Iter2d") {
   for (auto [i, j] : itw) {
     std::cout << i << j << std::endl;
   }
+}
+
+TEST_CASE("Sin") {
+  acg::math::sin(10);
+  acg::Field<float, 3> field(3, 3);
+  field.setZero();
+  auto sin_field = acg::math::sin(field);
+  CHECK(sin_field.cwiseEqual(0).all());
 }

@@ -2,9 +2,9 @@
 
 #include <Eigen/SparseCholesky>
 #include <Eigen/SparseQR>
-#include <acore/math/access.hpp>
 #include <acore/geometry/common.hpp>
 #include <acore/geometry/common_models.hpp>
+#include <acore/math/access.hpp>
 #include <acore/math/constants.hpp>
 
 using namespace acg;
@@ -48,7 +48,7 @@ void App::Init() {
   velocity_.resizeLike(position_);
   velocity_.setZero();
 
-  auto indexer = acg::MultiDimensionIndexer<2>(n_grids_, n_grids_);
+  auto indexer = acg::NdRangeIndexer<2>(n_grids_, n_grids_);
   for (Index i = 0; i < n_grids_ - 1; ++i) {
     for (Index j = 0; j < n_grids_ - 1; ++j) {
       AddSpring(indexer(i, j), indexer(i, j + 1));
@@ -240,31 +240,33 @@ void App::StepProjDynMf() {
     /****************************************
      * Evaluate the error
      ****************************************/
-    auto force = FieldBuilder<Float32, 3>(n_vertices_).Zeros();
-    auto facc = access(force);
-    for (auto sp : springs_) {
-      auto [i, j] = sp;
-      auto xij = (p_acc(i) - p_acc(j)).eval();
-      auto origin_length = (o_acc(i) - o_acc(j)).norm();
-      auto length = xij.norm();
+    if (eval_error_) {
+      auto force = FieldBuilder<Float32, 3>(n_vertices_).Zeros();
+      auto facc = access(force);
+      for (auto sp : springs_) {
+        auto [i, j] = sp;
+        auto xij = (p_acc(i) - p_acc(j)).eval();
+        auto origin_length = (o_acc(i) - o_acc(j)).norm();
+        auto length = xij.norm();
 
-      auto force_amp = k_* (length - origin_length);
+        auto force_amp = k_ * (length - origin_length);
 
-      auto fij = -(force_amp * xij.normalized()).eval();
+        auto fij = -(force_amp * xij.normalized()).eval();
 
-      facc(i) += fij;
-      facc(j) -= fij;
+        facc(i) += fij;
+        facc(j) -= fij;
+      }
+      auto acceleration_implicit = (force / mass_).eval();
+      acceleration_implicit.array().row(2) -= 9.8;
+
+      auto expected_velocity = acceleration_implicit * dt_ + velocity_;
+      auto expected_original_position = (current_solution - expected_velocity * dt_).eval();
+      for (Index i = 0; i < n_grids_; ++i) {
+        expected_original_position.col(i) = o_acc(i);
+      }
+      auto error_term = (expected_original_position - position_).cwiseAbs2().sum();
+      record_.Record(error_term);
     }
-    auto acceleration_implicit = (force / mass_).eval();
-    acceleration_implicit.array().row(2) -= 9.8;
-
-    auto expected_velocity = acceleration_implicit * dt_ + velocity_;
-    auto expected_original_position = (current_solution - expected_velocity * dt_).eval();
-    for (Index i = 0; i < n_grids_; ++i) {
-      expected_original_position.col(i) = o_acc(i);
-    }
-    auto error_term = (expected_original_position - position_).cwiseAbs2().sum();
-    record_.Record(error_term);
     // ACG_INFO("Iteration {}: error = {}", i, error_term);
   }
 

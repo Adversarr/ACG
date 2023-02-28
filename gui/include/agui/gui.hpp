@@ -132,7 +132,7 @@ public:
 
   explicit Gui(const Config& config);
 
-  void Tick();
+  void Tick(bool glfw_poll = false);
 
   ~Gui();
 

@@ -1,8 +1,9 @@
 #include <iterator>
 #include <tuple>
+#include <array>
 
 struct Iter2D {
-  constexpr Iter2D(int n, int m, int i, int j) : ij(i, j), n(n), m(m) {}
+  constexpr Iter2D(int n, int m, int i, int j) : ij({i, j}), n(n), m(m) {}
 
   constexpr decltype(auto) operator*() const { return ij; }
 
@@ -42,6 +43,7 @@ struct Iter2D {
   using pointer = std::tuple<int, int>*;
   using iterator_category = std::random_access_iterator_tag;
 
+  // std::array<int, 2> ij;
   std::tuple<int, int> ij;
   const int n;
   const int m;

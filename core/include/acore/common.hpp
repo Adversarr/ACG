@@ -39,7 +39,7 @@ using Float64 = double;
 /**
  * @brief Default floating-point type is Float 64, aka double.
  */
-using Float = Float64;
+using Float = Float32;
 
 /**
  * @brief Integer Types

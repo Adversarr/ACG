@@ -5,6 +5,7 @@
 #include "acore/common.hpp"
 #include "autils/common.hpp"
 #include "autils/god/utilities.hpp"
+#include "autils/meta.hpp"
 
 namespace acg {
 
@@ -23,37 +24,44 @@ template <int rows, int cols> struct ReshapeTransform {
   }
 };
 
-// NOTE: standard field Indexer. An indexer can also be iterated.
-template <Index dim> class MultiDimensionIndexer;
 
-template <> class MultiDimensionIndexer<0> {
+/****************************************
+ * NOTE: Foreach Indexer, it have:
+ *  1. value_type: indicates the return value type
+ *
+ ****************************************/
+
+// NOTE: standard field Indexer. An indexer can also be iterated.
+template <Index dim> class NdRangeIndexer;
+
+template <> class NdRangeIndexer<0> {
 public:
   inline constexpr Index operator()() const { return 0; }
 
   static constexpr Index this_dim = 0;  // NOLINT
 };
 
-template <> class MultiDimensionIndexer<1> {
+template <> class NdRangeIndexer<1> {
 public:
   inline Index operator()(Index id) const { return id; }
 
-  explicit constexpr MultiDimensionIndexer(Index this_dim = 0) : this_dim(this_dim) {}
+  explicit constexpr NdRangeIndexer(Index this_dim = 0) : this_dim(this_dim) {}
 
 protected:
   const Index this_dim{0};
 };
 
-template <Index dim> class MultiDimensionIndexer : public MultiDimensionIndexer<dim - 1> {
+template <Index dim> class NdRangeIndexer : public NdRangeIndexer<dim - 1> {
 public:
-  template <typename... Args> constexpr explicit MultiDimensionIndexer(Index this_dim, Args... arg)
-      : MultiDimensionIndexer<dim - 1>(arg...),
+  template <typename... Args> constexpr explicit NdRangeIndexer(Index this_dim, Args... arg)
+      : NdRangeIndexer<dim - 1>(arg...),
         this_dim(this_dim),
         multiplier(acg::utils::product(static_cast<Index>(arg)...)) {}
 
   template <typename... Args>
   constexpr Index operator()(Index this_size, Args... indices) const noexcept {
     return this_size * multiplier
-           + MultiDimensionIndexer<dim - 1>::operator()(static_cast<Index>(indices)...);
+           + NdRangeIndexer<dim - 1>::operator()(static_cast<Index>(indices)...);
   }
 
 protected:
@@ -61,11 +69,6 @@ protected:
   const Index multiplier{0};
 };
 
-// NOTE: Field Access Constructor Tags.
-struct LvalueTag {};
-struct RvalueTag {};
-struct ConstRvalueTag {};
-struct ConstLvalueTag {};
 
 // NOTE: Standard Field Accessor.
 template <typename Type, typename Transform, typename Indexer> struct FieldAccessor {
@@ -76,16 +79,16 @@ template <typename Type, typename Transform, typename Indexer> struct FieldAcces
   Indexer indexer;
   Transform transform;
 
-  inline explicit FieldAccessor(origin_type& x, Indexer getter, LvalueTag)
+  inline explicit FieldAccessor(origin_type& x, Indexer getter, utils::LvalueTag)
       : data(x), indexer(getter) {}
 
-  inline explicit FieldAccessor(const origin_type& x, Indexer getter, ConstLvalueTag)
+  inline explicit FieldAccessor(const origin_type& x, Indexer getter, utils::ConstLvalueTag)
       : data(x), indexer(getter) {}
 
-  inline explicit FieldAccessor(origin_type&& x, Indexer getter, RvalueTag)
+  inline explicit FieldAccessor(origin_type&& x, Indexer getter, utils::RvalueTag)
       : data(std::forward<origin_type>(x)), indexer(getter) {}
 
-  inline explicit FieldAccessor(const origin_type&& x, Indexer getter, ConstRvalueTag)
+  inline explicit FieldAccessor(const origin_type&& x, Indexer getter, utils::ConstRvalueTag)
       : data(x), indexer(getter) {}
 
   FieldAccessor(const FieldAccessor&) = delete;
@@ -117,6 +120,18 @@ template <typename Type, typename Transform, typename Indexer> struct FieldAcces
 
   inline decltype(auto) end() const { return data.colwise().end(); }
 };
+
+
+/****************************************
+ * NOTE: Enumerator
+ ****************************************/
+template <typename DataType, typename IndexIterator>
+class FieldEnumerate {
+  using index_type = typename IndexIterator::value_type;
+public:
+
+};
+
 
 }  // namespace details
 

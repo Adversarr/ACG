@@ -2,13 +2,11 @@
  * God is a tiny Compile Time Computation and Meta Programming Library
  */
 
-
 #pragma once
 #include <type_traits>
 
 // NOLINTBEGIN(readability-identifier-naming)
 #include "acore/common.hpp"
-
 
 namespace acg::utils::god {
 namespace details {
@@ -155,6 +153,14 @@ template <typename P, typename H, typename... T> struct Update<P, List<H, T...>>
 //   template <typename T> inline decltype(auto) operator()(T&& in) const noexcept { return in; }
 // };
 
+template <typename T, int count> struct Duplicate;
+template <typename T> struct Duplicate<T, 0> { using type = List<>; };
+template <typename T, int count> struct Duplicate {
+  static_assert(count >= 0, "Count < 0 detected.");
+  using last_type = typename Duplicate<T, count - 1>::type;
+  using type = typename last_type::template append<T>;
+};
+
 }  // namespace details
 
 using Empty = details::Empty;
@@ -200,5 +206,8 @@ template <typename H, typename L> using Update_t = typename details::Update<H, L
 
 template <typename L> using Reverse = details::Reverse<L>;
 template <typename L> using Reverse_t = typename Reverse<L>::type;
+
+template <typename L, int count> using Duplicate = details::Duplicate<L, count>;
+template <typename L, int count> using Duplicate_t = typename Duplicate<L, count>::type;
 }  // namespace acg::utils::god
 // NOLINTEND(readability-identifier-naming)

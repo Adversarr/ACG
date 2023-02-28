@@ -791,7 +791,10 @@ void Gui::DrawDefaultUI() {
   ImGui::End();
 }
 
-void Gui::Tick() {
+void Gui::Tick(bool glfw_poll) {
+  if (glfw_poll) {
+    glfwPollEvents();
+  }
   auto cur_time = std::chrono::steady_clock::now();
   dt = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(cur_time - last_time);
   last_time = cur_time;

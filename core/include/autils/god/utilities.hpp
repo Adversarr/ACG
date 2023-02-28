@@ -14,4 +14,7 @@ template <typename... Args> constexpr decltype(auto) product(Args... args) {
     return (args * ...);
   }
 }
+
+
+
 }  // namespace acg::utils

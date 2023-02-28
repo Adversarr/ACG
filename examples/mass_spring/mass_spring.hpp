@@ -45,5 +45,8 @@ public:
   int steps_{30};
 
   tf::Executor executor_{8};
+
+  bool eval_error_{false};
+
   acg::utils::RotingRecord<float, 128> record_;
 };

@@ -1,53 +1,52 @@
 #pragma once
-#include <autils/common.hpp>
 #include <acore/math/common.hpp>
+#include <autils/common.hpp>
 #include <tuple>
-#include "autils/common.hpp"
 
 #include "./details/access-inl.hpp"
+#include "autils/common.hpp"
 
-namespace acg{
+namespace acg {
 // Export Getter and Transform
 using IdentityTransform = details::IdentityTransform;
 template <int r, int c> using ReshapeTransform = details::ReshapeTransform<r, c>;
-template <Index d> using MultiDimensionIndexer = details::MultiDimensionIndexer<d>;
-using DefaultIndexer = MultiDimensionIndexer<1>;
+template <Index d> using NdRangeIndexer = details::NdRangeIndexer<d>;
+using DefaultIndexer = NdRangeIndexer<1>;
 
 // NOTE: Access Function for fields.
 
 // 1. For r-value.
-template <typename Indexer = details::MultiDimensionIndexer<1>,
+template <typename Indexer = details::NdRangeIndexer<1>,
           typename Transform = details::IdentityTransform, typename Type>
 decltype(auto) access(Type&& field, Indexer getter = Indexer()) {
   auto ret = details::FieldAccessor<const std::remove_cv_t<Type>, Transform, Indexer>(
-      std::forward<Type>(field), getter, details::RvalueTag{});
+      std::forward<Type>(field), getter, utils::RvalueTag{});
   return ret;
 }
 
 // 2. For cr-value
-template <typename Indexer = details::MultiDimensionIndexer<1>,
+template <typename Indexer = details::NdRangeIndexer<1>,
           typename Transform = details::IdentityTransform, typename Type>
 decltype(auto) access(const Type&& field, Indexer getter = Indexer()) {
   auto ret = details::FieldAccessor<Type, Transform, Indexer>(std::forward<decltype(field)>(field),
-                                                              getter, details::ConstRvalueTag{});
+                                                              getter, utils::ConstRvalueTag{});
   return ret;
 }
 
 // 3. For cl-value
-template <typename Indexer = details::MultiDimensionIndexer<1>,
+template <typename Indexer = details::NdRangeIndexer<1>,
           typename Transform = details::IdentityTransform, typename Type>
 decltype(auto) access(const Type& field, Indexer getter = Indexer()) {
   return details::FieldAccessor<const Type&, Transform, Indexer>(field, getter,
-                                                                 details::ConstLvalueTag{});
+                                                                 utils::ConstLvalueTag{});
 }
 
 // 4. For l-value
-template <typename Indexer = details::MultiDimensionIndexer<1>,
+template <typename Indexer = details::NdRangeIndexer<1>,
           typename Transform = details::IdentityTransform, typename Type>
 decltype(auto) access(Type& field, Indexer getter = Indexer()) {
-  return details::FieldAccessor<Type&, Transform, Indexer>(field, getter, details::LvalueTag{});
+  return details::FieldAccessor<Type&, Transform, Indexer>(field, getter, utils::LvalueTag{});
 }
-
 
 // TODO: Modify
 template <typename Scalar, int dim> class FieldEnumerate {
@@ -94,10 +93,11 @@ public:
 
   struct Iterator {
     using iterator_category = std::random_access_iterator_tag;
-    using difference_type = typename RawType::Index;
+    using difference_type = acg::Index;
     using value_type = std::pair<difference_type, decltype(std::declval<RawType>().col(0))>;
 
     difference_type index;
+
     const RawType& raw_data;
 
     Iterator(difference_type index, const RawType& raw_data) : index(index), raw_data(raw_data) {}
@@ -138,13 +138,8 @@ public:
 
   inline decltype(auto) Random() { return Field<Scalar, dim>::Random(dim, n_).eval(); }
 
-  inline decltype(auto) FromFunction(std::function<Vec<Scalar, dim>(Index i)> generator) {
-    auto ph = Placeholder();
-    for (auto [i, b] : FieldEnumerate(ph)) {
-      b = generator(i);
-    }
-    return ph;
-  }
+
+  // TODO: Generate from function
 };
 
 }  // namespace acg

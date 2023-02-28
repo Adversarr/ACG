@@ -36,10 +36,12 @@ int main(int argc, char** argv) {
     ImGui::InputInt("Max Iterate Count", &app.steps_);
     ImGui::Checkbox("Matrix Free Solver", &matfree);
     ImGui::Checkbox("Check result of MF", &checking_mode);
+    ImGui::Checkbox("Evaluate Error Term", &app.eval_error_);
     ImGui::PlotHistogram("Error Term", app.record_.Ptr(), app.steps_, 0, nullptr, FLT_MAX, FLT_MAX,
                          ImVec2(0, 80));
     ImGui::Text("Error Mean = %f, Max = %f", app.record_.Mean(),
                 app.record_.Reduce(0, [](float a, float b) { return std::max(a, b); }));
+    ImGui::InputFloat("Delta t for TimeStep", &app.dt_);
     ImGui::Text("Error Last = %f", app.record_.Last());
     init_once |= ImGui::InputFloat("Spring K", &app.k_);
   });
