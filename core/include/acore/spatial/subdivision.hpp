@@ -10,15 +10,13 @@
 
 namespace acg::spatial {
 
-template <typename F, typename D, int dim, UInt32 subdivision_count = 4,
-          UInt32 max_depth = 4>
+template <typename F, typename D, int dim, UInt32 subdivision_count = 4, UInt32 max_depth = 4>
 class SubDivisionAABB {
 public:
-  static constexpr UInt32 subdivision_count_total_ =
-      utils::god::pow<dim>(subdivision_count);
+  static constexpr UInt32 subdivision_count_total_ = utils::god::pow<dim>(subdivision_count);
   static_assert(max_depth > 0, "Max depth should be greater than 0.");
-  static_assert(utils::god::pow<max_depth>(subdivision_count_total_) <
-                    std::numeric_limits<size_t>::max(),
+  static_assert(utils::god::pow<max_depth>(subdivision_count_total_)
+                    < std::numeric_limits<size_t>::max(),
                 "subdivision too large.");
 
   struct Node {
@@ -33,16 +31,15 @@ public:
     size_t GetAABBIndex(const AABB<D, F, dim> &aabb) const;
 
     Node(const Node &rhs)
-        : box_(rhs.box_), unit_(rhs.unit_), depth_(rhs.depth_),
+        : box_(rhs.box_),
+          unit_(rhs.unit_),
+          depth_(rhs.depth_),
           leafs_(rhs.leafs_.begin(), rhs.leafs_.end()) {
-      std::copy(std::begin(rhs.sub_nodes_), std::end(rhs.sub_nodes_),
-                std::begin(sub_nodes_));
+      std::copy(std::begin(rhs.sub_nodes_), std::end(rhs.sub_nodes_), std::begin(sub_nodes_));
     }
     Node(Node &&rhs)
-        : box_(rhs.box_), unit_(rhs.unit_), depth_(rhs.depth_),
-          leafs_(std::move(rhs.leafs_)) {
-      std::copy(std::begin(rhs.sub_nodes_), std::end(rhs.sub_nodes_),
-                std::begin(sub_nodes_));
+        : box_(rhs.box_), unit_(rhs.unit_), depth_(rhs.depth_), leafs_(std::move(rhs.leafs_)) {
+      std::copy(std::begin(rhs.sub_nodes_), std::end(rhs.sub_nodes_), std::begin(sub_nodes_));
     }
 
     explicit Node(F unit, AABB<void, F, dim> box, size_t depth)
@@ -63,13 +60,15 @@ public:
 
   std::vector<size_t> Query(const AABB<void> &aabb) const;
 
+  std::vector<std::pair<D, D>> QueryInternal() const;
+
   explicit SubDivisionAABB(F unit_length = 1.0, F epsilon = 1e-6)
-      : epsilon_(epsilon), unit_(unit_length),
+      : epsilon_(epsilon),
+        unit_(unit_length),
         indexer_(std::make_from_tuple<NdRangeIndexer<dim>>(
             utils::god::duplicate<dim>(subdivision_count))) {}
 
-  // private:
-
+private:
   // @brief Query the entry node's id for aabb.
   size_t FindEntry(const AABB<D, F, dim> &aabb) const;
 
@@ -84,7 +83,7 @@ public:
 
   size_t PutNode(F local_unit, const AABB<void, F, dim> &range, size_t depth);
 
-  size_t EnsureSubDivision(const size_t parent, const size_t child);
+  size_t EnsureSubDivision( size_t parent,  size_t child);
 
   size_t EnsureEntry(const AABB<D> &aabb);
 
@@ -101,5 +100,5 @@ public:
   NdRangeIndexer<dim> indexer_;
 };
 
-} // namespace acg::spatial
+}  // namespace acg::spatial
 #include "details/subdivision-inl.hpp"

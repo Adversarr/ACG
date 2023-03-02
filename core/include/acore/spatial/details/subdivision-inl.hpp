@@ -47,7 +47,7 @@ template <typename F, typename D, int dim, UInt32 subdivision_count,
           UInt32 max_depth>
 size_t
 SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureSubDivision(
-    const size_t parent, const size_t child) {
+    size_t parent, size_t child) {
   if (nodes_[parent].sub_nodes_[child] == InvalidSubscript) {
     auto position = nodes_[parent].GetChildAABB(indexer_[child]);
     auto child_id = PutNode(nodes_[parent].unit_ / subdivision_count, position,
