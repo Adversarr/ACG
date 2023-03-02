@@ -125,8 +125,8 @@ void iter2d_iter(benchmark::State& state) {
   auto acc = access(pos, acg::NdRangeIndexer<2>{std::get<0>(rc), std::get<1>(rc)});
   for (auto _ : state) {
     float csum = 0;
-    Iter2DWrapper wrap(std::get<0>(rc), std::get<1>(rc));
-    for (auto&& [i, j] : wrap) {
+    NdRange<2> wrap(rc);
+    for (auto [i, j] : wrap) {
       csum += acc(i, j).norm();
     }
     benchmark::DoNotOptimize(csum);
@@ -170,7 +170,7 @@ void enumerate_enum_1d(benchmark::State& state) {
   Field<float, 4> pos(4, size_local);
   pos.setRandom();
   for (auto _ : state) {
-    auto en = FieldCEnumerate{pos};
+    auto en = enumerate(access(pos));
     for (auto [i, value] : en) {
       benchmark::DoNotOptimize(value.norm());
       benchmark::DoNotOptimize(i);

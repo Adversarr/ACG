@@ -1,74 +1,15 @@
 #pragma once
 #include <autils/common.hpp>
+#include <tuple>
 #include <utility>
 
 #include "acore/common.hpp"
 #include "autils/common.hpp"
 #include "autils/god/utilities.hpp"
-#include "autils/meta.hpp"
 
 namespace acg {
 
 namespace details {
-
-// Pre transform to field accessor.
-struct IdentityTransform {
-  template <typename T> inline decltype(auto) operator()(T&& in) const noexcept {
-    return std::forward<T>(in);
-  }
-};
-
-template <int rows, int cols> struct ReshapeTransform {
-  template <typename T> inline decltype(auto) operator()(T&& in) const noexcept {
-    return in.reshaped(rows, cols);
-  }
-};
-
-
-/****************************************
- * NOTE: Foreach Indexer, it have:
- *  1. value_type: indicates the return value type
- *
- ****************************************/
-
-// NOTE: standard field Indexer. An indexer can also be iterated.
-template <Index dim> class NdRangeIndexer;
-
-template <> class NdRangeIndexer<0> {
-public:
-  inline constexpr Index operator()() const { return 0; }
-
-  static constexpr Index this_dim = 0;  // NOLINT
-};
-
-template <> class NdRangeIndexer<1> {
-public:
-  inline Index operator()(Index id) const { return id; }
-
-  explicit constexpr NdRangeIndexer(Index this_dim = 0) : this_dim(this_dim) {}
-
-protected:
-  const Index this_dim{0};
-};
-
-template <Index dim> class NdRangeIndexer : public NdRangeIndexer<dim - 1> {
-public:
-  template <typename... Args> constexpr explicit NdRangeIndexer(Index this_dim, Args... arg)
-      : NdRangeIndexer<dim - 1>(arg...),
-        this_dim(this_dim),
-        multiplier(acg::utils::product(static_cast<Index>(arg)...)) {}
-
-  template <typename... Args>
-  constexpr Index operator()(Index this_size, Args... indices) const noexcept {
-    return this_size * multiplier
-           + NdRangeIndexer<dim - 1>::operator()(static_cast<Index>(indices)...);
-  }
-
-protected:
-  const Index this_dim{0};
-  const Index multiplier{0};
-};
-
 
 // NOTE: Standard Field Accessor.
 template <typename Type, typename Transform, typename Indexer> struct FieldAccessor {
@@ -79,19 +20,19 @@ template <typename Type, typename Transform, typename Indexer> struct FieldAcces
   Indexer indexer;
   Transform transform;
 
-  inline explicit FieldAccessor(origin_type& x, Indexer getter, utils::LvalueTag)
+  inline explicit FieldAccessor(origin_type& x, Indexer getter, utils::god::LvalueTag)
       : data(x), indexer(getter) {}
 
-  inline explicit FieldAccessor(const origin_type& x, Indexer getter, utils::ConstLvalueTag)
+  inline explicit FieldAccessor(const origin_type& x, Indexer getter, utils::god::ConstLvalueTag)
       : data(x), indexer(getter) {}
 
-  inline explicit FieldAccessor(origin_type&& x, Indexer getter, utils::RvalueTag)
+  inline explicit FieldAccessor(origin_type&& x, Indexer getter, utils::god::RvalueTag)
       : data(std::forward<origin_type>(x)), indexer(getter) {}
 
-  inline explicit FieldAccessor(const origin_type&& x, Indexer getter, utils::ConstRvalueTag)
+  inline explicit FieldAccessor(const origin_type&& x, Indexer getter, utils::god::ConstRvalueTag)
       : data(x), indexer(getter) {}
 
-  FieldAccessor(const FieldAccessor&) = delete;
+  FieldAccessor(const FieldAccessor&) = default;
 
   FieldAccessor(FieldAccessor&&) = default;
 
@@ -108,7 +49,8 @@ template <typename Type, typename Transform, typename Indexer> struct FieldAcces
   inline decltype(auto) operator[](Index i) const noexcept { return (*this)(i); }
 
   template <typename... Args> inline decltype(auto) operator()(Args... args) const noexcept {
-    return this->operator()(std::forward<Args>(args)...);
+    auto transformed = transform(data.col(indexer(std::forward<Args>(args)...)));
+    return transformed;
   }
 
   template <typename... Args> inline decltype(auto) operator()(Args... args) noexcept {
@@ -121,17 +63,43 @@ template <typename Type, typename Transform, typename Indexer> struct FieldAcces
   inline decltype(auto) end() const { return data.colwise().end(); }
 };
 
-
 /****************************************
  * NOTE: Enumerator
+ *
  ****************************************/
-template <typename DataType, typename IndexIterator>
-class FieldEnumerate {
-  using index_type = typename IndexIterator::value_type;
-public:
+template <typename Access, typename It> struct Iterator {
+  const Access& acc;
+  It it;
 
+  inline decltype(auto) operator*() const noexcept {
+    auto index = *it;
+    auto result = std::apply(acc, index);
+    return std::tuple_cat(index, std::make_tuple(result));
+  }
+
+  inline Iterator& operator++() noexcept {
+    ++it;
+    return *this;
+  }
+
+  inline bool operator==(const Iterator& rhs) const noexcept { return it == rhs.it; }
+  inline bool operator!=(const Iterator& rhs) const noexcept { return it != rhs.it; }
+
+  explicit Iterator(const Access& a, It i) : acc(a), it(i) {}
 };
+template <typename Access> class FieldEnumerate {
+public:
+  Access acc_;
 
+  inline decltype(auto) begin() const noexcept {
+    return Iterator(acc_, acc_.indexer.Iterate().begin());
+  }
+  inline decltype(auto) end() const noexcept {
+    return Iterator(acc_, acc_.indexer.Iterate().end());
+  }
+
+  explicit FieldEnumerate(Access a) : acc_(a) {}
+};
 
 }  // namespace details
 

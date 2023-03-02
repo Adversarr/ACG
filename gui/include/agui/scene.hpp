@@ -231,11 +231,11 @@ struct Scene2::Wireframe {
 
   explicit Wireframe(size_t id) : id(id) {}
 
-  inline Wireframe& SetIndices(const geometry::topology::LineList& ind);
+  Wireframe& SetIndices(const geometry::topology::LineList& ind);
 
-  inline Wireframe& SetPositions(const types::PositionField<float, 3>& pos);
+  Wireframe& SetPositions(const types::PositionField<float, 3>& pos);
 
-  inline Wireframe& SetColors(const types::RgbField& color);
+  Wireframe& SetColors(const types::RgbField& color);
 
   void MarkUpdate();
 };

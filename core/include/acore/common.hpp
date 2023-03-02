@@ -13,6 +13,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace acg {
 
@@ -53,5 +54,13 @@ using UInt64 = std::uint64_t;
  * @brief Index & Size type for mesh, particle system, rendering(index buffer), etc.
  */
 using Index = std::ptrdiff_t;
+
+/****************************************
+ * NOTE: Special Flags may used multiple times
+ ****************************************/
+
+// @brief indicates resource is Invalid
+constexpr Index InvalidIndex = std::numeric_limits<Index>::max();
+constexpr size_t InvalidSubscript = std::numeric_limits<size_t>::max();
 
 }  // namespace acg

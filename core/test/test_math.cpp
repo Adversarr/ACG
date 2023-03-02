@@ -21,33 +21,22 @@ TEST_CASE("Check Col copy status") {
 
 TEST_CASE("Field Enumerate") {
   acg::Field<acg::Float32, 3> positions(3, 4);
-  acg::FieldEnumerate enumerator(positions);
-  positions.setOnes();
-  for (auto v : enumerator) {
-    v.second(0) = v.first;
+  for (auto [i, v] : acg::enumerate(acg::access(positions))) {
+    v.setConstant(i);
   }
-  for (auto v : enumerator) {
-    CHECK(v.second(0) == v.first);
+  for (int i = 0; i < 4; ++i) {
+    CHECK((positions.col(i).array() == i).all());
   }
 
-  for (auto v : enumerator) {
-    CHECK(v.second(1) == positions(1, v.first));
+  auto acc2d = acg::access(positions, acg::NdRangeIndexer<2>(2, 2));
+  for (auto [i, j, v] : acg::enumerate(acc2d)) {
+    v.setConstant(i);
   }
 
-  using namespace acg;
-  acg::NdRangeIterator<3> it({0, 0, 0}, {3, 2, 1});
-  for (int i = 0; i < 3; ++i) {
+  for (int i =0; i< 2; ++i) {
     for (int j = 0; j < 2; ++j) {
-      CHECK(*it == std::make_tuple<Index, Index, Index>(i, j, 0));
-      ++it;
+      CHECK((acc2d(i, j).array() == i).all());
     }
-  }
-  acg::NdRange<3> ndrange({3, 2, 1});
-  for (auto [i, j, k]: ndrange) {
-    std::cout << std::setw(12) << i;
-    std::cout << std::setw(12) << j;
-    std::cout << std::setw(12) << k;
-    std::cout << std::endl;
   }
 }
 
@@ -61,7 +50,9 @@ TEST_CASE("FieldGetter") {
   Index p = 4, q = 3, r = 5;
   Index x = 1, y = 2, z = 4;
   NdRangeIndexer<3> getter(p, q, r);
+  getter[3];
   CHECK(getter(x, y, z) == x * r * q + r * y + z);
+  CHECK(getter[x * r * q + r * y + z] == std::tuple<Index, Index, Index>(x, y, z));
 }
 
 TEST_CASE("Field Rvalue") {

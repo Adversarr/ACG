@@ -21,7 +21,7 @@ template <typename Clock> void Timer<Clock>::TickEnd() {
       return;
     }
   end_times_.push_back(Clock::now());
-  state_ = State::kRunning;
+  state_ = State::kIdle;
 }
 
 template <typename Clock> Index Timer<Clock>::GetTickCount() const {
@@ -47,7 +47,7 @@ template <typename Clock> bool Timer<Clock>::Good() const { return state_ != Sta
 template <typename Clock> class Timer<Clock>::AutoTicker {
   explicit AutoTicker(Timer& timer) : parent_{timer} {
     parent_.TickBegin();
-    ACG_DEBUG_CHECK(parent_.Good(), "Cannot auto TickBegin the timer at {}", &timer);
+    ACG_DEBUG_CHECK(parent_.Good(), "Cannot auto TickBegin the timer");
   }
 
   Timer& parent_;
@@ -55,7 +55,7 @@ template <typename Clock> class Timer<Clock>::AutoTicker {
 public:
   ~AutoTicker() {
     parent_.TickEnd();
-    ACG_DEBUG_CHECK(parent_.Good(), "Cannot auto TickEnd the timer at {}", &timer);
+    ACG_DEBUG_CHECK(parent_.Good(), "Cannot auto TickEnd the timer");
   }
 };
 

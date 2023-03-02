@@ -68,7 +68,7 @@ struct Iter1D {
 
   int operator*() const { return i; }
 
-  Iter1D(int i) : i(i) {}
+  explicit Iter1D(int i) : i(i) {}
 
   int i = 0;
 };

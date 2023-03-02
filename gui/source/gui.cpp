@@ -482,7 +482,7 @@ void Gui::RenderOnce(bool verbose) {
   }
   for (const auto& info : wireframe_render_info_) {
     if (verbose) {
-      ACG_DEBUG_LOG("Rendering wireframe: buffers=[{} {}] #index={}", info.index, info.vertex);
+      ACG_DEBUG_LOG("Rendering wireframe: buffers=[{} {}] #index={}", info.index, info.vertex, info.index_count);
     }
     cbuf.bindVertexBuffers(0, GetAllocatedBuffer(info.vertex).GetBuffer(),
                            static_cast<vk::DeviceSize>(0));
@@ -596,13 +596,13 @@ void Gui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) {
     std::vector<WireframePoint> wf_vert(mesh.vertices.cols());
     std::vector<uint32_t> wf_index(info.index_count * 2);
 
-    for (const auto& [i, p] : FieldCEnumerate(mesh.vertices)) {
+    for (const auto& [i, p] : acg::enumerate(acg::access((mesh.vertices)))) {
       auto& vert = wf_vert[i];
       vert.position = glm::vec3(p.x(), p.y(), p.z());
       vert.color = glm::make_vec4(mesh_outline_color_.data());
     }
 
-    for (const auto& [i, v] : FieldCEnumerate(mesh.faces)) {
+    for (const auto& [i, v] : acg::enumerate(acg::access((mesh.faces)))) {
       wf_index[i * 6] = v.x();
       wf_index[i * 6 + 1] = v.y();
       wf_index[i * 6 + 2] = v.y();
@@ -627,7 +627,7 @@ void Gui::PrepareParticleBuffer(ParticleRenderInfo& info) {
 
 void Gui::PrepareWireframeBuffer(WireframeRenderInfo& info) {
   PrepareVertexBufferHelper(sizeof(WireframePoint) * info.vertex_count, info.vertex);
-  PrepareVertexBufferHelper(sizeof(uint32_t) * info.index_count, info.index);
+  PrepareIndexBufferHelper(sizeof(uint32_t) * info.index_count, info.index);
 }
 
 void Gui::PrepareMeshBuffer(MeshRenderInfo& info) {
@@ -704,7 +704,7 @@ void Gui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshRe
 
 void Gui::FillParticleBuffer(const Scene2::Particles& particle, const ParticleRenderInfo& info) {
   std::vector<PointVertex> vert(particle.positions.cols());
-  for (const auto& [i, p] : FieldCEnumerate{particle.positions}) {
+  for (const auto& [i, p] : acg::enumerate(acg::access(particle.positions))) {
     auto& v = vert[i];
     v.position = glm::vec3(p.x(), p.y(), p.z());
     Vec4f c = particle.colors.col(particle.use_uniform_color ? 0 : i);
@@ -717,7 +717,7 @@ void Gui::FillParticleBuffer(const Scene2::Particles& particle, const ParticleRe
 void Gui::FillWireframeBuffer(const Scene2::Wireframe& wireframe,
                                const WireframeRenderInfo& info) {
   std::vector<WireframePoint> vert(wireframe.positions.cols());
-  for (const auto& [i, p] : FieldCEnumerate{wireframe.positions}) {
+  for (const auto& [i, p] : acg::enumerate(acg::access(wireframe.positions))) {
     auto& v = vert[i];
     Vec3f c = wireframe.colors.col(wireframe.colors.cols() > 1 ? i : 0);
     v.position = glm::vec3(p.x(), p.y(), p.z());
@@ -727,7 +727,7 @@ void Gui::FillWireframeBuffer(const Scene2::Wireframe& wireframe,
       StagingUpdateInfo(info.vertex, vert.size() * sizeof(vert.front())), vert.data()));
 
   std::vector<uint32_t> indi(wireframe.indices.cols() * 2);
-  for (const auto& [id, i] : FieldCEnumerate{wireframe.indices}) {
+  for (const auto& [id, i] : acg::enumerate(acg::access((wireframe.indices)))) {
     indi[id * 2] = i.x();
     indi[id * 2 + 1] = i.y();
   }

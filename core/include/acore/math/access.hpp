@@ -4,120 +4,68 @@
 #include <tuple>
 
 #include "./details/access-inl.hpp"
-#include "autils/common.hpp"
+#include "indexer.hpp"
+#include "transform.hpp"
 
 namespace acg {
-// Export Getter and Transform
-using IdentityTransform = details::IdentityTransform;
-template <int r, int c> using ReshapeTransform = details::ReshapeTransform<r, c>;
-template <Index d> using NdRangeIndexer = details::NdRangeIndexer<d>;
 using DefaultIndexer = NdRangeIndexer<1>;
+
+/****************************************
+ * NOTE: When access a field(dense), two things should be considered:
+ *  1. How to Index your data, i.e. what is the relationship between
+ *     mathematics index and physical device's index. For example:
+ *     (See indexer.hpp for more details.)
+ *        For a field in physics world, we may index each cell (grid)
+ *        by (i, j, k). However, we only have one dimension I for the
+ *        field. Indexer provides the Bi-Map (i, j, k) <-> I
+ *  2. How to view your data, i.e. what is the relation ship between
+ *     (See transform.hpp for more details.)
+ *     mathematics symbol and physical data. For example:
+ *        For a matrix field, we have to use a Vectorize transform to
+ *        store it in a column. ReshapeTransform provides the function.
+ *
+ ****************************************/
 
 // NOTE: Access Function for fields.
 
 // 1. For r-value.
-template <typename Indexer = details::NdRangeIndexer<1>,
-          typename Transform = details::IdentityTransform, typename Type>
+template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
+          typename Type>
 decltype(auto) access(Type&& field, Indexer getter = Indexer()) {
-  auto ret = details::FieldAccessor<const std::remove_cv_t<Type>, Transform, Indexer>(
-      std::forward<Type>(field), getter, utils::RvalueTag{});
-  return ret;
+  getter.Fit(field);
+  return details::FieldAccessor<const std::remove_cv_t<Type>, Transform, Indexer>(
+      std::forward<Type>(field), getter, utils::god::RvalueTag{});
 }
 
 // 2. For cr-value
-template <typename Indexer = details::NdRangeIndexer<1>,
-          typename Transform = details::IdentityTransform, typename Type>
+template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
+          typename Type>
 decltype(auto) access(const Type&& field, Indexer getter = Indexer()) {
-  auto ret = details::FieldAccessor<Type, Transform, Indexer>(std::forward<decltype(field)>(field),
-                                                              getter, utils::ConstRvalueTag{});
-  return ret;
+  getter.Fit(field);
+  return details::FieldAccessor<Type, Transform, Indexer>(std::forward<decltype(field)>(field),
+                                                          getter, utils::god::ConstRvalueTag{});
 }
 
 // 3. For cl-value
-template <typename Indexer = details::NdRangeIndexer<1>,
-          typename Transform = details::IdentityTransform, typename Type>
+template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
+          typename Type>
 decltype(auto) access(const Type& field, Indexer getter = Indexer()) {
+  getter.Fit(field);
   return details::FieldAccessor<const Type&, Transform, Indexer>(field, getter,
-                                                                 utils::ConstLvalueTag{});
+                                                                 utils::god::ConstLvalueTag{});
 }
 
 // 4. For l-value
-template <typename Indexer = details::NdRangeIndexer<1>,
-          typename Transform = details::IdentityTransform, typename Type>
+template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
+          typename Type>
 decltype(auto) access(Type& field, Indexer getter = Indexer()) {
-  return details::FieldAccessor<Type&, Transform, Indexer>(field, getter, utils::LvalueTag{});
+  getter.Fit(field);
+  return details::FieldAccessor<Type&, Transform, Indexer>(field, getter, utils::god::LvalueTag{});
 }
 
-// TODO: Modify
-template <typename Scalar, int dim> class FieldEnumerate {
-  using RawType = Field<Scalar, dim>;
-  RawType& field_ref_;
-
-public:
-  inline explicit FieldEnumerate(Field<Scalar, dim>& field_ref) noexcept : field_ref_(field_ref) {}
-
-  struct Iterator {
-    using iterator_category = std::random_access_iterator_tag;
-    using difference_type = typename RawType::Index;
-    using value_type = std::pair<difference_type, decltype(std::declval<RawType>().col(0))>;
-
-    difference_type index;
-    RawType& raw_data;
-
-    Iterator(difference_type index, RawType& raw_data) : index(index), raw_data(raw_data) {}
-
-    value_type operator*() const { return std::make_pair(index, raw_data.col(index)); }
-
-    Iterator& operator++() {
-      index++;
-      return *this;
-    }
-
-    bool operator==(const Iterator& rhs) const { return index == rhs.index; }
-
-    bool operator!=(const Iterator& rhs) const { return index != rhs.index; }
-  };
-
-  inline Iterator begin() { return Iterator(0, field_ref_); }
-
-  inline Iterator end() { return Iterator(field_ref_.cols(), field_ref_); }
-};
-
-template <typename Scalar, int dim> class FieldCEnumerate {
-  using RawType = Field<Scalar, dim>;
-  const RawType& field_ref_;
-
-public:
-  inline explicit FieldCEnumerate(const Field<Scalar, dim>& field_ref) noexcept
-      : field_ref_(field_ref) {}
-
-  struct Iterator {
-    using iterator_category = std::random_access_iterator_tag;
-    using difference_type = acg::Index;
-    using value_type = std::pair<difference_type, decltype(std::declval<RawType>().col(0))>;
-
-    difference_type index;
-
-    const RawType& raw_data;
-
-    Iterator(difference_type index, const RawType& raw_data) : index(index), raw_data(raw_data) {}
-
-    decltype(auto) operator*() const { return std::make_pair(index, raw_data.col(index)); }
-
-    Iterator& operator++() {
-      index++;
-      return *this;
-    }
-
-    bool operator==(const Iterator& rhs) const { return index == rhs.index; }
-
-    bool operator!=(const Iterator& rhs) const { return index != rhs.index; }
-  };
-
-  inline Iterator begin() { return Iterator(0, field_ref_); }
-
-  inline Iterator end() { return Iterator(field_ref_.cols(), field_ref_); }
-};
+template <typename A> decltype(auto) enumerate(A&& access) {
+  return details::FieldEnumerate<std::decay_t<A>>(access);
+}
 
 template <typename Scalar, int dim> class FieldBuilder {
   using RawType = Field<Scalar, dim>;
@@ -137,7 +85,6 @@ public:
   }
 
   inline decltype(auto) Random() { return Field<Scalar, dim>::Random(dim, n_).eval(); }
-
 
   // TODO: Generate from function
 };

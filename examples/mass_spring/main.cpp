@@ -2,8 +2,8 @@
   Mass spring Simulator.
   algorithm: Fast Mass Spring (PD)
  ****************************************/
-
 #include <acore/geometry/normal.hpp>
+#include <acore/spatial/subdivision.hpp>
 #include <agui/gui.hpp>
 #include <agui/init.hpp>
 #include <autils/init.hpp>
@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
 
   App app;
-  app.n_grids_ = 100;
+  app.n_grids_ = 150;
   app.Init();
   auto& gui = Gui::Instance();
   bool running = false;
@@ -47,8 +47,9 @@ int main(int argc, char** argv) {
   });
 
   auto& render_mesh = gui.GetScene().AddMesh();
+  auto& render_wf = gui.GetScene().AddWireframe();
 
-  auto update_mesh = [&render_mesh, &app]() {
+  auto update_mesh = [&render_mesh, &app, &render_wf]() {
     auto indices = app.faces_;
     auto positions = app.position_;
     acg::geometry::Normal<Float32> kern_normal(indices, positions);
@@ -59,6 +60,18 @@ int main(int argc, char** argv) {
         .SetIndices(app.faces_)
         .SetEnableWireframe()
         .MarkUpdate();
+
+    acg::spatial::SubDivisionAABB<Float, Index, 3, 4, 7> sd;
+    for (auto [i, v] : acg::enumerate(acg::access(app.position_))) {
+      acg::spatial::AABB<Index> aabb(v, (v.array() + 0.001).matrix(), i);
+      sd.Insert(aabb);
+    }
+
+    auto [position, lines] = sd.Visualize();
+    render_wf.SetPositions(position);
+    render_wf.SetIndices(lines);
+    render_wf.SetColors(types::Rgb{.7, 0, 0});
+    render_wf.MarkUpdate();
   };
 
   update_mesh();
@@ -99,12 +112,6 @@ int main(int argc, char** argv) {
       timer.TickEnd();
       update_mesh();
     }
-
-    std::cout << 1000
-                     / std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(
-                           timer.GetLastPeriod())
-                           .count()
-              << std::endl;
 
     if (init_once) {
       app.Init();

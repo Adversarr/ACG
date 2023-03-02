@@ -28,9 +28,7 @@ template <int dim> struct NdRangeIterator {
 
   constexpr decltype(auto) operator*() const { return dims_; }
 
-  constexpr bool operator!=(const NdRangeIterator& another) const {
-      return dims_ != another.dims_;
-  }
+  constexpr bool operator!=(const NdRangeIterator& another) const { return dims_ != another.dims_; }
 
   template <int d> inline void Advance(char (*)[d >= 0] = 0) {
     auto& cur_dim = std::get<d>(dims_);
@@ -50,9 +48,10 @@ template <int dim> struct NdRangeIterator {
     return *this;
   }
 
-
   constexpr explicit NdRangeIterator(const container_type& ub)
       : dims_(details::get_zero_tuple<dim>()), ub_(ub) {}
+
+  constexpr NdRangeIterator(const NdRangeIterator& ) = default;
 
   constexpr NdRangeIterator(const container_type& dims, const container_type& ub)
       : dims_(dims), ub_(ub) {}
@@ -64,13 +63,10 @@ template <int dim> struct NdRange {
   using container_type =
       typename utils::god::Duplicate_t<acg::Index, dim>::template cast<std::tuple>;
   constexpr explicit NdRange(const container_type& dims) : dims_{dims} {}
-
   constexpr decltype(auto) begin() const { return NdRangeIterator<dim>(dims_); }
-
   constexpr decltype(auto) end() const {
     return NdRangeIterator<dim>(details::get_zero_tuple<dim>(std::get<0>(dims_)), dims_);
   }
-
   const container_type dims_;
 };
 }  // namespace acg
