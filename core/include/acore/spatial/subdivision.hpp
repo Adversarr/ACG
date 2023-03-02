@@ -23,24 +23,12 @@ public:
     AABB<void, F, dim> box_;
     F unit_;
     size_t depth_;
-    size_t sub_nodes_[subdivision_count_total_];
+    std::array<size_t, subdivision_count_total_> sub_nodes_;
     std::vector<size_t> leafs_;
 
     AABB<void, F, dim> GetChildAABB(utils::god::IndexTuple<dim> index) const;
 
     size_t GetAABBIndex(const AABB<D, F, dim> &aabb) const;
-
-    Node(const Node &rhs)
-        : box_(rhs.box_),
-          unit_(rhs.unit_),
-          depth_(rhs.depth_),
-          leafs_(rhs.leafs_.begin(), rhs.leafs_.end()) {
-      std::copy(std::begin(rhs.sub_nodes_), std::end(rhs.sub_nodes_), std::begin(sub_nodes_));
-    }
-    Node(Node &&rhs)
-        : box_(rhs.box_), unit_(rhs.unit_), depth_(rhs.depth_), leafs_(std::move(rhs.leafs_)) {
-      std::copy(std::begin(rhs.sub_nodes_), std::end(rhs.sub_nodes_), std::begin(sub_nodes_));
-    }
 
     explicit Node(F unit, AABB<void, F, dim> box, size_t depth)
         : box_(box), unit_(unit), depth_(depth) {
@@ -83,7 +71,7 @@ private:
 
   size_t PutNode(F local_unit, const AABB<void, F, dim> &range, size_t depth);
 
-  size_t EnsureSubDivision( size_t parent,  size_t child);
+  size_t EnsureSubDivision(size_t parent, size_t child);
 
   size_t EnsureEntry(const AABB<D> &aabb);
 

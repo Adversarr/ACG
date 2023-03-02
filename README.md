@@ -48,13 +48,16 @@ This repo is designed for study use. Some implemented (just demos, not optimized
 
 mass-spring system based on Projective Dynamics. Refer to "Fast mass spring" by Tiantian Liu.
 
-![image-20230224132002368](./media//image-20230224132002368.png)
+![image-20230224132002368](./media/image-20230224132002368.png)
 
 and this provides an bonus solver, which applies a single step of Jacobi method on PD, which leads to real-time simulation of traditional mass-spring at about 30fps (on my laptop).
+
+Now, mass spring will also show the dynamic computed grid (SubdivisonAABB) for further Broad Phase CCD app.
+
+![image-20230302185942678](./media//image-20230302185942678.png)
 
 ### Other Stuffs
 
 1. `fem-explict`: first-order explicit integrator. StVK FEM Soft Body Simulation.
 2. `mpm-explicit`: PIC-Fluid simulation, toy P2G and G2P process, weakly-compressible.
-
 

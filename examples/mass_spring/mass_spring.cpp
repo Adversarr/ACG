@@ -213,30 +213,32 @@ void App::StepProjDynMf() {
      * Step Global
      *
      ****************************************/
-    Vec<float> weight(n_vertices_);
-    weight.setConstant(mass_);
-    auto expected_position = (x_tilde * mass_).eval();
-    auto expected_position_acc = access(expected_position);
-    auto constraint_weight = k_ * dt_ * dt_;
-    for (size_t c = 0; c < springs_vec_.size(); ++c) {
-      auto [i, j] = springs_vec_[c];
-      weight(i) += constraint_weight;
-      weight(j) += constraint_weight;
 
-      auto x = p_acc(i);
-      auto y = p_acc(j);
-      auto d = d_acc(c);
-      expected_position_acc(i) += constraint_weight * (y + d);
-      expected_position_acc(j) += constraint_weight * (x - d);
-    }
-    for (Index i = 0; i < n_vertices_; ++i) {
-      expected_position_acc(i) /= weight[i];
-    }
-    current_solution = expected_position;
-    for (Index i = 0; i < n_grids_; ++i) {
-      p_acc(i) = o_acc(i);
-    }
+    for (int i = 0; i < global_step_count_; ++i) {
+      Vec<float> weight(n_vertices_);
+      weight.setConstant(mass_);
+      auto expected_position = (x_tilde * mass_).eval();
+      auto expected_position_acc = access(expected_position);
+      auto constraint_weight = k_ * dt_ * dt_;
+      for (size_t c = 0; c < springs_vec_.size(); ++c) {
+        auto [i, j] = springs_vec_[c];
+        weight(i) += constraint_weight;
+        weight(j) += constraint_weight;
 
+        auto x = p_acc(i);
+        auto y = p_acc(j);
+        auto d = d_acc(c);
+        expected_position_acc(i) += constraint_weight * (y + d);
+        expected_position_acc(j) += constraint_weight * (x - d);
+      }
+      for (Index i = 0; i < n_vertices_; ++i) {
+        expected_position_acc(i) /= weight[i];
+      }
+      current_solution = expected_position;
+      for (Index i = 0; i < n_grids_; ++i) {
+        p_acc(i) = o_acc(i);
+      }
+    }
     /****************************************
      * Evaluate the error
      ****************************************/

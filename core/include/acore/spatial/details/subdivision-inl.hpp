@@ -9,8 +9,7 @@
 
 namespace acg::spatial {
 
-template <typename F, typename D, int dim, UInt32 subdivision_count,
-          UInt32 max_depth>
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Insert(
     const AABB<D, F, dim> &aabb) {
   auto ind = PutAABBData(aabb);
@@ -24,8 +23,7 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Insert(
   ACG_DEBUG_CHECK(generate_sequence.front() == parent,
                   "Generated sequence does not start with entry. {} v.s. {}, "
                   "Input = {} by {}",
-                  generate_sequence.front(), parent,
-                  fmt::streamed(aabb.lower_bound.transpose()),
+                  generate_sequence.front(), parent, fmt::streamed(aabb.lower_bound.transpose()),
                   fmt::streamed(aabb.upper_bound.transpose()));
   auto it = generate_sequence.begin();
   auto child = *(++it);
@@ -43,32 +41,27 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Insert(
   return parent;
 }
 
-template <typename F, typename D, int dim, UInt32 subdivision_count,
-          UInt32 max_depth>
-size_t
-SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureSubDivision(
-    size_t parent, size_t child) {
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
+size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureSubDivision(size_t parent,
+                                                                                   size_t child) {
   if (nodes_[parent].sub_nodes_[child] == InvalidSubscript) {
     auto position = nodes_[parent].GetChildAABB(indexer_[child]);
-    auto child_id = PutNode(nodes_[parent].unit_ / subdivision_count, position,
-                            nodes_[parent].depth_ + 1);
+    auto child_id
+        = PutNode(nodes_[parent].unit_ / subdivision_count, position, nodes_[parent].depth_ + 1);
     nodes_[parent].sub_nodes_[child] = child_id;
   }
   return nodes_[parent].sub_nodes_[child];
 }
 
-template <typename F, typename D, int dim, UInt32 subdivision_count,
-          UInt32 max_depth>
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Clear() {
   large_leafs_.clear();
   nodes_.clear();
   entry_nodes_.clear();
   data_.clear();
 }
-template <typename F, typename D, int dim, UInt32 subdivision_count,
-          UInt32 max_depth>
-size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureEntry(
-    const AABB<D> &aabb) {
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
+size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureEntry(const AABB<D> &aabb) {
   auto ub_ceil = aabb.upper_bound.array().ceil().eval();
   auto lb_floor = aabb.lower_bound.array().floor().eval();
   if ((ub_ceil - unit_ != lb_floor).any()) {
@@ -93,8 +86,7 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureEntry(
   return entry_id;
 };
 
-template <typename F, typename D, int dim, UInt32 subdivision_count,
-          UInt32 max_depth>
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::PutNode(
     F local_unit, const AABB<void, F, dim> &range, size_t depth) {
   // ACG_WARN("Putting a new node: unit={} depth={}, lb={}, ub={}", local_unit,
@@ -104,8 +96,7 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::PutNode(
   return nodes_.size() - 1;
 }
 
-template <typename F, typename D, int dim, UInt32 subdivision_count,
-          UInt32 max_depth>
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindEntry(
     const AABB<D, F, dim> &aabb) const {
   // Foreach entry, test if the entry can hold the AABB
@@ -117,31 +108,24 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindEntry(
   return InvalidSubscript;
 }
 
-template <typename F, typename D, int dim, UInt32 subdivision_count,
-          UInt32 max_depth>
-size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::PutAABBData(
-    const AABB<D> &aabb) {
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
+size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::PutAABBData(const AABB<D> &aabb) {
   auto id = data_.size();
   data_.push_back(aabb);
   return id;
 }
 
-template <typename F, typename D, int dim, UInt32 subdivision_count,
-          UInt32 max_depth>
-AABB<void, F, dim>
-SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Node::GetChildAABB(
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
+AABB<void, F, dim> SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Node::GetChildAABB(
     utils::god::IndexTuple<dim> index) const {
   auto local_index_nd = std::make_from_tuple<Vec<Index, dim>>(index);
   auto units = Vec<F, dim>::Constant(unit_);
-  auto lb =
-      (box_.lower_bound + units.cwiseProduct(local_index_nd.template cast<F>()))
-          .eval();
+  auto lb = (box_.lower_bound + units.cwiseProduct(local_index_nd.template cast<F>())).eval();
   auto ub = lb + units;
   return AABB<void, F, dim>(lb, ub);
 }
 
-template <typename F, typename D, int dim, UInt32 subdivision_count,
-          UInt32 max_depth>
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 std::array<size_t, max_depth>
 SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindVisitSequence(
     const AABB<D, F, dim> &aabb) {
@@ -153,30 +137,14 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindVisitSequence(
   *it = id;
   if (id != InvalidSubscript) {
     Node &entry_node = nodes_[id];
-    Vec<F, dim> local_lb =
-        (aabb.lower_bound - entry_node.box_.lower_bound) / entry_node.unit_;
-    Vec<F, dim> local_ub =
-        (aabb.upper_bound - entry_node.box_.lower_bound) / entry_node.unit_;
-    // auto inspect = [&]() {
-    //   ACG_WARN("Lower = {}, Upper = {}", fmt::streamed(local_lb.transpose()),
-    //            fmt::streamed(local_ub.transpose()));
-    // };
-    // ACG_INFO("Input = {} by {}, Entry = {} by {}",
-    //          fmt::streamed(aabb.lower_bound.transpose()),
-    //          fmt::streamed(aabb.upper_bound.transpose()),
-    //          fmt::streamed(entry_node.box_.lower_bound.transpose()),
-    //          fmt::streamed(entry_node.box_.upper_bound.transpose()));
-    // inspect();
+    Vec<F, dim> local_lb = (aabb.lower_bound - entry_node.box_.lower_bound) / entry_node.unit_;
+    Vec<F, dim> local_ub = (aabb.upper_bound - entry_node.box_.lower_bound) / entry_node.unit_;
     ++it;
     while (id != InvalidSubscript && it != seq.end()) {
-      Vec<Index, dim> local_index_l =
-          local_lb.array().floor().template cast<Index>();
-      Vec<Index, dim> local_index_u =
-          local_ub.array().ceil().template cast<Index>();
+      Vec<Index, dim> local_index_l = local_lb.array().floor().template cast<Index>();
+      Vec<Index, dim> local_index_u = local_ub.array().ceil().template cast<Index>();
       // Too large for this cell.
-      if ((local_index_l.array() + static_cast<Index>(1) !=
-           local_index_u.array())
-              .any()) {
+      if ((local_index_l.array() + static_cast<Index>(1) != local_index_u.array()).any()) {
         break;
       }
 
@@ -194,24 +162,17 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindVisitSequence(
       ++it;
 
       // Update Local Coordinate
-      local_lb =
-          (local_lb - local_index_l.template cast<F>()) * subdivision_count;
-      local_ub =
-          (local_ub - local_index_l.template cast<F>()) * subdivision_count;
-      // inspect();
+      local_lb = (local_lb - local_index_l.template cast<F>()) * subdivision_count;
+      local_ub = (local_ub - local_index_l.template cast<F>()) * subdivision_count;
     }
   }
   return seq;
 }
-template <typename F, typename D, int dim, UInt32 subdivision_count,
-          UInt32 max_depth>
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 std::pair<Field<F, dim>, geometry::topology::LineList>
 SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Visualize() const {
-  Field<F, dim> position =
-      FieldBuilder<F, dim>(nodes_.size() * 8).Placeholder();
-  geometry::topology::LineList lines =
-      FieldBuilder<Index, 2>(nodes_.size() * 12).Placeholder();
-
+  Field<F, dim> position = FieldBuilder<F, dim>(nodes_.size() * 8).Placeholder();
+  geometry::topology::LineList lines = FieldBuilder<Index, 2>(nodes_.size() * 12).Placeholder();
   auto pacc = access(position);
   auto iacc = access(lines);
   Index np = 0, nl = 0;
@@ -241,7 +202,7 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Visualize() const {
     pacc(np++) = Vec3f{u.x(), l.y(), u.z()};
   }
 
-  return {position, lines};
+  return {std::move(position), std::move(lines)};
 }
 
-} // namespace acg::spatial
+}  // namespace acg::spatial
