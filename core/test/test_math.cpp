@@ -1,4 +1,6 @@
 #include <doctest/doctest.h>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include <acore/math/func.hpp>
 #include <acore/math/ndrange.hpp>
@@ -33,7 +35,7 @@ TEST_CASE("Field Enumerate") {
     v.setConstant(i);
   }
 
-  for (int i =0; i< 2; ++i) {
+  for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 2; ++j) {
       CHECK((acc2d(i, j).array() == i).all());
     }
@@ -213,4 +215,27 @@ TEST_CASE("Sin") {
   field.setZero();
   auto sin_field = acg::math::sin(field);
   CHECK(sin_field.cwiseEqual(0).all());
+}
+
+template <typename T>
+struct fmt::formatter<T, char,
+  // Double check for Eigen::xxx.
+                      std::enable_if_t<std::is_void_v<std::void_t<typename T::Index>>,
+                                       std::void_t<decltype(std::declval<T>().derived())>>> {
+  // Parses format specifications of the form ['f' | 'e'].
+  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+  // Formats the point p using the parsed format specification (presentation)
+  // stored in this formatter.
+  template <typename FormatContext> auto format(const T& p, FormatContext& ctx) const
+      -> decltype(ctx.out()) {
+    // ctx.out() is an output iterator to write to.
+    return fmt::format_to(ctx.out(), "{}", fmt::streamed(p));
+  }
+};
+
+TEST_CASE("Format Matrix") {
+  acg::Mat3x3f mat;
+  mat.setOnes();
+  fmt::print(fmt::format("{}\n", mat.cwiseAbs2()));
+  fmt::print(fmt::format("{}\n", mat));
 }
