@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
         .SetEnableWireframe()
         .MarkUpdate();
 
-    acg::spatial::SubDivisionAABB<Float, Index, 3, 4, 7> sd;
+    acg::spatial::SubDivisionAABB<Float, Index, 3, 8, 8> sd;
     for (auto [i, v] : acg::enumerate(acg::access(app.position_))) {
       acg::spatial::AABB<Index> aabb(v, (v.array() + 0.001).matrix(), i);
       sd.Insert(aabb);
