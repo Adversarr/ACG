@@ -1,6 +1,7 @@
 #pragma once
 #include <imgui.h>
 #include <optional>
+#include <functional>
 
 #include <vulkan/vulkan.hpp>
 
