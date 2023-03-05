@@ -7,6 +7,7 @@ add_requires('imgui', {configs = {glfw_vulkan = true}})
 
 
 target('acg_gui')
+  -- NOTE: You cannot use ImGUI in Shared Library.
   set_kind('static')
   set_group('library')
   add_includedirs('include', { public = true })

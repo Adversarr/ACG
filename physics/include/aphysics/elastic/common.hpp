@@ -1,30 +1,49 @@
 #pragma once
 
+#include <acore/math/common.hpp>
 #include <type_traits>
+
 namespace acg::physics::elastic {
+
+template <typename Scalar, int dim> struct HyperElasticResult {
+  Scalar energy;
+  Vec<Scalar, dim * dim> grad;
+};
+
+template <typename Scalar, int dim> struct HyperElasticResultWithHessian {
+  Scalar energy;
+  Vec<Scalar, dim * dim> grad;
+  Mat<Scalar, dim * dim, dim * dim> hessian;
+};
+
 /**
- * @brief For any `Elastic Model`, it can computes the value,
+ * @brief For any `Elastic Model`, it can computes the value of energy
  *
  * @tparam F Float point type.
- * @tparam dim Dimensions
  * @tparam Derived Implements the model.
  */
 template <typename F, int dim, typename Derived> class HyperElasticModel {
+  static_assert(dim == 2 || dim == 3, "HyperElasticModel requires dim == 2 or 3.");
+
 public:
-  template <typename... Args,
-            typename Enable = std::void_t<typename Derived::HasEnergyFlag>>
-  decltype(auto) Energy(Args &&...args) const noexcept {
-    return (static_cast<Derived *>(this))
-        ->EnergyImpl(std::forward<Args>(args)...);
+  struct WithHessianFlag {};
+  struct WithoutHessianFlag {};
+  HyperElasticResult<F, dim> ComputeGradient() const noexcept {
+    return static_cast<const Derived*>(this)->ComputeGradientImpl();
   }
 
-  template <typename... Args, typename Enable = void>
-  decltype(auto) Strain(Args &&...args) const noexcept;
+  HyperElasticResultWithHessian<F, dim> ComputeHessian() const noexcept {
+    return static_cast<const Derived* >(this)->ComputeHessianImpl();
+  }
 
-  template <typename... Args, typename Enable = void>
-  decltype(auto) Stress(Args &&...args) const noexcept;
+private:
+  HyperElasticResult<F, dim> ComputeGradientImpl() const noexcept {
+    static_assert(! std::is_same_v<Derived, Derived>, "Call to unimplemented Gradient Function.");
+  }
 
-  template <typename... Args, typename Enable = void>
-  decltype(auto) Hessian(Args &&...args) const noexcept;
+  HyperElasticResultWithHessian<F, dim> ComputeHessianImpl() const noexcept {
+    static_assert(! std::is_same_v<Derived, Derived>, "Call to unimplemented Hessian Function.");
+  }
 };
-} // namespace acg::physics::elastic
+
+}  // namespace acg::physics::elastic

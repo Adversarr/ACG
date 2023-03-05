@@ -2,6 +2,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <acore/math/decompositions/svd.hpp>
 #include <acore/math/func.hpp>
 #include <acore/math/ndrange.hpp>
 #include <acore/math/ops/kronecker.hpp>
@@ -219,7 +220,7 @@ TEST_CASE("Sin") {
 
 template <typename T>
 struct fmt::formatter<T, char,
-  // Double check for Eigen::xxx.
+                      // Double check for Eigen::xxx.
                       std::enable_if_t<std::is_void_v<std::void_t<typename T::Index>>,
                                        std::void_t<decltype(std::declval<T>().derived())>>> {
   // Parses format specifications of the form ['f' | 'e'].
@@ -238,4 +239,29 @@ TEST_CASE("Format Matrix") {
   mat.setOnes();
   fmt::print(fmt::format("{}\n", mat.cwiseAbs2()));
   fmt::print(fmt::format("{}\n", mat));
+}
+
+TEST_CASE("SVD") {
+  acg::Mat2x2f mat22;
+  mat22.setZero();
+  mat22.diagonal().setOnes();
+
+  acg::math::Svd svd(mat22);
+
+  std::cout << mat22 << std::endl;
+  std::cout << svd.u_ << std::endl;
+  std::cout << svd.sigma_ << std::endl;
+  std::cout << svd.v_ << std::endl;
+
+  acg::Mat3x3f mat33;
+  mat33.setZero();
+  mat33.diagonal().setOnes();
+  
+  acg::math::Svd svd33(mat33);
+
+  std::cout << mat33 << std::endl;
+  std::cout << svd33.u_ << std::endl;
+  std::cout << svd33.sigma_ << std::endl;
+  std::cout << svd33.v_ << std::endl;
+  mat33.block<3, 3>(0, 0).setZero();
 }

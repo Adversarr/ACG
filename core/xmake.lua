@@ -6,6 +6,7 @@ add_requires('taskflow')
 add_requires('nlohmann_json')
 
 target("acg_core")
+  -- NOTE: I think your LINKER is clever enough to link these Global Variables.
   set_kind('static')
   set_group('library')
   add_includedirs('include', {public = true})

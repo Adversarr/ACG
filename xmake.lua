@@ -12,7 +12,8 @@ includes(
   '3rdparty',
   'core',
   'port',
-  'gui'
+  'gui',
+  'physics'
 )
 
 includes('examples')
