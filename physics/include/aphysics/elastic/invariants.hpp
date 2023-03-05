@@ -20,17 +20,22 @@ template <typename F, Index dim = 3> struct InvariantHessianResult {
   Mat<F, dim * dim, dim * dim> i3_hessian_;
 };
 
-template <typename F> struct CauchyGreenInvariants {
-  explicit CauchyGreenInvariants(const Ref<Mat3x3<F>>& deformation_gradient) noexcept;
+template <typename Derived> struct CauchyGreenInvariants {
+  using Scalar = typename Trait<Derived>::Scalar;
+  static constexpr Index dim_ = Trait<Derived>::cols;
+  static_assert(dim_ == Trait<Derived>::rows, "Rows != cols.");
+  explicit CauchyGreenInvariants(const Eigen::MatrixBase<Derived>& dg) noexcept;
 
-  // I = || F ||_F^2
-  F i1_;
+  InvariantWithGradientResult<Scalar, dim_> ComputeVarientWithGrad() const;
 
-  // II = || F' F ||_F ^2
-  F i2_;
+  InvariantHessianResult<Scalar, dim_> ComputeVariantWithHessian() const;
+  Mat<Scalar, 3, 3> f_;
 
-  // III = det (F' F)
-  F i3_;
+  /**
+   * 1. F's Frob Norm 2
+   * 2. F^T F 's Frob Norm 2
+   * 3. det (F^T F).
+   */
 };
 
 /**
@@ -46,6 +51,11 @@ template <typename F> struct CauchyGreenInvariants {
  *        1. Tr(S)
  *        2. Tr(F' F)
  *        3. Determinant(F)
+ *
+ *        Relation-ship is
+ *          C1 = S2.
+ *          C3^2 = S3 (in most cases C3 > 0, for no inversion is happening)
+ *          C2 = .5 (S2^2 - S1^4) + S1^2 S2 + 4 S1 S3
  *
  * @tparam Derived
  * @param dg

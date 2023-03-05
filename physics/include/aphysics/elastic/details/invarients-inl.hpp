@@ -13,6 +13,25 @@ template <typename T> inline decltype(auto) make_vector_hat3d(T&& vec) {
 }  // namespace details
 
 template <typename Derived>
+CauchyGreenInvariants<Derived>::CauchyGreenInvariants(const Eigen::MatrixBase<Derived>& dg) noexcept
+    : f_(dg) {}
+
+template <typename Derived>
+InvariantWithGradientResult<typename CauchyGreenInvariants<Derived>::Scalar,
+                            CauchyGreenInvariants<Derived>::dim_>
+CauchyGreenInvariants<Derived>::ComputeVarientWithGrad() const {
+  InvariantWithGradientResult<Scalar, dim_> result;
+  result.i1_ = f_.array().square().sum();
+  result.i2_ = (f_ * f_.transpose()).array().square().sum();
+  auto detf = f_.determinant();
+  result.i3_ = detf * detf;
+  result.i1_grad_ = 2 * f_.reshaped();
+  result.i2_grad_ = 2 * (f_ * (f_.transpose() * f_ - Mat<Scalar, dim_, dim_>::Identity())).reshaped();
+  // TODO: i3 grad.
+  return result;
+};
+
+template <typename Derived>
 SmithInvariants<Derived>::SmithInvariants(const Eigen::MatrixBase<Derived>& dg) noexcept
     : f_(dg), polar_result_(dg) {}
 
@@ -21,8 +40,8 @@ template <typename Derived> InvariantWithGradientResult<typename SmithInvariants
 SmithInvariants<Derived>::ComputeVarientWithGrad() const {
   InvariantWithGradientResult<Scalar> result;
   result.i1_ = polar_result_.symm_.trace();
-  // result.i2_ = f_.array().square().sum();
-  result.i2_ = (f_.transpose() * f_).trace();
+  result.i2_ = f_.array().square().sum();
+  // result.i2_ = (f_.transpose() * f_).trace();
   result.i3_ = f_.determinant();
 
   result.i1_grad_ = polar_result_.rot_.reshaped();
