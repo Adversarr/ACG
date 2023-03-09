@@ -17,7 +17,6 @@ namespace acg::gui {
 class Scene {
   // todo: add marching cube support.
 public:
-
   void Reset();
 
   /**
@@ -51,7 +50,7 @@ public:
 
   vk::DeviceSize GetRequiredIndexBufferSize() const;
 
-  std::pair<std::vector<Vertex>, std::vector<GuiIndex >> Build() const;
+  std::pair<std::vector<Vertex>, std::vector<GuiIndex>> Build() const;
 
 private:
   std::vector<geometry::SimpleMesh<Float32>> meshes_;
@@ -65,7 +64,6 @@ private:
   std::vector<Vec3f> particles_colors_;
 };
 
-
 /**
  * NOTE: Use this as default.
  */
@@ -73,7 +71,7 @@ class Scene2 {
 public:
   Scene2() = default;
 
-  struct Mesh ;
+  struct Mesh;
   struct Particles;
   struct Wireframe;
 
@@ -102,17 +100,17 @@ public:
                 std::optional<Field<float, 3>> opt_normals = std::nullopt);
 
   Mesh& AddMesh();
-  
+
   Mesh& GetMesh(size_t id);
-  
+
   size_t GetMeshCount() const;
 
-  
   /**
    * @brief Add a mesh-based particle using instancing rendering.
    */
   Particles& AddMeshParticles();
-  Particles& AddMeshParticles(const types::PositionField<float, 3>& positions, Float32 radius = 1.0f);
+  Particles& AddMeshParticles(const types::PositionField<float, 3>& positions,
+                              Float32 radius = 1.0f);
 
   std::vector<Particles>& GetMeshParticles();
 
@@ -159,7 +157,7 @@ public:
   void Clear();
 };
 
-struct Scene2::Mesh{
+struct Scene2::Mesh {
   bool update_flag;
   size_t id;
   // mesh data.
@@ -169,7 +167,7 @@ struct Scene2::Mesh{
   Field<float, 3> normals;
   // Reserve for future use.
   Field<float, 2> uv;
-  
+
   bool enable_wireframe = false;
   bool use_uniform_color = false;
   bool use_double_side_lighting = false;
@@ -196,6 +194,8 @@ struct Scene2::Mesh{
 
   Mesh& SetDoubleSideLighting(bool val = true);
 
+  Mesh& ComputeDefaultNormal();
+
   Mesh& SetSpecularShiness(int shineness);
 
   Mesh& SetColor(types::RgbaField const& val);
@@ -216,7 +216,6 @@ struct Scene2::Mesh{
 
   void MarkUpdate();
 };
-
 
 struct Scene2::Wireframe {
   size_t id;
@@ -240,7 +239,7 @@ struct Scene2::Wireframe {
   void MarkUpdate();
 };
 
-struct Scene2::Particles  {
+struct Scene2::Particles {
   size_t id;
   bool update_flag;
   types::PositionField<float, 3> positions;
@@ -248,7 +247,7 @@ struct Scene2::Particles  {
   bool use_uniform_color = true;
   Float32 radius = 1.0f;
   bool use_instance_rendering = false;
-  
+
   Particles(const Particles&) = default;
 
   Particles& operator=(const Particles&) = default;

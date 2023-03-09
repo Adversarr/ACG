@@ -41,10 +41,15 @@ target_end()
 
 target('fem-implicit') 
   add_files('fem-implicit/**.cpp')
-  add_deps('acg_gui')
+  add_deps('acg_gui', 'acg_physics')
 target_end()
 
 target('spatial-subd')
   add_files('spatial-subdivision/**.cpp')
   add_deps('acg_gui')
+target_end()
+
+target('elastic-shape-matching')
+  add_files('elastic-shape-matching/**.cpp')
+  add_deps('acg_gui', 'acg_physics')
 target_end()

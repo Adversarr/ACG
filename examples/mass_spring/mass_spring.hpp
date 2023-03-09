@@ -5,7 +5,7 @@
 #include <autils/record/roting_record.hpp>
 #include <set>
 #include <taskflow/taskflow.hpp>
-class App {
+class MassSpringApp {
 public:
   void Init();
 

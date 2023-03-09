@@ -69,24 +69,21 @@ template <typename A> decltype(auto) enumerate(A&& access) {
 
 template <typename Scalar, int dim> class FieldBuilder {
   using RawType = Field<Scalar, dim>;
-  int n_{0};
+
+  Index n_{0};
 
 public:
-  explicit inline FieldBuilder(int n) : n_(n) {}
+  explicit inline FieldBuilder(Index n = 0) : n_(n) {}
 
-  inline decltype(auto) Placeholder() { return Field<Scalar, dim>(dim, n_); }
+  inline auto Placeholder() { return Field<Scalar, dim>(dim, n_); }
 
-  inline decltype(auto) Ones() { return Field<Scalar, dim>::Ones(dim, n_).eval(); }
+  inline auto Ones() { return Field<Scalar, dim>::Ones(dim, n_).eval(); }
 
-  inline decltype(auto) Zeros() { return Field<Scalar, dim>::Zero(dim, n_).eval(); }
+  inline auto Zeros() { return Field<Scalar, dim>::Zero(dim, n_).eval(); }
 
-  inline decltype(auto) Constant(Scalar s) {
-    return Field<Scalar, dim>::Constant(dim, n_, s).eval();
-  }
+  inline auto Constant(Scalar s) { return Field<Scalar, dim>::Constant(dim, n_, s).eval(); }
 
-  inline decltype(auto) Random() { return Field<Scalar, dim>::Random(dim, n_).eval(); }
-
-  // TODO: Generate from function
+  inline auto Random() { return Field<Scalar, dim>::Random(dim, n_).eval(); }
 };
 
 }  // namespace acg

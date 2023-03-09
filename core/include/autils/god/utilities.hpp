@@ -41,7 +41,7 @@ template <int alpha, typename T> constexpr T pow(T value) {
   if constexpr (alpha > 0) {
     return value * pow<alpha - 1>(value);
   } else {
-    return (T) 1;
+    return static_cast<T>(1);
   }
 }
 }  // namespace god

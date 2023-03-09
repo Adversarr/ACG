@@ -6,7 +6,7 @@
 
 namespace acg::physics::elastic {
 
-template <typename F, Index dim = 3> struct InvariantWithGradientResult {
+template <typename F, Index dim = 3> struct InvariantGradientResult {
   F i1_, i2_, i3_;
   Vec<F, dim * dim> i1_grad_;
   Vec<F, dim * dim> i2_grad_;
@@ -14,7 +14,7 @@ template <typename F, Index dim = 3> struct InvariantWithGradientResult {
 };
 
 template <typename F, Index dim = 3> struct InvariantHessianResult {
-  InvariantWithGradientResult<F, dim> inv_grad_result_;
+  InvariantGradientResult<F, dim> inv_grad_result_;
   Mat<F, dim * dim, dim * dim> i1_hessian_;
   Mat<F, dim * dim, dim * dim> i2_hessian_;
   Mat<F, dim * dim, dim * dim> i3_hessian_;
@@ -26,7 +26,7 @@ template <typename Derived> struct CauchyGreenInvariants {
   static_assert(dim_ == Trait<Derived>::rows, "Rows != cols.");
   explicit CauchyGreenInvariants(const Eigen::MatrixBase<Derived>& dg) noexcept;
 
-  InvariantWithGradientResult<Scalar, dim_> ComputeVarientWithGrad() const;
+  InvariantGradientResult<Scalar, dim_> ComputeVarientWithGrad() const;
 
   InvariantHessianResult<Scalar, dim_> ComputeVariantWithHessian() const;
   Mat<Scalar, 3, 3> f_;
@@ -71,7 +71,7 @@ template <typename Derived> struct SmithInvariants {
 
   math::PolarDecompositionRv<Derived> polar_result_;
 
-  InvariantWithGradientResult<Scalar, dim_> ComputeVarientWithGrad() const;
+  InvariantGradientResult<Scalar, dim_> ComputeVarientWithGrad() const;
 
   InvariantHessianResult<Scalar, dim_> ComputeVariantWithHessian() const;
 };

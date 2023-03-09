@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
   acg::gui::hook_default_gui_environment("Mass Spring");
   acg::init(argc, argv);
 
-  App app;
+  MassSpringApp app;
   app.n_grids_ = 100;
   app.Init();
   auto& gui = Gui::Instance();
@@ -27,12 +27,15 @@ int main(int argc, char** argv) {
   bool init_once = false;
   bool matfree = false;
   bool checking_mode = false;
-  gui.SetUIDrawCallback([&init_once, &running, &run_once, &app, &matfree, &checking_mode]() {
+  bool query_aabb = false;
+  spatial::AABB<void, float, 3> aabb{{.2, .2, -.4}, {.6, .6, 0}};
+  gui.SetUIDrawCallback([&]() {
     init_once = false;
     ImGui::Begin("GGui User Window");
     init_once |= ImGui::Button("Reset Scene.");
     run_once = ImGui::Button("Run Once");
     ImGui::Checkbox("Run", &running);
+
     ImGui::InputInt("Max Iterate Count", &app.steps_);
     ImGui::Checkbox("Matrix Free Solver", &matfree);
     ImGui::Checkbox("Check result of MF", &checking_mode);
@@ -42,6 +45,10 @@ int main(int argc, char** argv) {
     ImGui::Text("Error Mean = %f, Max = %f", app.record_.Mean(),
                 app.record_.Reduce(0, [](float a, float b) { return std::max(a, b); }));
     ImGui::InputFloat("Delta t for TimeStep", &app.dt_);
+
+    ImGui::InputFloat3("lb", aabb.lower_bound.data());
+    ImGui::InputFloat3("ub", aabb.upper_bound.data());
+    query_aabb = ImGui::Button("Query");
     ImGui::Text("Error Last = %f", app.record_.Last());
     init_once |= ImGui::InputFloat("Spring K", &app.k_);
   });
@@ -49,14 +56,12 @@ int main(int argc, char** argv) {
   auto& render_mesh = gui.GetScene().AddMesh();
   auto& render_wf = gui.GetScene().AddWireframe();
 
-  auto update_mesh = [&render_mesh, &app, &render_wf]() {
+  auto update_mesh = [&]() {
     auto indices = app.faces_;
     auto positions = app.position_;
-    acg::geometry::Normal<Float32> kern_normal(indices, positions);
-    auto normal = kern_normal.PerVertex(geometry::NormalPerVertexMode::kArea);
     render_mesh.SetVertices(app.position_)
         .SetUniformColor(acg::types::Rgba{.7, .7, .3, 1})
-        .SetNormals(normal)
+        .ComputeDefaultNormal()
         .SetIndices(app.faces_)
         .SetEnableWireframe()
         .MarkUpdate();
@@ -68,6 +73,10 @@ int main(int argc, char** argv) {
     }
 
     auto [position, lines] = sd.Visualize();
+    if (query_aabb) {
+      auto colls = sd.Query(aabb);
+      ACG_INFO("Count = {}", colls.size());
+    }
     render_wf.SetPositions(position);
     render_wf.SetIndices(lines);
     render_wf.SetColors(types::Rgb{.7, 0, 0});

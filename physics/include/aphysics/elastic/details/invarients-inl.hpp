@@ -17,10 +17,10 @@ CauchyGreenInvariants<Derived>::CauchyGreenInvariants(const Eigen::MatrixBase<De
     : f_(dg) {}
 
 template <typename Derived>
-InvariantWithGradientResult<typename CauchyGreenInvariants<Derived>::Scalar,
+InvariantGradientResult<typename CauchyGreenInvariants<Derived>::Scalar,
                             CauchyGreenInvariants<Derived>::dim_>
 CauchyGreenInvariants<Derived>::ComputeVarientWithGrad() const {
-  InvariantWithGradientResult<Scalar, dim_> result;
+  InvariantGradientResult<Scalar, dim_> result;
   result.i1_ = f_.array().square().sum();
   result.i2_ = (f_ * f_.transpose()).array().square().sum();
   auto detf = f_.determinant();
@@ -35,10 +35,10 @@ template <typename Derived>
 SmithInvariants<Derived>::SmithInvariants(const Eigen::MatrixBase<Derived>& dg) noexcept
     : f_(dg), polar_result_(dg) {}
 
-template <typename Derived> InvariantWithGradientResult<typename SmithInvariants<Derived>::Scalar,
+template <typename Derived> InvariantGradientResult<typename SmithInvariants<Derived>::Scalar,
                                                         SmithInvariants<Derived>::dim_>
 SmithInvariants<Derived>::ComputeVarientWithGrad() const {
-  InvariantWithGradientResult<Scalar> result;
+  InvariantGradientResult<Scalar> result;
   result.i1_ = polar_result_.symm_.trace();
   result.i2_ = f_.array().square().sum();
   // result.i2_ = (f_.transpose() * f_).trace();

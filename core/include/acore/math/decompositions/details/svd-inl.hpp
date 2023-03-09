@@ -7,7 +7,7 @@
 
 namespace acg::math {
 template <typename Derived> Svd<Derived>::Svd(const Eigen::MatrixBase<Derived>& x) {
-  auto svd = x.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
+  auto svd = x.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
   u_ = svd.matrixU();
   v_ = svd.matrixV();
   sigma_ = svd.singularValues();

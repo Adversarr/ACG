@@ -18,15 +18,9 @@ template <typename F, int dim> struct AABB<void, F, dim> {
   AABB(AABB &&) = default;
 
   template <typename Tp> inline bool Intersect(const AABB<Tp, F, dim> &another) const {
-    // HACK: Unroll the loop
-    for (Index i = 0; i < dim; ++i) {
-      if ((upper_bound(i) - another.lower_bound(i)) * (another.upper_bound(i) - lower_bound(i))
-          < 0) {
-        return false;
-      }
-    }
-
-    return true;
+    auto crossing
+        = (upper_bound - another.lower_bound).array() * (another.upper_bound - lower_bound).array();
+    return !(crossing.array() < 0).any();
   }
 
   template <typename Tp> inline bool Contain(const AABB<Tp, F, dim> &another) const {

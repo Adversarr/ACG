@@ -4,6 +4,7 @@
 #include <acore/math/utilities.hpp>
 #include <autils/log.hpp>
 #include <iostream>
+#include <queue>
 
 #include "../subdivision.hpp"
 
@@ -19,18 +20,11 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Insert(
     return parent;
   }
   auto generate_sequence = FindVisitSequence(aabb);
-
-  ACG_DEBUG_CHECK(generate_sequence.front() == parent,
-                  "Generated sequence does not start with entry. {} v.s. {}, "
-                  "Input = {} by {}",
-                  generate_sequence.front(), parent, fmt::streamed(aabb.lower_bound.transpose()),
-                  fmt::streamed(aabb.upper_bound.transpose()));
   auto it = generate_sequence.begin();
   auto child = *(++it);
 
   while (child != InvalidSubscript && it != generate_sequence.end()) {
     auto ret = EnsureSubDivision(parent, child);
-    // Check the ensured child:
     parent = ret;
     child = *(++it);
   }
@@ -44,13 +38,14 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Insert(
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureSubDivision(size_t parent,
                                                                                    size_t child) {
-  if (nodes_[parent].sub_nodes_[child] == InvalidSubscript) {
-    auto position = nodes_[parent].GetChildAABB(indexer_[child]);
-    auto child_id
-        = PutNode(nodes_[parent].unit_ / subdivision_count, position, nodes_[parent].depth_ + 1);
-    nodes_[parent].sub_nodes_[child] = child_id;
+  auto &pnode = nodes_[parent];
+  auto &cid = pnode.sub_nodes_[child];
+  if (cid == InvalidSubscript) {
+    auto position = pnode.GetChildAABB(indexer_[child]);
+    auto child_id = PutNode(pnode.unit_ / subdivision_count, position, pnode.depth_ + 1);
+    cid = child_id;
   }
-  return nodes_[parent].sub_nodes_[child];
+  return cid;
 }
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
@@ -60,8 +55,10 @@ void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Clear() {
   entry_nodes_.clear();
   data_.clear();
 }
+
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
-size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureEntry(const AABB<D> &aabb) {
+size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureEntry(
+    const AABB<D, F, dim> &aabb) {
   auto ub_ceil = aabb.upper_bound.array().ceil().eval();
   auto lb_floor = aabb.lower_bound.array().floor().eval();
   if ((ub_ceil - unit_ != lb_floor).any()) {
@@ -77,11 +74,6 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureEntry(con
   // Otherwise, create a new entry.
   auto entry_id = PutNode(unit_ / static_cast<F>(subdivision_count),
                           {lb_floor.matrix(), ub_ceil.matrix()}, 0);
-  // ACG_INFO("Entry {} by {} created for {} by {}",
-  //   fmt::streamed(nodes_[entry_id].box_.lower_bound.transpose()),
-  //   fmt::streamed(nodes_[entry_id].box_.upper_bound.transpose()),
-  //   fmt::streamed(aabb.lower_bound.transpose()),
-  //   fmt::streamed(aabb.lower_bound.transpose()));
   entry_nodes_.push_back(entry_id);
   return entry_id;
 };
@@ -89,9 +81,6 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureEntry(con
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::PutNode(
     F local_unit, const AABB<void, F, dim> &range, size_t depth) {
-  // ACG_WARN("Putting a new node: unit={} depth={}, lb={}, ub={}", local_unit,
-  //          depth, fmt::streamed(range.lower_bound.transpose()),
-  //          fmt::streamed(range.upper_bound.transpose()));
   nodes_.emplace_back(local_unit, range, depth);
   return nodes_.size() - 1;
 }
@@ -109,7 +98,8 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindEntry(
 }
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
-size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::PutAABBData(const AABB<D> &aabb) {
+size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::PutAABBData(
+    const AABB<D, F, dim> &aabb) {
   auto id = data_.size();
   data_.push_back(aabb);
   return id;
@@ -151,14 +141,6 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindVisitSequence(
       // Find the local index.
       auto index = std::apply(indexer_, make_tuple_from_vector(local_index_l));
       *it = index;
-      // ACG_CHECK(index < subdivision_count_total_,
-      //           "Got index greater than total supported! {} > = {}, vec = "
-      //           "{} by {},vec_index = {},"
-      //           "Entry Unit = {}",
-      //           index, subdivision_count_total_,
-      //           fmt::streamed(local_lb.transpose()),
-      //           fmt::streamed(local_ub.transpose()),
-      //           fmt::streamed(local_index_l.transpose()), entry_node.unit_);
       ++it;
 
       // Update Local Coordinate
@@ -168,6 +150,7 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindVisitSequence(
   }
   return seq;
 }
+
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 std::pair<Field<F, dim>, geometry::topology::LineList>
 SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Visualize() const {
@@ -191,7 +174,6 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Visualize() const {
     iacc(nl++) = Vec2<Index>{np + 1, np + 5};
     iacc(nl++) = Vec2<Index>{np + 2, np + 6};
     iacc(nl++) = Vec2<Index>{np + 3, np + 7};
-
     pacc(np++) = l;
     pacc(np++) = Vec3f{l.x(), u.y(), l.z()};
     pacc(np++) = Vec3f{u.x(), u.y(), l.z()};
@@ -201,8 +183,51 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Visualize() const {
     pacc(np++) = Vec3f{u.x(), u.y(), u.z()};
     pacc(np++) = Vec3f{u.x(), l.y(), u.z()};
   }
-
   return {std::move(position), std::move(lines)};
+}
+
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
+AABB<D, F, dim> &SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Get(size_t id) {
+  return data_[id];
+}
+
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
+const AABB<D, F, dim> &SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Get(
+    size_t id) const {
+  return data_[id];
+}
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
+std::vector<size_t> SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Query(
+    const AABB<void, F, dim> &aabb) const {
+  std::vector<size_t> retval;
+  // 1. Large leafs.
+  for (auto id : large_leafs_) {
+    const auto &entity = Get(id);
+
+    if (entity.Intersect(aabb)) {
+      retval.push_back(id);
+    }
+  }
+
+  // 2. for each entry...
+  for (auto id : entry_nodes_) {
+    QueryVisit(retval, id, aabb);
+  }
+  return retval;
+}
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
+void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryVisit(
+    std::vector<size_t> &retval, size_t node, const AABB<void, F, dim> &aabb) const {
+  const auto &n = nodes_[node];
+  if (n.box_.Intersect(aabb)) {
+    std::copy(n.leafs_.begin(), n.leafs_.end(), std::back_inserter(retval));
+
+    for (auto id: n.sub_nodes_) {
+      if (id != InvalidSubscript) {
+        QueryVisit(retval, id, aabb);
+      }
+    }
+  }
 }
 
 }  // namespace acg::spatial

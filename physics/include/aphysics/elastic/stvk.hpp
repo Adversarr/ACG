@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-
 #include "./common.hpp"
 #include "./invariants.hpp"
 
@@ -15,19 +13,6 @@ public:
 
 private:
   HyperElasticResult<F, dim> ComputeGradientImpl() const noexcept {
-    // Page 72
-    // BUG: This is Neo-Hookean.
-    //
-    // // Phi = 1/2 mu (I2 - 3) - mu Log[I3] + 1/2 lambda (Log[I3])^2
-    //
-    // F logi3 = log(invariants.i3_);
-    // F i3_scale = (logi3 * lambda_ - mu_) / invariants.i3_;
-    // F i2_scale = mu_ * static_cast<F>(.5);
-    // F energy = .5 * mu_ * (invariants.i2_ - 3) - mu_ * logi3 + .5 * lambda_ * logi3 * logi3;
-    // HyperElasticResult<F, dim> result;
-    // result.energy = energy;
-    // result.grad = i2_scale * invariants.i2_grad_ + i3_scale * invariants.i3_grad_;
-
     // NOTE: See "Analytic Eigensystems for Isotropic Distortion Energies"
     //       for more details
     // Phi = 0.125 (lambda (I2 - 3)^2 + mu (8 I1 I3 + I2 ^ 2 + 2 I1^2 I2
@@ -49,18 +34,6 @@ private:
     result.grad = di1 * invariants.i1_grad_ + di2 * invariants.i2_grad_ + di3 *
     invariants.i3_grad_;
 
-    // TODO: based on cauchy invarient:
-    // auto invariants = CauchyGreenInvariants{deformation_gradient}.ComputeVarientWithGrad();
-    // std::cout << invariants.i1_ << std::endl;
-    // std::cout << invariants.i2_ << std::endl;
-    // std::cout << invariants.i3_ << std::endl;
-    // // Phi = .25 * II_C - .5 I_C + 3
-    // result.energy
-    //     = mu_ * (.25 * invariants.i2_ - .5 * invariants.i1_ + 0.75)
-    //       + 0.125 * lambda_ * (invariants.i1_ * invariants.i1_ - 6 * invariants.i1_ + 9);
-    // std::cout << result.energy << std::endl;
-    // result.grad = mu_ * (.25 * invariants.i2_grad_ - .5 * invariants.i1_grad_)
-    //               + lambda_ * 0.25 * (invariants.i1_ - 3) * invariants.i1_grad_;
     return result;
   }
 

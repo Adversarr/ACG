@@ -33,7 +33,7 @@ vk::DeviceSize Scene::GetRequiredIndexBufferSize() const {
   }
   // INFO: 20 is hard coded because we use sphere_20 for particle rendering.
   size += particles_.size() * 20;
-  return size * 3 * sizeof(details::GuiIndex );
+  return size * 3 * sizeof(details::GuiIndex);
 }
 
 void Scene::Reset() {
@@ -44,9 +44,9 @@ void Scene::Reset() {
   particles_colors_.clear();
 }
 
-std::pair<std::vector<Vertex>, std::vector<GuiIndex >> Scene::Build() const {
+std::pair<std::vector<Vertex>, std::vector<GuiIndex>> Scene::Build() const {
   std::vector<Vertex> vertices;
-  std::vector<GuiIndex > indices;
+  std::vector<GuiIndex> indices;
   for (size_t i = 0; i < meshes_.size(); ++i) {
     const auto& m = meshes_[i];
     const auto& c = mesh_colors_[i];
@@ -96,8 +96,8 @@ Scene& Scene::AddParticle(const geometry::Particle<Float32>& particle, const Vec
   return *this;
 }
 
-Scene& Scene::AddMesh(geometry::SimpleMesh<Float32> mesh, std::optional<Field<Float32, 3>> opt_normals,
-                      Field<Float32, 3> colors) {
+Scene& Scene::AddMesh(geometry::SimpleMesh<Float32> mesh,
+                      std::optional<Field<Float32, 3>> opt_normals, Field<Float32, 3> colors) {
   // normals_.emplace_back(acg::geometry::Normal<F32>{mesh.GetFaces(),
   // mesh.GetVertices()}.PerVertex());
   if (!opt_normals.has_value()) {
@@ -127,9 +127,7 @@ Scene2::Mesh& Scene2::AddMesh(const geometry::topology::TriangleList& indices,
   if (opt_normals.has_value()) {
     mesh.SetNormals(opt_normals.value());
   } else {
-    acg::geometry::Normal<Float32> kern_normal(indices, positions);
-    auto normal = kern_normal.PerVertex(geometry::NormalPerVertexMode::kArea);
-    mesh.SetNormals(normal);
+    mesh.ComputeDefaultNormal();
   }
   return mesh;
 }
@@ -234,6 +232,13 @@ Scene2::Mesh& Scene2::Mesh::SetUniformColor(const types::Rgba& val) {
   color.col(0) = val;
   return *this;
 }
+
+Scene2::Mesh& Scene2::Mesh::ComputeDefaultNormal() {
+  acg::geometry::Normal<Float32> kern_normal(faces, vertices);
+  auto normal = kern_normal.PerVertex(geometry::NormalPerVertexMode::kArea);
+  SetNormals(normal);
+  return *this;
+}
 Scene2::Mesh& Scene2::Mesh::SetNormals(const Field<float, 3>& val) {
   normals = val;
   return *this;
@@ -303,8 +308,7 @@ Scene2::Particles& Scene2::Particles::SetRadius(Float32 r) {
 
 void Scene2::Wireframe::MarkUpdate() {
   update_flag = true;
-  ACG_CHECK(positions.cols() == colors.cols() || colors.cols() == 1,
-      "#Color error");
+  ACG_CHECK(positions.cols() == colors.cols() || colors.cols() == 1, "#Color error");
   // TODO: add debug check.
 }
 Scene2::Wireframe& Scene2::Wireframe::SetIndices(const geometry::topology::LineList& ind) {

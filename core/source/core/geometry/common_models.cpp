@@ -1,4 +1,5 @@
 #include "acore/geometry/common_models.hpp"
+
 #include "acore/math/constants.hpp"
 namespace acg::geometry {
 
@@ -34,10 +35,10 @@ SimpleMesh<Float32> sphere_uv(Vec3f center, Float32 radius, Index n_stacks, Inde
     indices.col(idx) = index_vector;
   }
   // south pole
-  for (Index i = 1; i <= n_slices; ++i) {
+  for (Index i = 0; i < n_slices; ++i) {
     auto base_idx = n_vertices - n_slices - 1;
-    Vec3Index index_vector{0, base_idx + i, base_idx + (i < n_slices ? i + 1 : 1)};
-    Index idx = n_faces - n_slices + i - 1;
+    Vec3Index index_vector{base_idx + i, n_vertices - 1, base_idx + ((i + 1) % n_slices)};
+    Index idx = n_faces - n_slices + i;
     indices.col(idx) = index_vector;
   }
   Index face_idx = n_slices;
@@ -48,8 +49,8 @@ SimpleMesh<Float32> sphere_uv(Vec3f center, Float32 radius, Index n_stacks, Inde
       Index right_top = (j < n_slices) ? (left_top + 1) : (left_top + 1 - n_slices);
       Index left_bottom = left_top + n_slices;
       Index right_bottom = right_top + n_slices;
-      indices.col(face_idx++) = Vec3Index {left_top, left_bottom, right_top};
-      indices.col(face_idx++) = Vec3Index {left_bottom, right_bottom, right_top};
+      indices.col(face_idx++) = Vec3Index{left_top, left_bottom, right_top};
+      indices.col(face_idx++) = Vec3Index{left_bottom, right_bottom, right_top};
     }
   }
   return SimpleMesh<Float32>{vertices, indices};
@@ -61,15 +62,15 @@ SimpleMesh<Float32> sphere_20(Vec3f center, Float32 radius) {
   Float32 x = .525731112119133606;
   Float32 z = .850650808352039932;
   vertices = AttrTrans<Float32, 3>{{-x, 0.0, z}, {x, 0.0, z},  {-x, 0.0, -z}, {x, 0.0, -z},
-                                  {0.0, z, x},  {0.0, z, -x}, {0.0, -z, x},  {0.0, -z, -x},
-                                  {z, x, 0.0},  {-z, x, 0.0}, {z, -x, 0.0},  {-z, -x, 0.0}}
+                                   {0.0, z, x},  {0.0, z, -x}, {0.0, -z, x},  {0.0, -z, -x},
+                                   {z, x, 0.0},  {-z, x, 0.0}, {z, -x, 0.0},  {-z, -x, 0.0}}
                  .transpose();
   vertices = vertices * radius;
   vertices.colwise() += center;
   indices = AttrTrans<Index, 3>{{1, 4, 0},  {4, 9, 0},  {4, 5, 9},  {8, 5, 4},  {1, 8, 4},
-                                 {1, 10, 8}, {10, 3, 8}, {8, 3, 5},  {3, 2, 5},  {3, 7, 2},
-                                 {3, 10, 7}, {10, 6, 7}, {6, 11, 7}, {6, 0, 11}, {6, 1, 0},
-                                 {10, 1, 6}, {11, 0, 9}, {2, 11, 9}, {5, 2, 9},  {11, 2, 7}}
+                                {1, 10, 8}, {10, 3, 8}, {8, 3, 5},  {3, 2, 5},  {3, 7, 2},
+                                {3, 10, 7}, {10, 6, 7}, {6, 11, 7}, {6, 0, 11}, {6, 1, 0},
+                                {10, 1, 6}, {11, 0, 9}, {2, 11, 9}, {5, 2, 9},  {11, 2, 7}}
                 .transpose();
   return {vertices, indices};
 }

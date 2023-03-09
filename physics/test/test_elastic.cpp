@@ -1,7 +1,11 @@
 #include <doctest/doctest.h>
+#include <fmt/format.h>
+#include <acore/math/utilities.hpp>
 
 #include <Eigen/Eigenvalues>
 #include <aphysics/elastic/common.hpp>
+#include <aphysics/elastic/neohookean.hpp>
+#include <aphysics/elastic/shape_matching.hpp>
 #include <aphysics/elastic/stvk.hpp>
 #include <iostream>
 
@@ -49,4 +53,38 @@ TEST_CASE("Stvk") {
     std::cout << "f = " << std::endl << forces << std::endl;
     std::cout << "w = " << std::endl << w << std::endl;
   }
+}
+
+TEST_CASE("Shape Matching") {
+  Field<float, 3> position{{1, 0, 0}, {0, 1, 0}, {0, 0, 0}};
+  Field<float, 1> mass;
+
+  mass.resize(Eigen::NoChange, 3);
+  mass(0) = 1;
+  mass(1) = 1;
+  mass(2) = 10000;
+  physics::elastic::ShapeMatching<float, 3> sm{position, mass};
+  std::cout << sm.rest_pose_local_ << std::endl;
+  std::cout << sm.rest_pose_mass_center_ << std::endl;
+  position *= 0.9;
+  std::cout << sm.ComputeGoalPositions(position) << std::endl;
+  // Mat3x3f rd;
+  // rd.setRandom();
+  // std::cout << (rd * position.colwise()) << std::endl;
+}
+
+TEST_CASE("Neohookean") {
+  float mu = 1;
+  float lambda = 1;
+  Mat3x3d dg;
+  dg.setIdentity();
+  // dg.setZero();
+  // dg.diagonal().setConstant(0.9);
+  physics::elastic::OgdenNeoHookean<double, 3> stvk(dg, lambda, mu);
+  auto g = stvk.ComputeGradient();
+  auto h = stvk.ComputeHessian();
+
+  fmt::print("H = {}\n", h.hessian);
+  fmt::print("g = {}\n", h.grad);
+  fmt::print("Phi = {}\n", h.energy);
 }

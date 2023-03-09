@@ -39,7 +39,7 @@ geometry::SimpleMesh<Float64> make_plane_xy(Index n) {
   return {vertices, faces};
 }
 
-void App::Init() {
+void MassSpringApp::Init() {
   auto mesh = make_plane_xy(n_grids_);
   position_ = mesh.GetVertices().cast<float>();
   n_vertices_ = n_grids_ * n_grids_;
@@ -93,12 +93,12 @@ void App::Init() {
   splu_.compute(hessian_);
 }
 
-void App::AddSpring(acg::Index i, acg::Index j) {
+void MassSpringApp::AddSpring(acg::Index i, acg::Index j) {
   auto spring = std::make_pair(std::min(i, j), std::max(i, j));
   springs_.insert(spring);
 }
 
-void App::Step() {
+void MassSpringApp::Step() {
   auto acceleration = acg::FieldBuilder<float, 3>(position_.cols()).Zeros();
   auto p_acc = access(position_);
   auto o_acc = access(origin_position_);
@@ -127,7 +127,7 @@ void App::Step() {
   }
 }
 
-void App::StepProjDyn() {
+void MassSpringApp::StepProjDyn() {
   auto o_acc = access(origin_position_);
   auto d_acc = access(d_);
   d_.resize(Eigen::NoChange, springs_.size());
@@ -183,7 +183,7 @@ void App::StepProjDyn() {
   position_ = current_solution.reshaped(3, n_vertices_);
 }
 
-void App::StepProjDynMf() {
+void MassSpringApp::StepProjDynMf() {
   auto o_acc = access(origin_position_);
   auto d_acc = access(d_);
   d_.resize(Eigen::NoChange, springs_.size());
