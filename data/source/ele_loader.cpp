@@ -1,8 +1,8 @@
-#include "aport/triangle/ele_loader.hpp"
+#include "adata//triangle/ele_loader.hpp"
 
 #include "autils/log.hpp"
 
-namespace acg::port::triangle {
+namespace acg::data::triangle {
 
 EleLoader::EleLoader(std::istream& input_stream, bool has_tetra_index)
     : input_stream_(input_stream),

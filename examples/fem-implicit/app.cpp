@@ -80,7 +80,6 @@ void FemImplicitApp::Step() {
     for (auto [iter] : NdRange<1>({steps_})) {
       rhs = (current_solution.reshaped() - x_tilde_vec) * mass_ / (dt_ * dt_);
       std::vector<Tri> hessian_data;
-      // ACG_INFO("Iteration {}", iter);
       // Put diagnal, i.e. Inertia Part.
       for (auto [i, p] : enumerate(access(position_))) {
         // mass = 1
@@ -112,16 +111,13 @@ void FemImplicitApp::Step() {
 
         // Spread hessian to sparse data.
         for (Index i = 0; i < 4; ++i) {
-          for (Index j = 0; j < 4; ++j) {
-            for (Index di = 0; di < 3; ++di) {
+          for (Index di = 0; di < 3; ++di) {
+            for (Index j = 0; j < 4; ++j) {
               for (Index dj = 0; dj < 3; ++dj) {
                 hessian_data.push_back(
                     Tri{3 * tet(i) + di, 3 * tet(j) + dj, hessian(3 * i + di, 3 * j + dj)});
               }
             }
-          }
-
-          for (Index di = 0; di < 3; ++di) {
             rhs(3 * tet(i) + di) += grad(3 * i + di);
           }
         }
@@ -132,11 +128,20 @@ void FemImplicitApp::Step() {
       auto result = splu.solve(rhs);
       current_solution -= result.reshaped(3, position_.cols());
       // ACG_INFO("Hessian = {}, Position = {}", sp.toDense(), current_solution);
-      current_solution.col(0) = rest_position_.col(0);
-      current_solution.col(1) = rest_position_.col(1);
+
+      ACG_INFO("Iteration {}, delta={}", iter, result.norm());
+
+      if (result.norm() < eps_) {
+        break;
+      }
     }
 
-    velocity_ = (current_solution - position_) / dt_;
+    for (auto pos : access(current_solution)) {
+      if (pos.z() < 0) {
+        pos.z() = 0;
+      }
+    }
+    velocity_ = 0.997 * (current_solution - position_) / dt_;
     position_ = current_solution;
   }
 }

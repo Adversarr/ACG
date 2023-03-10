@@ -27,11 +27,11 @@ target('acg_gui')
   end)
   
   after_build(function (tg)
-    if os.isdir("$(projectdir)/data/shaders/") then
-      os.mkdir("$(projectdir)/data/shaders/")
+    if os.isdir("$(projectdir)/data/data/shaders/") then
+      os.mkdir("$(projectdir)/data/data/shaders/")
     end
-    os.rm("$(projectdir)/data/shaders/*.spv")
-    os.cp("$(buildir)" .. spv_home .. "/*.spv", "$(projectdir)/data/shaders/")
+    os.rm("$(projectdir)/data/data/shaders/*.spv")
+    os.cp("$(buildir)" .. spv_home .. "/*.spv", "$(projectdir)/data/data/shaders/")
   end)
 target_end()
 

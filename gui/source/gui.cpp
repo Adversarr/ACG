@@ -16,13 +16,12 @@ Gui& Gui::Instance() {
 
 void Gui::Config::Hook() const {
   acg::InitHook hook;
-  hook.on_init = [*this] (){
-    ACG_CHECK(::gui_instance.get() == nullptr,
-        "Double Init to Gui.");
+  hook.on_init = [*this]() {
+    ACG_CHECK(::gui_instance.get() == nullptr, "Double Init to Gui.");
     gui_instance = std::make_unique<Gui>(*this);
   };
 
-  hook.on_exit = [](){ ::gui_instance.reset(); };
+  hook.on_exit = []() { ::gui_instance.reset(); };
   hook.priority = 5;
   hook.name = "Gui Init";
   acg::details::add_hook(hook);
@@ -339,7 +338,6 @@ void Gui::FillBuffers(bool force) {
       FillMeshBuffer(mesh, mesh_render_info_[i]);
     }
   }
-  // TODO: Process other kinds
   for (size_t i = 0; i < scene_.GetParticlesCount(); ++i) {
     auto& part = scene_.GetParticles(i);
     if (part.update_flag | force) {
@@ -482,7 +480,8 @@ void Gui::RenderOnce(bool verbose) {
   }
   for (const auto& info : wireframe_render_info_) {
     if (verbose) {
-      ACG_DEBUG_LOG("Rendering wireframe: buffers=[{} {}] #index={}", info.index, info.vertex, info.index_count);
+      ACG_DEBUG_LOG("Rendering wireframe: buffers=[{} {}] #index={}", info.index, info.vertex,
+                    info.index_count);
     }
     cbuf.bindVertexBuffers(0, GetAllocatedBuffer(info.vertex).GetBuffer(),
                            static_cast<vk::DeviceSize>(0));
@@ -714,8 +713,7 @@ void Gui::FillParticleBuffer(const Scene2::Particles& particle, const ParticleRe
       StagingUpdateInfo(info.vertex, sizeof(PointVertex) * vert.size()), vert.data()));
 }
 
-void Gui::FillWireframeBuffer(const Scene2::Wireframe& wireframe,
-                               const WireframeRenderInfo& info) {
+void Gui::FillWireframeBuffer(const Scene2::Wireframe& wireframe, const WireframeRenderInfo& info) {
   std::vector<WireframePoint> vert(wireframe.positions.cols());
   for (const auto& [i, p] : acg::enumerate(acg::access(wireframe.positions))) {
     auto& v = vert[i];

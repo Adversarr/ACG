@@ -54,7 +54,6 @@ void VkGraphicsContext::CreateSwapchain(bool verbose) {
     info.setImageSharingMode(vk::SharingMode::eExclusive);
   }
 
-  // TODO: old swapchain available here.
   info.setPreTransform(surface_capabilities.currentTransform)
       .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
       .setPresentMode(present_mode)

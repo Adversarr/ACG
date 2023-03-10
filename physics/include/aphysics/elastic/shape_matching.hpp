@@ -14,6 +14,7 @@ public:
 
   void Fit(const Field<Scalar, dim>& rest_pose);
 
+private:
   // TODO: Move to private.
   Field<Scalar, dim> rest_pose_local_;
 

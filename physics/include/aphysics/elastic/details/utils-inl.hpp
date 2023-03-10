@@ -3,7 +3,7 @@
 #include <aphysics/elastic/invariants.hpp>
 namespace acg::physics::elastic::details {
 
-// TODO: See page 71, Equation 5.50.
+// NOTE: See page 71, Equation 5.50.
 template <typename Scalar, int dim>
 auto compose_final_hessian(Scalar ddi1, Scalar ddi2, Scalar ddi3, Scalar di1,
                                             Scalar di2, Scalar di3,

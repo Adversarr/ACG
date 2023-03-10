@@ -1,8 +1,8 @@
 #include <doctest/doctest.h>
 #include <fmt/format.h>
-#include <acore/math/utilities.hpp>
 
 #include <Eigen/Eigenvalues>
+#include <acore/math/utilities.hpp>
 #include <aphysics/elastic/common.hpp>
 #include <aphysics/elastic/neohookean.hpp>
 #include <aphysics/elastic/shape_matching.hpp>
@@ -64,13 +64,8 @@ TEST_CASE("Shape Matching") {
   mass(1) = 1;
   mass(2) = 10000;
   physics::elastic::ShapeMatching<float, 3> sm{position, mass};
-  std::cout << sm.rest_pose_local_ << std::endl;
-  std::cout << sm.rest_pose_mass_center_ << std::endl;
   position *= 0.9;
   std::cout << sm.ComputeGoalPositions(position) << std::endl;
-  // Mat3x3f rd;
-  // rd.setRandom();
-  // std::cout << (rd * position.colwise()) << std::endl;
 }
 
 TEST_CASE("Neohookean") {

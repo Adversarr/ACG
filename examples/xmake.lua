@@ -41,7 +41,7 @@ target_end()
 
 target('fem-implicit') 
   add_files('fem-implicit/**.cpp')
-  add_deps('acg_gui', 'acg_physics')
+  add_deps('acg_gui', 'acg_physics', 'acg_data')
 target_end()
 
 target('spatial-subd')

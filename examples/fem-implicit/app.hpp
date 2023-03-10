@@ -16,7 +16,9 @@ public:
 
   Float32 lambda_{1.0}, mu_{1.};
 
-  Float32 dt_{.005};
+  Float32 dt_{.0005};
+
+  Float32 eps_{0.0001};
 
   bool apply_force_;
 

@@ -5,7 +5,7 @@
 
 namespace acg {
 
-namespace port {
+namespace data {
 
 namespace triangle {
 
@@ -14,8 +14,8 @@ namespace triangle {
  *
  * @intro
  *        .node files
- *        First line: [# of points] [dimension (must be 3)] [# of attributes] [# of boundary markers (0 or 1)] 
- *        Remaining lines: [point #] [x] [y] [z] [optional attributes] [optional boundary marker]
+ *        First line: [# of points] [dimension (must be 3)] [# of attributes] [# of boundary markers
+ * (0 or 1)] Remaining lines: [point #] [x] [y] [z] [optional attributes] [optional boundary marker]
  */
 class NodeLoader {
 public:
@@ -41,5 +41,5 @@ public:
 };
 
 }  // namespace triangle
-}  // namespace port
+}  // namespace data
 }  // namespace acg

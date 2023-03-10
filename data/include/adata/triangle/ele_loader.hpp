@@ -11,7 +11,7 @@
 
 namespace acg {
 
-namespace port {
+namespace data {
 
 namespace triangle {
 
@@ -25,7 +25,7 @@ namespace triangle {
  */
 class EleLoader {
 public:
-  explicit EleLoader(std::istream& input_stream, bool has_tetra_index=true);
+  explicit EleLoader(std::istream& input_stream, bool has_tetra_index = true);
 
   void Load();
 
@@ -48,5 +48,5 @@ public:
 };
 
 }  // namespace triangle
-}  // namespace port
+}  // namespace data
 }  // namespace acg

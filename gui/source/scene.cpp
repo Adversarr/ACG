@@ -309,7 +309,6 @@ Scene2::Particles& Scene2::Particles::SetRadius(Float32 r) {
 void Scene2::Wireframe::MarkUpdate() {
   update_flag = true;
   ACG_CHECK(positions.cols() == colors.cols() || colors.cols() == 1, "#Color error");
-  // TODO: add debug check.
 }
 Scene2::Wireframe& Scene2::Wireframe::SetIndices(const geometry::topology::LineList& ind) {
   indices = ind;

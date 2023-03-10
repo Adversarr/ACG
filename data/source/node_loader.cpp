@@ -1,7 +1,9 @@
 #include <acore/math/access.hpp>
-#include <aport/triangle/node_loader.hpp>
+#include <acore/math/utilities.hpp>
+#include <adata/triangle/node_loader.hpp>
 #include <autils/common.hpp>
-namespace acg::port::triangle {
+
+namespace acg::data::triangle {
 
 NodeLoader::NodeLoader(std::istream& input_stream)
     : input_stream_(input_stream), status_(Status::kFailedPrecondition) {}
@@ -22,7 +24,8 @@ void NodeLoader::Load() {
   }
 
   // Load first line.
-  input_stream_ >> num_points_ >> dimension_ >> num_attributes_;
+  int num_bc = 0;
+  input_stream_ >> num_points_ >> dimension_ >> num_attributes_ >> num_bc;
   if (input_stream_.fail()) {
     ACG_ERROR("Failed to get any information from InputStream!");
     status_ = Status::kUnavailable;
@@ -44,15 +47,24 @@ void NodeLoader::Load() {
   for (Index i = 0; i < num_points_; ++i) {
     Index point_id;
     input_stream_ >> point_id;
-    if (i == 0) UNLIKELY {
-        offset = point_id;
-      }
-    for (Index j = 0; j < dimension_; ++j) {
-      input_stream_ >> accessor(i - offset)(j);
+    if (i == 0) {
+      offset = point_id;
     }
+
+    point_id -= offset;
+    for (Index j = 0; j < dimension_; ++j) {
+      input_stream_ >> accessor(point_id)(j);
+    }
+
+    if (num_bc > 0) {
+      int is_bc;
+      input_stream_ >> is_bc;
+    }
+
+    ACG_INFO("Node: {}, vec = {}", point_id, accessor(point_id));
   }
 
   status_ = Status::kOk;
 }
 
-}  // namespace acg::port::triangle
+}  // namespace acg::data::triangle

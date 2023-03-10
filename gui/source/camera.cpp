@@ -117,6 +117,4 @@ Camera& Camera::SetUp(Vec3f up) {
   return *this;
 }
 
-// TODO: compute everything using yrp.
-
 }  // namespace acg::gui

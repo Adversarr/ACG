@@ -1,8 +1,9 @@
 #pragma once
 
+#include <acore/math/func.hpp>
+
 #include "./common.hpp"
 #include "./invariants.hpp"
-
 namespace acg::physics::elastic {
 template <typename F, int dim> class StVK : public HyperElasticModel<F, dim, StVK<F, dim>> {
 public:
@@ -20,20 +21,15 @@ private:
     HyperElasticResult<F, dim> result;
     auto invariants = SmithInvariants{deformation_gradient}.ComputeVarientWithGrad();
     auto i1 = invariants.i1_, i2 = invariants.i2_, i3 = invariants.i3_;
-    // TODO: This expression is SOO UGLY.
+    using namespace acg::math;
     result.energy
         = 0.125
-          * (lambda_ * (i2 - 3) * (i2 - 3)
-             + mu_ * (8 * i1 * i3 + i2 * i2 + 2 * i1 * i1 * i2 - 4 * i2 - i1 * i1 * i1 * i1 +
-             6));
-    // TODO: implement the grad.
-    //
-    F di1 = 0.125 * mu_ * (8 * i3 + 4 * i1 * i2 - 4 * i1 * i1 * i1);
-    F di2 = lambda_ * 0.25 * (i2 - 3) + 0.125 * mu_ * (2 * i2 + 2 * i1 * i1 - 4);
+          * (lambda_ * math::square(i2 - 3)
+             + mu_ * (8 * i1 * i3 + square(i2) + 2 * square(i1) * i2 - 4 * i2 - pow<4>(i1) + 6));
+    F di1 = 0.125 * mu_ * (8 * i3 + 4 * i1 * i2 - 4 * pow<3>(i1));
+    F di2 = lambda_ * 0.25 * (i2 - 3) + 0.125 * mu_ * (2 * i2 + 2 * square(i1) - 4);
     F di3 = mu_ * i1;
-    result.grad = di1 * invariants.i1_grad_ + di2 * invariants.i2_grad_ + di3 *
-    invariants.i3_grad_;
-
+    result.grad = di1 * invariants.i1_grad_ + di2 * invariants.i2_grad_ + di3 * invariants.i3_grad_;
     return result;
   }
 
