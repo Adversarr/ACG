@@ -19,7 +19,7 @@ private:
     // Phi = 0.125 (lambda (I2 - 3)^2 + mu (8 I1 I3 + I2 ^ 2 + 2 I1^2 I2
     //                                      - 4I2 - I1^4 + 6))
     HyperElasticResult<F, dim> result;
-    auto invariants = SmithInvariants{deformation_gradient}.ComputeVarientWithGrad();
+    auto invariants = SmithInvariants{deformation_gradient}.ComputeGrad();
     auto i1 = invariants.i1_, i2 = invariants.i2_, i3 = invariants.i3_;
     using namespace acg::math;
     result.energy

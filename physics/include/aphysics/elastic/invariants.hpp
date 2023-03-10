@@ -26,9 +26,9 @@ template <typename Derived> struct CauchyGreenInvariants {
   static_assert(dim_ == Trait<Derived>::rows, "Rows != cols.");
   explicit CauchyGreenInvariants(const Eigen::MatrixBase<Derived>& dg) noexcept;
 
-  InvariantGradientResult<Scalar, dim_> ComputeVarientWithGrad() const;
+  InvariantGradientResult<Scalar, dim_> ComputeGrad() const;
 
-  InvariantHessianResult<Scalar, dim_> ComputeVariantWithHessian() const;
+  InvariantHessianResult<Scalar, dim_> ComputeHessian() const;
   Mat<Scalar, 3, 3> f_;
 
   /**
@@ -71,9 +71,9 @@ template <typename Derived> struct SmithInvariants {
 
   math::PolarDecompositionRv<Derived> polar_result_;
 
-  InvariantGradientResult<Scalar, dim_> ComputeVarientWithGrad() const;
+  InvariantGradientResult<Scalar, dim_> ComputeGrad() const;
 
-  InvariantHessianResult<Scalar, dim_> ComputeVariantWithHessian() const;
+  InvariantHessianResult<Scalar, dim_> ComputeHessian() const;
 };
 }  // namespace acg::physics::elastic
 #include "details/invarients-inl.hpp"

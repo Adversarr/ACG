@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
 
   MassSpringApp app;
-  app.n_grids_ = 100;
+  app.n_grids_ = 10;
   app.Init();
   auto& gui = Gui::Instance();
   bool running = false;
@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 
     auto [position, lines] = sd.Visualize();
     if (query_aabb) {
-      auto colls = sd.Query(aabb);
+      auto colls = sd.QueryInternal();
       ACG_INFO("Count = {}", colls.size());
     }
     render_wf.SetPositions(position);

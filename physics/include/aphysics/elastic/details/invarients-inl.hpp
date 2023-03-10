@@ -19,7 +19,7 @@ CauchyGreenInvariants<Derived>::CauchyGreenInvariants(const Eigen::MatrixBase<De
 template <typename Derived>
 InvariantGradientResult<typename CauchyGreenInvariants<Derived>::Scalar,
                             CauchyGreenInvariants<Derived>::dim_>
-CauchyGreenInvariants<Derived>::ComputeVarientWithGrad() const {
+CauchyGreenInvariants<Derived>::ComputeGrad() const {
   InvariantGradientResult<Scalar, dim_> result;
   result.i1_ = f_.array().square().sum();
   result.i2_ = (f_ * f_.transpose()).array().square().sum();
@@ -37,7 +37,7 @@ SmithInvariants<Derived>::SmithInvariants(const Eigen::MatrixBase<Derived>& dg) 
 
 template <typename Derived> InvariantGradientResult<typename SmithInvariants<Derived>::Scalar,
                                                         SmithInvariants<Derived>::dim_>
-SmithInvariants<Derived>::ComputeVarientWithGrad() const {
+SmithInvariants<Derived>::ComputeGrad() const {
   InvariantGradientResult<Scalar> result;
   result.i1_ = polar_result_.symm_.trace();
   result.i2_ = f_.array().square().sum();
@@ -64,10 +64,10 @@ SmithInvariants<Derived>::ComputeVarientWithGrad() const {
 
 template <typename Derived>
 InvariantHessianResult<typename SmithInvariants<Derived>::Scalar, SmithInvariants<Derived>::dim_>
-SmithInvariants<Derived>::ComputeVariantWithHessian() const {
+SmithInvariants<Derived>::ComputeHessian() const {
   InvariantHessianResult<Scalar, dim_> result;
   // II: Same for 2, 3 d.
-  result.inv_grad_result_ = ComputeVarientWithGrad();
+  result.inv_grad_result_ = ComputeGrad();
   result.i2_hessian_ = Mat<Scalar, dim_ * dim_, dim_ * dim_>::Identity() * 2;
 
   if constexpr (dim_ == 2) {

@@ -15,7 +15,7 @@ TEST_CASE("Elastic Common") {
   dg.setZero();
   dg.diagonal().setConstant(0.9);
   acg::physics::elastic::SmithInvariants invariants(Eigen::Matrix3f::Identity());
-  auto result = invariants.ComputeVariantWithHessian();
+  auto result = invariants.ComputeHessian();
   std::cout << result.inv_grad_result_.i1_ << std::endl;
   std::cout << result.inv_grad_result_.i2_ << std::endl;
   std::cout << result.inv_grad_result_.i3_ << std::endl;
@@ -76,7 +76,6 @@ TEST_CASE("Neohookean") {
   // dg.setZero();
   // dg.diagonal().setConstant(0.9);
   physics::elastic::OgdenNeoHookean<double, 3> stvk(dg, lambda, mu);
-  auto g = stvk.ComputeGradient();
   auto h = stvk.ComputeHessian();
 
   fmt::print("H = {}\n", h.hessian);

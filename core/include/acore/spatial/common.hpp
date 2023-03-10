@@ -27,6 +27,8 @@ template <typename F, int dim> struct AABB<void, F, dim> {
     return (lower_bound.array() <= another.lower_bound.array()).all()
            && (upper_bound.array() >= another.upper_bound.array()).all();
   }
+
+  AABB<void, F, dim> GetVoidAABB() const { return {lower_bound, upper_bound}; }
 };
 
 template <typename T, typename F, int dim> struct AABB : public AABB<void, F, dim> {

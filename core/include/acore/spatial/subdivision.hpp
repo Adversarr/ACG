@@ -54,7 +54,7 @@ public:
    */
   std::vector<size_t> Query(const AABB<void, F, dim> &aabb) const;
 
-  std::vector<std::pair<D, D>> QueryInternal() const;
+  std::vector<std::pair<size_t, size_t>> QueryInternal() const;
 
   explicit SubDivisionAABB(F unit_length = 1.0, F epsilon = 1e-6)
       : epsilon_(epsilon),
@@ -102,8 +102,9 @@ private:
 
   size_t EnsureEntry(const AABB<D, F, dim> &aabb);
 
-  void QueryVisit(std::vector<size_t>& retval, size_t node,
-      const AABB<void, F, dim>& aabb) const;
+  void QueryVisit(std::vector<size_t> &retval, size_t node, const AABB<void, F, dim> &aabb) const;
+  
+  void QueryVisitInternal(std::vector<std::pair<size_t, size_t>> &retval, size_t node) const;
 
   std::vector<AABB<D, F, dim>> data_;
   std::vector<Node> nodes_;

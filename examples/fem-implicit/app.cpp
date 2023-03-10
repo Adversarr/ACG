@@ -119,7 +119,6 @@ void FemImplicitApp::Step() {
       Eigen::SparseLU splu(sp);
       auto result = splu.solve(rhs);
       current_solution -= result.reshaped(3, position_.cols());
-      // ACG_INFO("Hessian = {}, Position = {}", sp.toDense(), current_solution);
 
       ACG_INFO("Iteration {}, delta={}", iter, result.norm());
 

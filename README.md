@@ -58,6 +58,6 @@ Now, mass spring will also show the dynamic computed grid (SubdivisonAABB) for f
 
 ### Other Stuffs
 
-1. `fem-explict`: first-order explicit integrator. StVK FEM Soft Body Simulation.
+1. `fem-implicit`: first-order explicit integrator. NeoHookean or StVK FEM Soft Body Simulation.
 2. `mpm-explicit`: PIC-Fluid simulation, toy P2G and G2P process, weakly-compressible.
 

@@ -222,7 +222,7 @@ void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryVisit(
   if (n.box_.Intersect(aabb)) {
     std::copy(n.leafs_.begin(), n.leafs_.end(), std::back_inserter(retval));
 
-    for (auto id: n.sub_nodes_) {
+    for (auto id : n.sub_nodes_) {
       if (id != InvalidSubscript) {
         QueryVisit(retval, id, aabb);
       }
@@ -230,4 +230,41 @@ void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryVisit(
   }
 }
 
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
+std::vector<std::pair<size_t, size_t>>
+SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryInternal() const {
+  std::vector<std::pair<size_t, size_t>> retval;
+  // 1. Large leafs.
+  for (auto id : large_leafs_) {
+    const auto &entity = Get(id);
+    auto leaf_intersect = Query(entity.GetVoidAABB());
+    for (auto another : leaf_intersect) {
+      retval.push_back({id, another});
+    }
+  }
+
+  // 2. for each entry...
+  for (auto id : entry_nodes_) {
+    QueryVisitInternal(retval, id);
+  }
+  return retval;
+}
+template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
+void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryVisitInternal(
+    std::vector<std::pair<size_t, size_t>> &retval, size_t node) const {
+  const auto &n = nodes_[node];
+  for (auto l : n.leafs_) {
+    std::vector<size_t> intersect;
+    QueryVisit(intersect, node, data_[l].GetVoidAABB());
+    for (auto r : intersect) {
+      retval.push_back({l, r});
+    }
+  }
+
+  for (auto id : n.sub_nodes_) {
+    if (id != InvalidSubscript) {
+      QueryVisitInternal(retval, id);
+    }
+  }
+}
 }  // namespace acg::spatial
