@@ -8,14 +8,6 @@
 #include <autils/log.hpp>
 using namespace app;
 
-/**
- * NOTE: What is a kernel?
- * 1. have zero, one, or multiple `Input`
- * 2. have one, or multiple `Output`
- * 3. have zero, one, or multiple `Constants`
- * 4. The computation should not change the input buffer
- */
-
 void FemImplicitApp::Step() {
   using Tri = Eigen::Triplet<Float32>;
   // M / dt2 = 1 / (dt * dt)
