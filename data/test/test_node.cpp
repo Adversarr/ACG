@@ -5,7 +5,7 @@
 
 TEST_CASE("Ele Loader") {
   std::stringstream input(
-      R"(1 3 0
+      R"(1 3 0 0
          0 1.0 2.0 3.0
         )");
   acg::data::triangle::NodeLoader loader(input);
