@@ -27,6 +27,10 @@ public:
 
   const types::DynamicField<Float64>& GetData() const;
 
+  const std::vector<bool>& GetBoundaryData() const;
+
+  Index GetOffset() const;
+
 private:
   std::istream& input_stream_;
 
@@ -34,10 +38,13 @@ private:
 
   types::DynamicField<Float64> nodes_;
 
+  std::vector<bool> node_is_boundary_;
+
 public:
   Index num_points_;
   Index num_attributes_;
   Index dimension_;
+  Index offset_;
 };
 
 }  // namespace triangle

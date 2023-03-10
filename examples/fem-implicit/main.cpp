@@ -90,27 +90,26 @@ int main(int argc, char** argv) {
   auto data_path = acg::data::get_data_dir();
   std::ifstream ele_file(data_path + "/house-ele-node/house.ele");
   std::ifstream node_file(data_path + "/house-ele-node/house.node");
-  std::cout << data_path << std::endl;
-  std::cout << ele_file.good() << std::endl;
   auto house_ele = acg::data::triangle::EleLoader(ele_file, false);
   auto house_node = acg::data::triangle::NodeLoader(node_file);
   house_ele.Load();
   house_node.Load();
-
   ACG_INFO("Ele load {} x {}, ", house_ele.GetData().rows(), house_ele.GetData().cols());
   ACG_INFO("Node load {} x {}, ", house_node.GetData().rows(), house_node.GetData().cols());
-  std::cout << house_node.GetData().array().maxCoeff() << std::endl;
-  std::cout << house_node.GetData().array().minCoeff() << std::endl;
   app::FemImplicitApp app;
 
-  // app.position_ = make_pos();
-  // app.tetras_ = make_tetra();
-  app.position_ = house_node.GetData().cast<float>();
-  app.tetras_ = house_ele.GetData().cast<acg::Index>();
-  app.tetras_.array() -= 1;
-  app.position_ *= 0.1;
-  app.rest_position_ = app.position_;
-  app.Init();
+  auto reset_f = [&]() {
+    // app.position_ = make_pos();
+    // app.tetras_ = make_tetra();
+    app.position_ = house_node.GetData().cast<float>();
+    app.tetras_ = house_ele.GetData().cast<acg::Index>();
+    app.tetras_.array() -= house_node.GetOffset();
+    app.position_ *= 0.1;
+    app.rest_position_ = app.position_;
+    app.Init();
+  };
+
+  reset_f();
   bool reset = false;
   auto update_scene = [&]() {
     auto face = acg::geometry::Tet2Face<float>{app.position_, app.tetras_};
@@ -155,7 +154,7 @@ int main(int argc, char** argv) {
 
     if (reset) {
       ACG_INFO("Reset...");
-      app.Init();
+      reset_f();
       update_scene();
     }
   }

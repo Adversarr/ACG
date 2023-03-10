@@ -40,31 +40,32 @@ void NodeLoader::Load() {
     status_ = Status::kUnimplemented;
     return;
   }
-
   nodes_.resize(dimension_, num_points_);
+  node_is_boundary_.resize(num_points_);
   auto accessor = access(nodes_);
-  Index offset = 0;
+  offset_ = 0;
   for (Index i = 0; i < num_points_; ++i) {
     Index point_id;
     input_stream_ >> point_id;
     if (i == 0) {
-      offset = point_id;
+      offset_ = point_id;
     }
 
-    point_id -= offset;
+    point_id -= offset_;
     for (Index j = 0; j < dimension_; ++j) {
       input_stream_ >> accessor(point_id)(j);
     }
 
     if (num_bc > 0) {
-      int is_bc;
-      input_stream_ >> is_bc;
+      int is_bd = 0;
+      input_stream_ >> is_bd;
+      node_is_boundary_[point_id] = (is_bd == 1);
     }
-
-    ACG_INFO("Node: {}, vec = {}", point_id, accessor(point_id));
   }
-
   status_ = Status::kOk;
 }
+
+Index NodeLoader::GetOffset() const { return offset_; }
+const std::vector<bool>& NodeLoader::GetBoundaryData() const { return node_is_boundary_; }
 
 }  // namespace acg::data::triangle

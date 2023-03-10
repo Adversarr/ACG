@@ -131,16 +131,16 @@ void FemImplicitApp::Step() {
 
       ACG_INFO("Iteration {}, delta={}", iter, result.norm());
 
+      for (auto pos : access(current_solution)) {
+        if (pos.z() < 0) {
+          pos.z() = 0;
+        }
+      }
       if (result.norm() < eps_) {
         break;
       }
     }
 
-    for (auto pos : access(current_solution)) {
-      if (pos.z() < 0) {
-        pos.z() = 0;
-      }
-    }
     velocity_ = 0.997 * (current_solution - position_) / dt_;
     position_ = current_solution;
   }
