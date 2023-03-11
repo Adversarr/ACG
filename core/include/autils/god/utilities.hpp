@@ -44,6 +44,21 @@ template <int alpha, typename T> constexpr T pow(T value) {
     return static_cast<T>(1);
   }
 }
+
+template <typename Arg> void sort3(Arg& x, Arg& y, Arg& z) {
+  if (x > y) {
+    std::swap(x, y);
+  }
+
+  if (x > z) {
+    std::swap(x, z);
+  }
+
+  if (y > z) {
+    std::swap(y, z);
+  }
+}
+
 }  // namespace god
 
 }  // namespace acg::utils

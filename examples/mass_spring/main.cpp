@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
 
   MassSpringApp app;
-  app.n_grids_ = 10;
+  app.n_grids_ = 100;
   app.Init();
   auto& gui = Gui::Instance();
   bool running = false;
@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
   bool matfree = false;
   bool checking_mode = false;
   bool query_aabb = false;
-  spatial::AABB<void, float, 3> aabb{{.2, .2, -.4}, {.6, .6, 0}};
+  spatial::AABB<float, 3> aabb{{.2, .2, -.4}, {.6, .6, 0}};
   gui.SetUIDrawCallback([&]() {
     init_once = false;
     ImGui::Begin("GGui User Window");
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 
     ImGui::InputFloat3("lb", aabb.lower_bound.data());
     ImGui::InputFloat3("ub", aabb.upper_bound.data());
-    query_aabb = ImGui::Button("Query");
+    ImGui::Checkbox("Query", &query_aabb);
     ImGui::Text("Error Last = %f", app.record_.Last());
     init_once |= ImGui::InputFloat("Spring K", &app.k_);
   });
@@ -56,6 +56,11 @@ int main(int argc, char** argv) {
   auto& render_mesh = gui.GetScene().AddMesh();
   auto& render_wf = gui.GetScene().AddWireframe();
 
+  acg::spatial::SubDivisionAABB<Float, Index, 3, 4, 8> sd;
+  for (auto [i, v] : acg::enumerate(acg::access(app.position_))) {
+    acg::spatial::AABB<float, 3> aabb(v, (v.array() + 0.001).matrix());
+    sd.Insert({aabb, i});
+  }
   auto update_mesh = [&]() {
     auto indices = app.faces_;
     auto positions = app.position_;
@@ -65,12 +70,6 @@ int main(int argc, char** argv) {
         .SetIndices(app.faces_)
         .SetEnableWireframe()
         .MarkUpdate();
-
-    acg::spatial::SubDivisionAABB<Float, Index, 3, 8, 8> sd;
-    for (auto [i, v] : acg::enumerate(acg::access(app.position_))) {
-      acg::spatial::AABB<Index> aabb(v, (v.array() + 0.001).matrix(), i);
-      sd.Insert(aabb);
-    }
 
     auto [position, lines] = sd.Visualize();
     if (query_aabb) {
@@ -119,6 +118,11 @@ int main(int argc, char** argv) {
         ACG_INFO("Error of d = {}", err_d);
       }
       timer.TickEnd();
+      sd.Clear();
+      for (auto [i, v] : acg::enumerate(acg::access(app.position_))) {
+        acg::spatial::AABB<float, 3> aabb(v, (v.array() + 0.001).matrix());
+        sd.Insert({aabb, i});
+      }
       update_mesh();
     }
 
