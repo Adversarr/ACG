@@ -3,7 +3,7 @@
 
 namespace acg::geometry {
 
-template <typename Tp = F32> class Particle {
+template <typename Tp = Float32> class Particle {
 private:
   Vec3<Tp> center_{0.0, 0.0, 0.0};
 

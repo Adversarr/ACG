@@ -54,7 +54,6 @@ Field<Scalar, 3> Normal<Scalar>::PerVertex(NormalPerVertexMode mode) const noexc
       break;
 
     case NormalPerVertexMode::kAngle:
-      // TODO: Not Implemented Error.
       break;
   }
   FVTransform fvt(triangle_list_, positions_.cols());

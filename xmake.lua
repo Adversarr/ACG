@@ -9,10 +9,11 @@ set_warnings('allextra') -- -Wall
 add_rules("mode.debug", "mode.release", "mode.releasedbg")
 
 includes(
+  'data',
   '3rdparty',
   'core',
-  'port',
-  'gui'
+  'gui',
+  'physics'
 )
 
 includes('examples')

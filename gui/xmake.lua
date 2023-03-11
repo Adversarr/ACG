@@ -7,6 +7,7 @@ add_requires('imgui', {configs = {glfw_vulkan = true}})
 
 
 target('acg_gui')
+  -- NOTE: You cannot use ImGUI in Shared Library.
   set_kind('static')
   set_group('library')
   add_includedirs('include', { public = true })
@@ -26,11 +27,11 @@ target('acg_gui')
   end)
   
   after_build(function (tg)
-    if os.isdir("$(projectdir)/data/shaders/") then
-      os.mkdir("$(projectdir)/data/shaders/")
+    if os.isdir("$(projectdir)/data/data/shaders/") then
+      os.mkdir("$(projectdir)/data/data/shaders/")
     end
-    os.rm("$(projectdir)/data/shaders/*.spv")
-    os.cp("$(buildir)" .. spv_home .. "/*.spv", "$(projectdir)/data/shaders/")
+    os.rm("$(projectdir)/data/data/shaders/*.spv")
+    os.cp("$(buildir)" .. spv_home .. "/*.spv", "$(projectdir)/data/data/shaders/")
   end)
 target_end()
 

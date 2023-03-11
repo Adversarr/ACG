@@ -80,8 +80,6 @@ template <typename T> struct Node {
   decltype(auto) Norm() const noexcept { return Node<acg::sad::Norm<T>>{}; }
 
   decltype(auto) Sum() const noexcept { return Node<acg::sad::Sum<T>>{}; }
-
-  // TODO: Add other basic functions, e.g. sin, cos, tan, ...
 };
 
 // Short hand for Concatenate:

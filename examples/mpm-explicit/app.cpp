@@ -52,9 +52,8 @@ void MpmExplictApp::P2G() {
           assert(gid < grid_size_);
           // compute the weight.
           auto weight_d = (Vec3d(1 - di, 1 - dj, 1 - dk) - fx);
-          F64 weight = abs(weight_d.x() * weight_d.y() * weight_d.z());
+          Float64 weight = abs(weight_d.x() * weight_d.y() * weight_d.z());
           // TODO: Affine Transform.
-          // ACG_DEBUG_LOG("Gid = {}", gid);
           grid_mass_(gid) += weight;
           grid_velocity_.col(gid) += weight * (particle_velocity_.col(i));
         }
@@ -73,7 +72,7 @@ void MpmExplictApp::Projection() {
         } else {
           grid_velocity_.col(gid).setZero();
         }
-        grid_velocity_.col(gid) += dt_ * grav_.cast<F64>();
+        grid_velocity_.col(gid) += dt_ * grav_.cast<Float64>();
       }
     }
   }
@@ -87,9 +86,9 @@ void MpmExplictApp::Projection() {
         Index g_dz0 = GetGridIndex(i, j, k - 1);
         Index g_dz1 = GetGridIndex(i, j, k + 1);
         Index g_this = GetGridIndex(i, j, k);
-        F64 m_dx = grid_mass_(g_dx1) - grid_mass_(g_dx0);
-        F64 m_dy = grid_mass_(g_dy1) - grid_mass_(g_dy0);
-        F64 m_dz = grid_mass_(g_dz1) - grid_mass_(g_dz0);
+        Float64 m_dx = grid_mass_(g_dx1) - grid_mass_(g_dx0);
+        Float64 m_dy = grid_mass_(g_dy1) - grid_mass_(g_dy0);
+        Float64 m_dz = grid_mass_(g_dz1) - grid_mass_(g_dz0);
         grid_velocity_.col(g_this) -= 10 * dt_ * Vec3d(m_dx, m_dy, m_dz) / 2;
       }
     }
@@ -120,7 +119,7 @@ void MpmExplictApp::Projection() {
 }
 
 void MpmExplictApp::G2P() {
-  Field<F64, 3> new_vel;
+  Field<Float64, 3> new_vel;
   new_vel.resizeLike(particle_velocity_);
   new_vel.setZero();
   weight_sum = 0;
@@ -129,7 +128,7 @@ void MpmExplictApp::G2P() {
     Vec3d base_f = xp.array().floor().matrix();
     Vec3Index base = base_f.cast<Index>();
     Vec3d fx = xp - base_f;
-    F64 weight_sum_local = 0;
+    Float64 weight_sum_local = 0;
     auto blk = new_vel.col(i);
     for (Index di = 0; di <= 1; ++di) {
       for (Index dj = 0; dj <= 1; ++dj) {
@@ -137,7 +136,7 @@ void MpmExplictApp::G2P() {
           Index gid = GetGridIndex(base.x() + di, base.y() + dj, base.z() + dk);
           // compute the weight.
           auto weight_d = (Vec3d(1 - di, 1 - dj, 1 - dk) - fx);
-          F64 weight = abs(weight_d.x() * weight_d.y() * weight_d.z());
+          Float64 weight = abs(weight_d.x() * weight_d.y() * weight_d.z());
           assert(weight < 1);
           weight_sum_local += weight;
 

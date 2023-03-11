@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 
+#include <autils/record/roting_record.hpp>
 #include "Eigen/Eigen"
 
 using namespace acg::utils::god::details;
@@ -90,4 +91,10 @@ TEST_CASE("Result") {
   CHECK(err_cvt.Error() == acg::Status::kInvalidArgument);
 
   auto nocopy_result = acg::make_result<NoCopy>();
+}
+
+
+TEST_CASE("RotingRecord") {
+  acg::utils::RotingRecord<float, 10> record10(10);
+  record10.Sum();
 }

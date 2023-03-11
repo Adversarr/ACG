@@ -2,7 +2,7 @@
 #include <acore/geometry/common.hpp>
 #include <acore/geometry/mesh.hpp>
 #include <acore/geometry/particle.hpp>
-#include <acore/access.hpp>
+#include <acore/math/access.hpp>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -17,7 +17,6 @@ namespace acg::gui {
 class Scene {
   // todo: add marching cube support.
 public:
-
   void Reset();
 
   /**
@@ -26,7 +25,7 @@ public:
    * @param particle: contains the position and radius
    * @param color: the particle's color, in RGB (r, g, b \in [0, 1])
    */
-  Scene& AddParticle(const geometry::Particle<F32>& particle, const Vec3f& color);
+  Scene& AddParticle(const geometry::Particle<Float32>& particle, const Vec3f& color);
 
   /**
    * @brief Add a triangle mesh to the scene.
@@ -44,27 +43,26 @@ public:
    *     scene_.AddMesh(mesh, AttrVecTrans<F32, 3>{{1, 0, 0}, {1, 0, 0}, {1, 0, 0}}.transpose(),
    * Vec3f(.5, .6, .7));
    */
-  Scene& AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Field<F32, 3>> opt_normals,
-                 Field<F32, 3> colors);
+  Scene& AddMesh(geometry::SimpleMesh<Float32> mesh, std::optional<Field<Float32, 3>> opt_normals,
+                 Field<Float32, 3> colors);
 
   vk::DeviceSize GetRequiredVertexBufferSize() const;
 
   vk::DeviceSize GetRequiredIndexBufferSize() const;
 
-  std::pair<std::vector<Vertex>, std::vector<GuiIndex >> Build() const;
+  std::pair<std::vector<Vertex>, std::vector<GuiIndex>> Build() const;
 
 private:
-  std::vector<geometry::SimpleMesh<F32>> meshes_;
+  std::vector<geometry::SimpleMesh<Float32>> meshes_;
 
-  std::vector<std::optional<Field<F32, 3>>> normals_;
+  std::vector<std::optional<Field<Float32, 3>>> normals_;
 
-  std::vector<Field<F32, 3>> mesh_colors_;
+  std::vector<Field<Float32, 3>> mesh_colors_;
 
-  std::vector<geometry::Particle<F32>> particles_;
+  std::vector<geometry::Particle<Float32>> particles_;
 
   std::vector<Vec3f> particles_colors_;
 };
-
 
 /**
  * NOTE: Use this as default.
@@ -73,7 +71,7 @@ class Scene2 {
 public:
   Scene2() = default;
 
-  struct Mesh ;
+  struct Mesh;
   struct Particles;
   struct Wireframe;
 
@@ -102,17 +100,17 @@ public:
                 std::optional<Field<float, 3>> opt_normals = std::nullopt);
 
   Mesh& AddMesh();
-  
+
   Mesh& GetMesh(size_t id);
-  
+
   size_t GetMeshCount() const;
 
-  
   /**
    * @brief Add a mesh-based particle using instancing rendering.
    */
   Particles& AddMeshParticles();
-  Particles& AddMeshParticles(const types::PositionField<float, 3>& positions, F32 radius = 1.0f);
+  Particles& AddMeshParticles(const types::PositionField<float, 3>& positions,
+                              Float32 radius = 1.0f);
 
   std::vector<Particles>& GetMeshParticles();
 
@@ -127,7 +125,7 @@ public:
   /**
    * @brief add a group of particles into scene.
    */
-  Particles& AddParticles(const types::PositionField<float, 3>& positions, F32 radius = 1.0f);
+  Particles& AddParticles(const types::PositionField<float, 3>& positions, Float32 radius = 1.0f);
 
   Particles& AddParticles();
 
@@ -159,7 +157,7 @@ public:
   void Clear();
 };
 
-struct Scene2::Mesh{
+struct Scene2::Mesh {
   bool update_flag;
   size_t id;
   // mesh data.
@@ -169,7 +167,7 @@ struct Scene2::Mesh{
   Field<float, 3> normals;
   // Reserve for future use.
   Field<float, 2> uv;
-  
+
   bool enable_wireframe = false;
   bool use_uniform_color = false;
   bool use_double_side_lighting = false;
@@ -196,6 +194,8 @@ struct Scene2::Mesh{
 
   Mesh& SetDoubleSideLighting(bool val = true);
 
+  Mesh& ComputeDefaultNormal();
+
   Mesh& SetSpecularShiness(int shineness);
 
   Mesh& SetColor(types::RgbaField const& val);
@@ -217,7 +217,6 @@ struct Scene2::Mesh{
   void MarkUpdate();
 };
 
-
 struct Scene2::Wireframe {
   size_t id;
   geometry::topology::LineList indices;
@@ -231,24 +230,24 @@ struct Scene2::Wireframe {
 
   explicit Wireframe(size_t id) : id(id) {}
 
-  inline Wireframe& SetIndices(const geometry::topology::LineList& ind);
+  Wireframe& SetIndices(const geometry::topology::LineList& ind);
 
-  inline Wireframe& SetPositions(const types::PositionField<float, 3>& pos);
+  Wireframe& SetPositions(const types::PositionField<float, 3>& pos);
 
-  inline Wireframe& SetColors(const types::RgbField& color);
+  Wireframe& SetColors(const types::RgbField& color);
 
   void MarkUpdate();
 };
 
-struct Scene2::Particles  {
+struct Scene2::Particles {
   size_t id;
   bool update_flag;
   types::PositionField<float, 3> positions;
   types::RgbaField colors;
   bool use_uniform_color = true;
-  F32 radius = 1.0f;
+  Float32 radius = 1.0f;
   bool use_instance_rendering = false;
-  
+
   Particles(const Particles&) = default;
 
   Particles& operator=(const Particles&) = default;
@@ -263,7 +262,7 @@ struct Scene2::Particles  {
 
   Particles& SetUniformColor(types::Rgba color);
 
-  Particles& SetRadius(F32 r);
+  Particles& SetRadius(Float32 r);
 
   void MarkUpdate();
 };

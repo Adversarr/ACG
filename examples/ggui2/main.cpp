@@ -4,7 +4,7 @@
 #include <agui/backend/window.hpp>
 #include <agui/gui.hpp>
 #include <autils/init.hpp>
-#include <autils/time.hpp>
+#include <autils/time/time.hpp>
 
 using namespace acg::gui;
 

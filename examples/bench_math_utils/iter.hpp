@@ -1,9 +1,9 @@
-#include <tuple>
 #include <iterator>
-
+#include <tuple>
+#include <array>
 
 struct Iter2D {
-  constexpr Iter2D(int n, int m, int i, int j) : ij(i, j), n(n), m(m) {}
+  constexpr Iter2D(int n, int m, int i, int j) : ij({i, j}), n(n), m(m) {}
 
   constexpr decltype(auto) operator*() const { return ij; }
 
@@ -13,7 +13,17 @@ struct Iter2D {
 
   constexpr bool operator!=(const Iter2D& another) const { return ij != another.ij; }
 
-  Iter2D& operator++();
+  Iter2D& operator++() {
+    auto& i = std::get<0>(ij);
+    auto& j = std::get<1>(ij);
+    j += 1;
+    // This cost lots of time...
+    if (j >= m) [[unlikely]] {
+      j = 0;
+      i += 1;
+    }
+    return *this;
+  }
 
   Iter2D operator++(int) {
     auto clone = *this;
@@ -33,6 +43,7 @@ struct Iter2D {
   using pointer = std::tuple<int, int>*;
   using iterator_category = std::random_access_iterator_tag;
 
+  // std::array<int, 2> ij;
   std::tuple<int, int> ij;
   const int n;
   const int m;
@@ -57,7 +68,7 @@ struct Iter1D {
 
   int operator*() const { return i; }
 
-  Iter1D(int i) : i(i) {}
+  explicit Iter1D(int i) : i(i) {}
 
   int i = 0;
 };

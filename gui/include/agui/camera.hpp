@@ -30,33 +30,33 @@ public:
 
   Vec3f &GetUp();
 
-  void Move(Vec3f direction, F64 dt);
+  void Move(Vec3f direction, Float64 dt);
   // Set the position of the camera.
   bool SetPosition(glm::vec3 position);
 
   // Set the front direction of the camera. 
   bool SetFront(glm::vec3 front);
 
-  Camera& SetFov(F32 angle);
-  F32 GetFov() const;
+  Camera& SetFov(Float32 angle);
+  Float32 GetFov() const;
   Camera& SetUp(Vec3f up);
 
-  Camera& SetLeft(F32 left);
-  Camera& SetRight(F32 right);
-  Camera& SetTop(F32 top);
-  Camera& SetBottom(F32 bottom);
+  Camera& SetLeft(Float32 left);
+  Camera& SetRight(Float32 right);
+  Camera& SetTop(Float32 top);
+  Camera& SetBottom(Float32 bottom);
 
   Camera& SetLookAt(Vec3f look_at);
 
   Camera& SetProjectionMode(bool is_perspective = true);
 
-  Camera& SetYaw(F32 yaw);
-  Camera& SetRoll(F32 roll);
-  Camera& SetPitch(F32 pitch);
+  Camera& SetYaw(Float32 yaw);
+  Camera& SetRoll(Float32 roll);
+  Camera& SetPitch(Float32 pitch);
 
-  F32 GetYaw() const;
-  F32 GetRoll() const;
-  F32 GetPitch() const;
+  Float32 GetYaw() const;
+  Float32 GetRoll() const;
+  Float32 GetPitch() const;
 
 
   bool& GetProjectionMode() { return is_perspective_; }

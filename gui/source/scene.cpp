@@ -33,7 +33,7 @@ vk::DeviceSize Scene::GetRequiredIndexBufferSize() const {
   }
   // INFO: 20 is hard coded because we use sphere_20 for particle rendering.
   size += particles_.size() * 20;
-  return size * 3 * sizeof(details::GuiIndex );
+  return size * 3 * sizeof(details::GuiIndex);
 }
 
 void Scene::Reset() {
@@ -44,9 +44,9 @@ void Scene::Reset() {
   particles_colors_.clear();
 }
 
-std::pair<std::vector<Vertex>, std::vector<GuiIndex >> Scene::Build() const {
+std::pair<std::vector<Vertex>, std::vector<GuiIndex>> Scene::Build() const {
   std::vector<Vertex> vertices;
-  std::vector<GuiIndex > indices;
+  std::vector<GuiIndex> indices;
   for (size_t i = 0; i < meshes_.size(); ++i) {
     const auto& m = meshes_[i];
     const auto& c = mesh_colors_[i];
@@ -90,20 +90,20 @@ std::pair<std::vector<Vertex>, std::vector<GuiIndex >> Scene::Build() const {
   return {std::move(vertices), std::move(indices)};
 }
 
-Scene& Scene::AddParticle(const geometry::Particle<F32>& particle, const Vec3f& color) {
+Scene& Scene::AddParticle(const geometry::Particle<Float32>& particle, const Vec3f& color) {
   particles_.push_back(particle);
   particles_colors_.push_back(color);
   return *this;
 }
 
-Scene& Scene::AddMesh(geometry::SimpleMesh<F32> mesh, std::optional<Field<F32, 3>> opt_normals,
-                      Field<F32, 3> colors) {
+Scene& Scene::AddMesh(geometry::SimpleMesh<Float32> mesh,
+                      std::optional<Field<Float32, 3>> opt_normals, Field<Float32, 3> colors) {
   // normals_.emplace_back(acg::geometry::Normal<F32>{mesh.GetFaces(),
   // mesh.GetVertices()}.PerVertex());
   if (!opt_normals.has_value()) {
     const auto& face = mesh.GetFaces();
     const auto& vert = mesh.GetVertices();
-    acg::geometry::Normal<F32> normal_compute(face, vert);
+    acg::geometry::Normal<Float32> normal_compute(face, vert);
     auto normal = normal_compute.PerVertex(geometry::NormalPerVertexMode::kArea);
     normals_.push_back(normal);
   } else {
@@ -127,9 +127,7 @@ Scene2::Mesh& Scene2::AddMesh(const geometry::topology::TriangleList& indices,
   if (opt_normals.has_value()) {
     mesh.SetNormals(opt_normals.value());
   } else {
-    acg::geometry::Normal<F32> kern_normal(indices, positions);
-    auto normal = kern_normal.PerVertex(geometry::NormalPerVertexMode::kArea);
-    mesh.SetNormals(normal);
+    mesh.ComputeDefaultNormal();
   }
   return mesh;
 }
@@ -141,7 +139,7 @@ Scene2::Particles& Scene2::AddMeshParticles() {
 }
 
 Scene2::Particles& Scene2::AddMeshParticles(const types::PositionField<float, 3>& positions,
-                                            F32 radius) {
+                                            Float32 radius) {
   return AddMeshParticles().SetPositions(positions).SetRadius(radius);
 }
 
@@ -156,7 +154,7 @@ Scene2::Particles& Scene2::AddParticles() {
 }
 
 Scene2::Particles& Scene2::AddParticles(const types::PositionField<float, 3>& positions,
-                                        F32 radius) {
+                                        Float32 radius) {
   return AddParticles().SetPositions(positions).SetRadius(radius);
 }
 
@@ -234,6 +232,13 @@ Scene2::Mesh& Scene2::Mesh::SetUniformColor(const types::Rgba& val) {
   color.col(0) = val;
   return *this;
 }
+
+Scene2::Mesh& Scene2::Mesh::ComputeDefaultNormal() {
+  acg::geometry::Normal<Float32> kern_normal(faces, vertices);
+  auto normal = kern_normal.PerVertex(geometry::NormalPerVertexMode::kArea);
+  SetNormals(normal);
+  return *this;
+}
 Scene2::Mesh& Scene2::Mesh::SetNormals(const Field<float, 3>& val) {
   normals = val;
   return *this;
@@ -296,16 +301,14 @@ Scene2::Particles& Scene2::Particles::SetUniformColor(types::Rgba color) {
   colors.col(0) = color;
   return *this;
 }
-Scene2::Particles& Scene2::Particles::SetRadius(F32 r) {
+Scene2::Particles& Scene2::Particles::SetRadius(Float32 r) {
   radius = r;
   return *this;
 }
 
 void Scene2::Wireframe::MarkUpdate() {
   update_flag = true;
-  ACG_CHECK(positions.cols() == colors.cols() || colors.cols() == 1,
-      "#Color error");
-  // TODO: add debug check.
+  ACG_CHECK(positions.cols() == colors.cols() || colors.cols() == 1, "#Color error");
 }
 Scene2::Wireframe& Scene2::Wireframe::SetIndices(const geometry::topology::LineList& ind) {
   indices = ind;

@@ -17,6 +17,6 @@ void acg::utils::UtilsHooker::Hook() {
 
 void acg::utils::hook_default_utils_environment() {
   auto utils_hooker = acg::utils::UtilsHooker();
-  utils_hooker.default_logging_level = spdlog::level::debug;
+  utils_hooker.default_logging_level = spdlog::level::info;
   utils_hooker.Hook();
 }

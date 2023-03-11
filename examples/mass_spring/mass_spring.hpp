@@ -2,15 +2,19 @@
 #include <acore/all.hpp>
 #include <acore/common.hpp>
 #include <acore/math/sparse.hpp>
+#include <autils/record/roting_record.hpp>
 #include <set>
 #include <taskflow/taskflow.hpp>
-class App {
+class MassSpringApp {
 public:
   void Init();
 
   void Step();
 
-  void StepImplicit();
+  void StepProjDyn();
+
+  void StepProjDynMf();
+
   void AddSpring(acg::Index, acg::Index);
 
   acg::Field<float, 3> position_;
@@ -28,7 +32,6 @@ public:
 
   std::vector<std::pair<acg::Index, acg::Index>> springs_vec_;
 
-
   float dt_{0.005};
 
   float k_{1000};
@@ -37,9 +40,15 @@ public:
 
   acg::SpMat<float> hessian_;
 
-  Eigen::SimplicialLDLT<acg::SpMat<float>> splu_;
+  Eigen::SparseLU<acg::SpMat<float>> splu_;
 
   int steps_{30};
 
+  int global_step_count_{3};
+
   tf::Executor executor_{8};
+
+  bool eval_error_{false};
+
+  acg::utils::RotingRecord<float, 128> record_;
 };

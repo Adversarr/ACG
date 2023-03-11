@@ -1,0 +1,13 @@
+target('acg_physics')
+  set_kind('headeronly')
+  add_includedirs('include', {public= true})
+  add_files('source/**.cpp')
+  add_deps('acg_core', {public = true})
+target_end()
+
+target("acg_physics_test")
+  set_kind('binary')
+  add_files('test/**.cpp')
+  add_deps('acg_physics')
+  add_packages('doctest')
+target_end()

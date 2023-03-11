@@ -2,6 +2,7 @@
 #include <fmt/format.h>
 #include <spdlog/common.h>
 #include <spdlog/logger.h>
+
 #include "autils/common.hpp"
 
 namespace acg {
@@ -83,4 +84,10 @@ inline void set_default_log_level(LogLevel lvl) { get_default_logger()->set_leve
 #  else
 #    define ACG_DEBUG_CHECK(condition, message, ...) acg::utils::do_nothing();
 #  endif
+#endif
+#ifndef NDEBUG
+#  define INSPECT(val) \
+    std::cout << "[" __FILE__ << ":" << __LINE__ << "] " #val " = " << (val) << std::endl;
+#else
+#  define INSPECT(val) acg::utils::do_nothing();
 #endif

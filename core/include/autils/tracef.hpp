@@ -3,8 +3,7 @@
 #include "log.hpp"
 namespace acg::utils {
 
-// TODO: do not use standard spdlog.
-//
+  // TODO: New implementation.
 class FunctionDeferredLogger {
 private:
   const char* function_name_;

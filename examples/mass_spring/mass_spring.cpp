@@ -4,18 +4,18 @@
 #include <Eigen/SparseQR>
 #include <acore/geometry/common.hpp>
 #include <acore/geometry/common_models.hpp>
-#include <acore/access.hpp>
+#include <acore/math/access.hpp>
 #include <acore/math/constants.hpp>
 
 using namespace acg;
 
-geometry::SimpleMesh<F64> make_plane_xy(Index n) {
+geometry::SimpleMesh<Float64> make_plane_xy(Index n) {
   // z = 0, xy in [0, 1]
   // 3x3 => x = 0, 0.5, 1
   //        y = 0, 0.5, 1
   //        z = 0.
-  Field<F64, 3> vertices(3, n * n);
-  geometry::SimpleMesh<F64>::FacesType faces(3, 2 * (n - 1) * (n - 1));
+  Field<Float64, 3> vertices(3, n * n);
+  geometry::SimpleMesh<Float64>::FacesType faces(3, 2 * (n - 1) * (n - 1));
   for (Index i = 0; i < n; ++i) {
     for (Index j = 0; j < n; ++j) {
       Index idx = i * n + j;
@@ -39,7 +39,7 @@ geometry::SimpleMesh<F64> make_plane_xy(Index n) {
   return {vertices, faces};
 }
 
-void App::Init() {
+void MassSpringApp::Init() {
   auto mesh = make_plane_xy(n_grids_);
   position_ = mesh.GetVertices().cast<float>();
   n_vertices_ = n_grids_ * n_grids_;
@@ -48,7 +48,7 @@ void App::Init() {
   velocity_.resizeLike(position_);
   velocity_.setZero();
 
-  auto indexer = acg::MultiDimensionIndexer<2>(n_grids_, n_grids_);
+  auto indexer = acg::NdRangeIndexer<2>(n_grids_, n_grids_);
   for (Index i = 0; i < n_grids_ - 1; ++i) {
     for (Index j = 0; j < n_grids_ - 1; ++j) {
       AddSpring(indexer(i, j), indexer(i, j + 1));
@@ -93,12 +93,12 @@ void App::Init() {
   splu_.compute(hessian_);
 }
 
-void App::AddSpring(acg::Index i, acg::Index j) {
+void MassSpringApp::AddSpring(acg::Index i, acg::Index j) {
   auto spring = std::make_pair(std::min(i, j), std::max(i, j));
   springs_.insert(spring);
 }
 
-void App::Step() {
+void MassSpringApp::Step() {
   auto acceleration = acg::FieldBuilder<float, 3>(position_.cols()).Zeros();
   auto p_acc = access(position_);
   auto o_acc = access(origin_position_);
@@ -127,12 +127,10 @@ void App::Step() {
   }
 }
 
-void App::StepImplicit() {
+void MassSpringApp::StepProjDyn() {
   auto o_acc = access(origin_position_);
   auto d_acc = access(d_);
   d_.resize(Eigen::NoChange, springs_.size());
-  auto p_acc = access(position_);
-
   Vec<float> x_tilde(n_vertices_ * 3);
   x_tilde.setZero();
   auto xn = position_.reshaped();
@@ -140,7 +138,7 @@ void App::StepImplicit() {
   x_tilde += xn + dt_ * vn;
   x_tilde.reshaped(3, n_vertices_).array().row(2) -= 9.8 * dt_ * dt_;
   auto m_x_tilde = mass_ * x_tilde;
-  auto current_solution = position_.eval();
+  auto current_solution = x_tilde.reshaped(3, n_vertices_).eval();
   for (int i = 0; i < steps_; ++i) {
     /****************************************
       Step Local
@@ -173,13 +171,6 @@ void App::StepImplicit() {
     auto rhs = (m_x_tilde + sdt.reshaped());
     Vec<float> solution = splu_.solve(rhs).eval();
     ACG_CHECK(splu_.info() == Eigen::Success, "Splu Solver failed.");
-
-    auto err = (current_solution.reshaped() - solution).norm();
-    if (err < 0.01 / n_grids_) {
-      current_solution = solution.reshaped(3, n_vertices_);
-      ACG_INFO("Early Terminate because step size is small enough. #Iter = {} err = {}", i, err);
-      break;
-    }
     current_solution = solution.reshaped(3, n_vertices_);
     for (Index i = 0; i < n_grids_; ++i) {
       p_acc(i) = o_acc(i);
@@ -190,7 +181,100 @@ void App::StepImplicit() {
   ****************************************/
   velocity_ = (current_solution.reshaped(3, n_vertices_) - position_) / dt_;
   position_ = current_solution.reshaped(3, n_vertices_);
-  for (Index i = 0; i < n_grids_; ++i) {
-    p_acc(i) = o_acc(i);
+}
+
+void MassSpringApp::StepProjDynMf() {
+  auto o_acc = access(origin_position_);
+  auto d_acc = access(d_);
+  d_.resize(Eigen::NoChange, springs_.size());
+  auto x_tilde = (position_ + velocity_ * dt_).eval();
+  x_tilde.array().row(2) -= 9.8 * dt_ * dt_;
+  auto current_solution = x_tilde.eval();
+  record_.Reset();
+
+  for (int i = 0; i < steps_; ++i) {
+    /****************************************
+      Step Local
+    ****************************************/
+    auto p_acc = access(current_solution);
+    tf::Taskflow tf;
+    tf.for_each_index(static_cast<int>(0), static_cast<int>(springs_vec_.size()), 1,
+                      [&d_acc, &p_acc, &o_acc, this](int sp_id) {
+                        auto [i, j] = springs_vec_[sp_id];
+                        auto xij = (p_acc(i) - p_acc(j)).normalized();
+                        auto origin_length = (o_acc(i) - o_acc(j)).norm();
+                        d_acc(sp_id) = xij * origin_length;
+                        sp_id += 1;
+                      });
+    executor_.run(tf).wait();
+
+    /****************************************
+     *
+     * Step Global
+     *
+     ****************************************/
+
+    for (int i = 0; i < global_step_count_; ++i) {
+      Vec<float> weight(n_vertices_);
+      weight.setConstant(mass_);
+      auto expected_position = (x_tilde * mass_).eval();
+      auto expected_position_acc = access(expected_position);
+      auto constraint_weight = k_ * dt_ * dt_;
+      for (size_t c = 0; c < springs_vec_.size(); ++c) {
+        auto [i, j] = springs_vec_[c];
+        weight(i) += constraint_weight;
+        weight(j) += constraint_weight;
+
+        auto x = p_acc(i);
+        auto y = p_acc(j);
+        auto d = d_acc(c);
+        expected_position_acc(i) += constraint_weight * (y + d);
+        expected_position_acc(j) += constraint_weight * (x - d);
+      }
+      for (Index i = 0; i < n_vertices_; ++i) {
+        expected_position_acc(i) /= weight[i];
+      }
+      current_solution = expected_position;
+      for (Index i = 0; i < n_grids_; ++i) {
+        p_acc(i) = o_acc(i);
+      }
+    }
+    /****************************************
+     * Evaluate the error
+     ****************************************/
+    if (eval_error_) {
+      auto force = FieldBuilder<Float32, 3>(n_vertices_).Zeros();
+      auto facc = access(force);
+      for (auto sp : springs_) {
+        auto [i, j] = sp;
+        auto xij = (p_acc(i) - p_acc(j)).eval();
+        auto origin_length = (o_acc(i) - o_acc(j)).norm();
+        auto length = xij.norm();
+
+        auto force_amp = k_ * (length - origin_length);
+
+        auto fij = -(force_amp * xij.normalized()).eval();
+
+        facc(i) += fij;
+        facc(j) -= fij;
+      }
+      auto acceleration_implicit = (force / mass_).eval();
+      acceleration_implicit.array().row(2) -= 9.8;
+
+      auto expected_velocity = acceleration_implicit * dt_ + velocity_;
+      auto expected_original_position = (current_solution - expected_velocity * dt_).eval();
+      for (Index i = 0; i < n_grids_; ++i) {
+        expected_original_position.col(i) = o_acc(i);
+      }
+      auto error_term = (expected_original_position - position_).cwiseAbs2().sum();
+      record_.Record(error_term);
+    }
+    // ACG_INFO("Iteration {}: error = {}", i, error_term);
   }
+
+  /****************************************
+    Step Update
+  ****************************************/
+  velocity_ = (current_solution - position_) / dt_;
+  position_ = current_solution;
 }

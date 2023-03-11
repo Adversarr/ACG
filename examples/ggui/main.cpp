@@ -2,7 +2,7 @@
 
 #include <acore/geometry/common_models.hpp>
 #include <acore/init.hpp>
-#include <acore/access.hpp>
+#include <acore/math/access.hpp>
 #include <acore/math/constants.hpp>
 #include <agui/backend/context.hpp>
 #include <agui/backend/graphics_context.hpp>
@@ -10,7 +10,7 @@
 #include <agui/backend/ui_pass.hpp>
 #include <agui/convent.hpp>
 #include <autils/init.hpp>
-#include <autils/time.hpp>
+#include <autils/time/time.hpp>
 #include <atomic>
 #include <glm/gtx/transform.hpp>
 

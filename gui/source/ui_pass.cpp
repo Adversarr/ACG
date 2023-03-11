@@ -32,6 +32,9 @@ UiPass::UiPass(Config config) {
   descriptor_pool_ = VkContext2::Instance().device_.createDescriptorPool(pool_info);
 
   IMGUI_CHECKVERSION();
+  if (config.call_on_init) {
+    config.call_on_init.value()();
+  }
   ImGui::CreateContext();
   ImGui_ImplGlfw_InitForVulkan(Window::Instance().GetWindow(), true);
 
