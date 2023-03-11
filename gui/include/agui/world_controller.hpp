@@ -93,8 +93,6 @@ protected:
 
   virtual void ProcessInputImpl();
 
-private:
-protected:
   // Ui Pipeline is the only pipeline.
   bool ui_only_mode_{true};
 

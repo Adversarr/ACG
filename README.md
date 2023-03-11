@@ -1,5 +1,7 @@
 # Adversarr's Computer Graphics toolbox
 
+[![CodeFactor](https://www.codefactor.io/repository/github/adversarr/acg/badge)](https://www.codefactor.io/repository/github/adversarr/acg)
+
 NOTE: This project is highly expremental.
 
 ACG is a toolbox designed for study use mainly about Physical Simulation, but not Rendering.
