@@ -48,3 +48,8 @@ target('elastic-shape-matching')
   add_files('elastic-shape-matching/**.cpp')
   add_deps('acg_gui', 'acg_physics')
 target_end()
+
+target('hybred')
+  add_files('hybred/**.cpp')
+  add_deps('acg_gui', 'acg_physics')
+target_end()

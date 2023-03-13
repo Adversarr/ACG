@@ -91,7 +91,7 @@ using Mat3x3d = Mat3x3<Float64>;
 using Mat4x4f = Mat4x4<Float32>;
 using Mat4x4d = Mat4x4<Float64>;
 
-template <typename T, int n_attrib> using Field
+template <typename T, int n_attrib = 1> using Field
     = Eigen::Matrix<T, n_attrib, Eigen::Dynamic,
                     Eigen::AutoAlign | (n_attrib == 1 ? Eigen::RowMajor : Eigen::ColMajor)>;
 

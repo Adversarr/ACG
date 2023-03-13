@@ -17,8 +17,6 @@ template <typename Derived> struct Operator {
 
 };
 
-/**
- */
 template <typename Derived> struct Kernel {};
 
 }  // namespace acg::math

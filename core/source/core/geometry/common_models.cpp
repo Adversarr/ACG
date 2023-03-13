@@ -3,6 +3,33 @@
 #include "acore/math/constants.hpp"
 namespace acg::geometry {
 
+SimpleMesh<Float64> make_plane_xy(Index n) {
+  Field<Float64, 3> vertices(3, n * n);
+  geometry::SimpleMesh<Float64>::FacesType faces(3, 2 * (n - 1) * (n - 1));
+  for (Index i = 0; i < n; ++i) {
+    for (Index j = 0; j < n; ++j) {
+      Index idx = i * n + j;
+      vertices.col(idx)
+          = Vec3d(static_cast<double>(i) / (n - 1), static_cast<double>(j) / (n - 1), 0);
+    }
+  }
+
+  for (Index i = 0; i < n - 1; ++i) {
+    for (Index j = 0; j < n - 1; ++j) {
+      Index idx = 2 * (i * (n - 1) + j);
+      Index lt = i * n + j;
+      Index rt = i * n + j + 1;
+      Index lb = (i + 1) * n + j;
+      Index rb = (i + 1) * n + j + 1;
+
+      faces.col(idx) = Vec3Index(lt, lb, rt);
+      faces.col(idx + 1) = Vec3Index(rt, lb, rb);
+    }
+  }
+  return {vertices, faces};
+}
+
+
 SimpleMesh<Float32> sphere_uv(Vec3f center, Float32 radius, Index n_stacks, Index n_slices) {
   auto n_faces = 2 * n_slices * n_stacks;
   auto n_vertices = 2 + n_slices * n_stacks;

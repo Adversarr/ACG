@@ -10,10 +10,6 @@
 using namespace acg;
 
 geometry::SimpleMesh<Float64> make_plane_xy(Index n) {
-  // z = 0, xy in [0, 1]
-  // 3x3 => x = 0, 0.5, 1
-  //        y = 0, 0.5, 1
-  //        z = 0.
   Field<Float64, 3> vertices(3, n * n);
   geometry::SimpleMesh<Float64>::FacesType faces(3, 2 * (n - 1) * (n - 1));
   for (Index i = 0; i < n; ++i) {
