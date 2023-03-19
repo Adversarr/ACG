@@ -140,4 +140,189 @@ void FemImplicitApp::Step() {
 void FemImplicitApp::Init() {
   velocity_.resizeLike(position_);
   velocity_.setZero();
+  using Trip = Eigen::Triplet<Float32>;
+  std::vector<Trip> laplacian_data;
+  auto coeff = 2 * mu_ + lambda_;
+  Mat<float, 9, 12> gi;
+  auto i = Mat3x3f::Identity();
+  auto o = Mat3x3f::Zero();
+  gi << -i, i, o, o, -i, o, i, o, -i, o, o, i;
+  auto li = (gi.transpose() * gi).eval();
+  for (auto v : access(tetras_)) {
+    for (auto [i, j, di, dj] : NdRange<4>{{4, 4, 3, 3}}) {
+      auto t = Trip{3 * v(i) + di, 3 * v(j) + dj, li(3 * i + di, 3 * j + dj) * coeff};
+      laplacian_data.push_back(t);
+    }
+  }
+
+  pc_hes_.resize(position_.size(), position_.size());
+  pc_hes_.setFromTriplets(laplacian_data.begin(), laplacian_data.end());
+  pc_hes_.diagonal().array() += mass_ / math::square(dt_);
+  pc_hes_.makeCompressed();
+  solver_.compute(pc_hes_);
+}
+
+void FemImplicitApp::StepMF() {
+  Field<float, 3> x_tilde = position_ + velocity_ * dt_;
+
+  // Ext forces:
+  x_tilde.array().row(2) -= 9.8 * dt_ * dt_;
+
+  auto racc = access(rest_position_);
+  Field<float, 3> current_solution = x_tilde;
+  auto pacc = access(current_solution);
+
+  auto mdd = mass_ / dt_ / dt_;
+  for (auto [iter] : NdRange<1>(steps_)) {
+    Field<float, 9> weights = FieldBuilder<float, 9>(position_.cols()).Zeros();
+    // Inertia:
+    auto wacc = access<DefaultIndexer, ReshapeTransform<3, 3>>(weights);
+    auto rhs = (mdd * (x_tilde - current_solution)).eval();
+
+    auto rhsacc = access(rhs);
+    for (auto w : wacc) {
+      w.setZero();
+      w.reshaped(3, 3).diagonal().setConstant(mdd);
+    }
+    for (auto [i, tet] : enumerate(access(tetras_))) {
+      // Foreach tetra. gather the weights.
+      Mat3x3f rest;
+      rest.col(0) = racc(tet.y()) - racc(tet.x());
+      rest.col(1) = racc(tet.z()) - racc(tet.x());
+      rest.col(2) = racc(tet.w()) - racc(tet.x());
+      // cur:
+      Mat3x3f cur;
+      cur.col(0) = pacc(tet.y()) - pacc(tet.x());
+      cur.col(1) = pacc(tet.z()) - pacc(tet.x());
+      cur.col(2) = pacc(tet.w()) - pacc(tet.x());
+
+      Mat3x3f rinv = rest.inverse();
+      Mat3x3f deform_grad = cur * rinv;
+
+      auto pfpx = physics::elastic::compose_pfpx(rinv);
+      auto hes = physics::elastic::OgdenNeoHookean<Float32, 3>(deform_grad, lambda_, mu_)
+                     .ComputeHessian();
+      Mat<Float32, 12, 12> hessian = pfpx.transpose() * hes.hessian * pfpx;
+      auto grad = pfpx.transpose() * hes.grad;
+
+      wacc(tet.x()) += Mat3x3f::Identity();
+      wacc(tet.y()) += Mat3x3f::Identity();
+      wacc(tet.z()) += Mat3x3f::Identity();
+      wacc(tet.w()) += Mat3x3f::Identity();
+
+      rhsacc(tet.x()) -= grad.block<3, 1>(0, 0);
+      rhsacc(tet.y()) -= grad.block<3, 1>(3, 0);
+      rhsacc(tet.z()) -= grad.block<3, 1>(6, 0);
+      rhsacc(tet.w()) -= grad.block<3, 1>(9, 0);
+    }
+
+    for (auto [i, p] : enumerate(pacc)) {
+      auto delta = wacc(i).reshaped(3, 3).inverse() * rhsacc(i);
+      p += delta * 0.7;
+    }
+    for (auto pos : access(current_solution)) {
+      if (pos.z() < 0) {
+        pos.z() = 0;
+      }
+    }
+  }
+
+  velocity_ = (current_solution - position_) / dt_;
+  position_ = current_solution;
+}
+
+void FemImplicitApp::StepQuasi() {
+  Field<float, 3> x_tilde = position_ + velocity_ * dt_;
+
+  // Ext forces:
+  x_tilde.array().row(2) -= 9.8 * dt_ * dt_;
+
+  auto racc = access(rest_position_);
+  Field<float, 3> current_solution = x_tilde;
+  auto pacc = access(current_solution);
+  auto eval_object = [&]() -> float {
+    float o = 0;
+    for (auto [i, tet] : enumerate(access(tetras_))) {
+      // Foreach tetra. gather the weights.
+      Mat3x3f rest;
+      rest.col(0) = racc(tet.y()) - racc(tet.x());
+      rest.col(1) = racc(tet.z()) - racc(tet.x());
+      rest.col(2) = racc(tet.w()) - racc(tet.x());
+      // cur:
+      Mat3x3f cur;
+      cur.col(0) = pacc(tet.y()) - pacc(tet.x());
+      cur.col(1) = pacc(tet.z()) - pacc(tet.x());
+      cur.col(2) = pacc(tet.w()) - pacc(tet.x());
+
+      Mat3x3f rinv = rest.inverse();
+      Mat3x3f deform_grad = cur * rinv;
+      o += physics::elastic::SNHNeoHookean<Float32, 3>(deform_grad, lambda_, mu_).ComputeEnergy();
+    }
+    return o;
+  };
+
+  auto eval_grad = [&]() {
+    Vec<float> g = Vec<Float32>::Zero(position_.size());
+    for (auto [i, tet] : enumerate(access(tetras_))) {
+      // Foreach tetra. gather the weights.
+      Mat3x3f rest;
+      rest.col(0) = racc(tet.y()) - racc(tet.x());
+      rest.col(1) = racc(tet.z()) - racc(tet.x());
+      rest.col(2) = racc(tet.w()) - racc(tet.x());
+      // cur:
+      Mat3x3f cur;
+      cur.col(0) = pacc(tet.y()) - pacc(tet.x());
+      cur.col(1) = pacc(tet.z()) - pacc(tet.x());
+      cur.col(2) = pacc(tet.w()) - pacc(tet.x());
+
+      Mat3x3f rinv = rest.inverse();
+      Mat3x3f deform_grad = cur * rinv;
+
+      auto pfpx = physics::elastic::compose_pfpx(rinv);
+      auto hes = physics::elastic::OgdenNeoHookean<Float32, 3>(deform_grad, lambda_, mu_)
+                     .ComputeGradient();
+      auto grad = pfpx.transpose() * hes.grad;
+
+      for (auto [p] : NdRange<1>{4}) {
+        g.block<3, 1>(tet(p) * 3, 0) += grad.block<3, 1>(p * 3, 0);
+      }
+    }
+
+    return g;
+  };
+  for (auto [i] : NdRange<1>{steps_}) {
+    auto grad = eval_grad();
+    auto d = (-solver_.solve(grad)).eval();
+
+    auto thre = (grad.array() * d.array()).sum();
+    float alpha = 2.0;
+    bool converged = false;
+    auto g = eval_object();
+
+    auto backup_sol = current_solution.eval();
+
+    ACG_INFO("Step {}", i);
+    do {
+      alpha /= 2;
+      ACG_INFO("Linesearch... alpha = {} g = {}, eps = {}", alpha, g, eps_);
+      current_solution = backup_sol + alpha * d.reshaped(3, position_.cols());
+      auto gnew = eval_object();
+      if (gnew - g < 0.3 * alpha * thre) {
+        converged = true;
+        ACG_INFO("Converged! delta g = {}", gnew - g);
+      }
+    } while (!converged && alpha > eps_);
+
+    for (auto pos : access(current_solution)) {
+      if (pos.z() < 0) {
+        pos.z() = 0;
+      }
+    }
+    if (d.norm() < eps_) {
+      break;
+    }
+  }
+
+  velocity_ = (current_solution - position_) / dt_;
+  position_ = current_solution;
 }

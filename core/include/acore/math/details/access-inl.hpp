@@ -1,4 +1,5 @@
 #pragma once
+#include <acore/math/traits.hpp>
 #include <autils/common.hpp>
 #include <tuple>
 #include <utility>
@@ -12,24 +13,29 @@ namespace acg {
 namespace details {
 
 // NOTE: Standard Field Accessor.
-template <typename Type, typename Transform, typename Indexer> struct FieldAccessor {
+template <typename Type, typename Transform, typename Indexer>
+struct FieldAccessor {
   using type = Type;
-  using origin_type = std::remove_cv_t<Type>;
+  using origin_type = std::decay_t<Type>;
 
   Type data;
   Indexer indexer;
   Transform transform;
 
-  inline explicit FieldAccessor(origin_type& x, Indexer getter, utils::god::LvalueTag)
+  inline explicit FieldAccessor(origin_type& x, Indexer getter,
+                                utils::god::LvalueTag)
       : data(x), indexer(getter) {}
 
-  inline explicit FieldAccessor(const origin_type& x, Indexer getter, utils::god::ConstLvalueTag)
+  inline explicit FieldAccessor(const origin_type& x, Indexer getter,
+                                utils::god::ConstLvalueTag)
       : data(x), indexer(getter) {}
 
-  inline explicit FieldAccessor(origin_type&& x, Indexer getter, utils::god::RvalueTag)
+  inline explicit FieldAccessor(origin_type&& x, Indexer getter,
+                                utils::god::RvalueTag)
       : data(std::forward<origin_type>(x)), indexer(getter) {}
 
-  inline explicit FieldAccessor(const origin_type&& x, Indexer getter, utils::god::ConstRvalueTag)
+  inline explicit FieldAccessor(const origin_type&& x, Indexer getter,
+                                utils::god::ConstRvalueTag)
       : data(x), indexer(getter) {}
 
   FieldAccessor(const FieldAccessor&) = default;
@@ -46,16 +52,30 @@ template <typename Type, typename Transform, typename Indexer> struct FieldAcces
    ****************************************/
   inline decltype(auto) operator[](Index i) noexcept { return data.col(i); }
 
-  inline decltype(auto) operator[](Index i) const noexcept { return (*this)(i); }
-
-  template <typename... Args> inline decltype(auto) operator()(Args... args) const noexcept {
-    auto transformed = transform(data.col(indexer(std::forward<Args>(args)...)));
-    return transformed;
+  inline decltype(auto) operator[](Index i) const noexcept {
+    return (*this)(i);
   }
 
-  template <typename... Args> inline decltype(auto) operator()(Args... args) noexcept {
-    auto transformed = transform(data.col(indexer(std::forward<Args>(args)...)));
-    return transformed;
+  template <typename... Args>
+  inline decltype(auto) operator()(Args... args) const noexcept {
+    if constexpr (details::Trait<origin_type>::rows == 1) {
+      return data(indexer(std::forward<Args>(args)...));
+    } else {
+      auto transformed
+          = transform(data.col(indexer(std::forward<Args>(args)...)));
+      return transformed;
+    }
+  }
+
+  template <typename... Args>
+  inline decltype(auto) operator()(Args... args) noexcept {
+    if constexpr (details::Trait<origin_type>::rows == 1) {
+      return data(indexer(std::forward<Args>(args)...));
+    } else {
+      auto transformed
+          = transform(data.col(indexer(std::forward<Args>(args)...)));
+      return transformed;
+    }
   }
 
   inline decltype(auto) begin() const { return data.colwise().begin(); }
@@ -82,8 +102,12 @@ template <typename Access, typename It> struct Iterator {
     return *this;
   }
 
-  inline bool operator==(const Iterator& rhs) const noexcept { return it == rhs.it; }
-  inline bool operator!=(const Iterator& rhs) const noexcept { return it != rhs.it; }
+  inline bool operator==(const Iterator& rhs) const noexcept {
+    return it == rhs.it;
+  }
+  inline bool operator!=(const Iterator& rhs) const noexcept {
+    return it != rhs.it;
+  }
 
   explicit Iterator(const Access& a, It i) : acc(a), it(i) {}
 };

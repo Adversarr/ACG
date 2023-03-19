@@ -14,7 +14,7 @@ TEST_CASE("Elastic Common") {
   Eigen::Matrix3f dg;
   dg.setZero();
   dg.diagonal().setConstant(0.9);
-  acg::physics::elastic::SmithInvariants invariants(Eigen::Matrix3f::Identity());
+  acg::physics::elastic::SmithInvariants<float, 3> invariants(Eigen::Matrix3f::Identity());
   auto result = invariants.ComputeHessian();
   std::cout << result.inv_grad_result_.i1_ << std::endl;
   std::cout << result.inv_grad_result_.i2_ << std::endl;

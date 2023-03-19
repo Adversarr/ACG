@@ -58,6 +58,10 @@ Now, mass spring will also show the dynamic computed grid (SubdivisonAABB) for f
 
 ![image-20230302185942678](./media//image-20230302185942678.png)
 
+### fem-implicit
+
+Quasi Newton solver.
+
 ### Other Stuffs
 
 1. `fem-implicit`: first-order explicit integrator. NeoHookean or StVK FEM Soft Body Simulation.

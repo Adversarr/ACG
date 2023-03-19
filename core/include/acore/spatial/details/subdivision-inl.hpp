@@ -152,10 +152,10 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindVisitSequence(
 }
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
-std::pair<Field<F, dim>, geometry::topology::LineList>
+std::pair<Field<F, dim>, types::topology::LineList>
 SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Visualize() const {
   Field<F, dim> position = FieldBuilder<F, dim>(nodes_.size() * 8).Placeholder();
-  geometry::topology::LineList lines = FieldBuilder<Index, 2>(nodes_.size() * 12).Placeholder();
+  types::topology::LineList lines = FieldBuilder<Index, 2>(nodes_.size() * 12).Placeholder();
   auto pacc = access(position);
   auto iacc = access(lines);
   Index np = 0, nl = 0;

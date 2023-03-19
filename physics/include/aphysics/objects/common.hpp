@@ -2,6 +2,8 @@
 #include "../common.hpp"
 
 namespace acg::physics {
+
+// NOTE: Whenever you implement a new PO, add the type here.
 enum class PhysicsObjectType {
   kCloth,
   kSoftbody,
@@ -11,7 +13,11 @@ enum class PhysicsObjectType {
 
 struct PhysicsObject {
   PhysicsObjectType type_;
-  Index id_;
-  Index entity_;
+  Index object_;  // ID for object
+  Index id_;      // ID for component
 };
-}
+
+// Use SELECT_ALL_COMPONENT for every component.
+static constexpr Index SELECT_ALL_COMPONENT = std::numeric_limits<Index>::max();
+
+}  // namespace acg::physics

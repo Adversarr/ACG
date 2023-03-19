@@ -119,7 +119,7 @@ Scene2::Mesh& Scene2::AddMesh() {
   return meshes_.back();
 }
 
-Scene2::Mesh& Scene2::AddMesh(const geometry::topology::TriangleList& indices,
+Scene2::Mesh& Scene2::AddMesh(const types::topology::TriangleList& indices,
                               const types::PositionField<float, 3>& positions,
                               std::optional<Field<float, 3>> opt_normals) {
   decltype(auto) mesh = AddMesh();
@@ -173,7 +173,7 @@ Scene2::Wireframe& Scene2::AddWireframe() {
   return wireframe_.back();
 }
 
-Scene2::Wireframe& Scene2::AddWireframe(const geometry::topology::LineList& indices,
+Scene2::Wireframe& Scene2::AddWireframe(const types::topology::LineList& indices,
                                         types::PositionField<float, 3> positions,
                                         const types::RgbField& colors) {
   auto&& wireframe = AddWireframe().SetIndices(indices).SetPositions(positions).SetColors(colors);
@@ -210,7 +210,7 @@ void Scene2::Mesh::MarkUpdate() {
 
   ACG_CHECK(normals.cols() == vertices.cols(), "#Normal != #Vertex");
 }
-Scene2::Mesh& Scene2::Mesh::SetIndices(const geometry::topology::TriangleList& val) {
+Scene2::Mesh& Scene2::Mesh::SetIndices(const types::topology::TriangleList& val) {
   faces = val;
   return *this;
 }
@@ -310,7 +310,7 @@ void Scene2::Wireframe::MarkUpdate() {
   update_flag = true;
   ACG_CHECK(positions.cols() == colors.cols() || colors.cols() == 1, "#Color error");
 }
-Scene2::Wireframe& Scene2::Wireframe::SetIndices(const geometry::topology::LineList& ind) {
+Scene2::Wireframe& Scene2::Wireframe::SetIndices(const types::topology::LineList& ind) {
   indices = ind;
   return *this;
 }

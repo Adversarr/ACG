@@ -12,32 +12,37 @@ template <typename T> inline decltype(auto) make_vector_hat3d(T&& vec) {
 }
 }  // namespace details
 
-template <typename Derived>
-CauchyGreenInvariants<Derived>::CauchyGreenInvariants(const Eigen::MatrixBase<Derived>& dg) noexcept
-    : f_(dg) {}
+template <typename Scalar, int dim>
+CauchyGreenInvariants<Scalar, dim>::CauchyGreenInvariants(Mat<Scalar, dim, dim> dg) noexcept
+    : f_(std::move(dg)) {}
 
-template <typename Derived>
-InvariantGradientResult<typename CauchyGreenInvariants<Derived>::Scalar,
-                            CauchyGreenInvariants<Derived>::dim_>
-CauchyGreenInvariants<Derived>::ComputeGrad() const {
-  InvariantGradientResult<Scalar, dim_> result;
+template <typename Scalar, int dim>
+InvariantGradientResult<Scalar, dim> CauchyGreenInvariants<Scalar, dim>::ComputeGrad() const {
+  InvariantGradientResult<Scalar, dim> result;
   result.i1_ = f_.array().square().sum();
   result.i2_ = (f_ * f_.transpose()).array().square().sum();
   auto detf = f_.determinant();
   result.i3_ = detf * detf;
   result.i1_grad_ = 2 * f_.reshaped();
-  result.i2_grad_ = 2 * (f_ * (f_.transpose() * f_ - Mat<Scalar, dim_, dim_>::Identity())).reshaped();
+  result.i2_grad_ = 2 * (f_ * (f_.transpose() * f_ - Mat<Scalar, dim, dim>::Identity())).reshaped();
   // TODO: i3 grad.
   return result;
 };
 
-template <typename Derived>
-SmithInvariants<Derived>::SmithInvariants(const Eigen::MatrixBase<Derived>& dg) noexcept
+template <typename Scalar, int dim>
+SmithInvariants<Scalar, dim>::SmithInvariants(Mat<Scalar, dim, dim> dg) noexcept
     : f_(dg), polar_result_(dg) {}
 
-template <typename Derived> InvariantGradientResult<typename SmithInvariants<Derived>::Scalar,
-                                                        SmithInvariants<Derived>::dim_>
-SmithInvariants<Derived>::ComputeGrad() const {
+template <typename Scalar, int dim>
+InvariantResult<Scalar, dim> SmithInvariants<Scalar, dim>::ComputeValue() const {
+  InvariantResult<Scalar> result;
+  result.i1_ = polar_result_.symm_.trace();
+  result.i2_ = f_.array().square().sum();
+  result.i3_ = f_.determinant();
+  return result;
+}
+template <typename Scalar, int dim>
+InvariantGradientResult<Scalar, dim> SmithInvariants<Scalar, dim>::ComputeGrad() const {
   InvariantGradientResult<Scalar> result;
   result.i1_ = polar_result_.symm_.trace();
   result.i2_ = f_.array().square().sum();
@@ -46,7 +51,7 @@ SmithInvariants<Derived>::ComputeGrad() const {
 
   result.i1_grad_ = polar_result_.rot_.reshaped();
   result.i2_grad_ = f_.reshaped() * 2;
-  if constexpr (dim_ == 3) {
+  if constexpr (dim == 3) {
     auto f0 = f_.col(0);
     auto f1 = f_.col(1);
     auto f2 = f_.col(2);
@@ -62,15 +67,14 @@ SmithInvariants<Derived>::ComputeGrad() const {
   return result;
 }
 
-template <typename Derived>
-InvariantHessianResult<typename SmithInvariants<Derived>::Scalar, SmithInvariants<Derived>::dim_>
-SmithInvariants<Derived>::ComputeHessian() const {
-  InvariantHessianResult<Scalar, dim_> result;
+template <typename Scalar, int dim>
+InvariantHessianResult<Scalar, dim> SmithInvariants<Scalar, dim>::ComputeHessian() const {
+  InvariantHessianResult<Scalar, dim> result;
   // II: Same for 2, 3 d.
   result.inv_grad_result_ = ComputeGrad();
-  result.i2_hessian_ = Mat<Scalar, dim_ * dim_, dim_ * dim_>::Identity() * 2;
+  result.i2_hessian_ = Mat<Scalar, dim * dim, dim * dim>::Identity() * 2;
 
-  if constexpr (dim_ == 2) {
+  if constexpr (dim == 2) {
     // Invariant 1.
     // H[I] = DR / DF, See Page 69 for more details.
     const auto& svd = polar_result_.svd_;

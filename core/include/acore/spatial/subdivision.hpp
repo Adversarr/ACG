@@ -40,7 +40,7 @@ public:
   /**
    * @brief Get Visualize data, first = position, second = topo.
    */
-  std::pair<Field<F, dim>, geometry::topology::LineList> Visualize() const;
+  std::pair<Field<F, dim>, types::topology::LineList> Visualize() const;
 
   /**
    * @brief Clean all the aabbs.

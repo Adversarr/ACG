@@ -23,7 +23,7 @@ public:
   acg::Field<float, 3> velocity_;
   acg::Field<float, 3> d_;
 
-  acg::geometry::topology::TriangleList faces_;
+  acg::types::topology::TriangleList faces_;
 
   acg::Index n_grids_ = 5;
   acg::Index n_vertices_;

@@ -55,7 +55,8 @@ TEST_CASE("FieldGetter") {
   NdRangeIndexer<3> getter(p, q, r);
   getter[3];
   CHECK(getter(x, y, z) == x * r * q + r * y + z);
-  CHECK(getter[x * r * q + r * y + z] == std::tuple<Index, Index, Index>(x, y, z));
+  CHECK(getter[x * r * q + r * y + z]
+        == std::tuple<Index, Index, Index>(x, y, z));
 }
 
 TEST_CASE("Field Rvalue") {
@@ -90,7 +91,7 @@ TEST_CASE("Row") {
   Field<float, 1> field(1, p * q * r);
   auto acc = access(field, getter);
   acc[x * r * q + r * y + z].setOnes();
-  CHECK(acc(x, y, z).array().sum() == 1);
+  CHECK(acc(x, y, z) == 1);
 }
 
 TEST_CASE("Access standard iterate") {
@@ -177,7 +178,9 @@ struct Iter2D {
     return i == another.i && j == another.j && n == another.n && m == another.m;
   }
 
-  constexpr bool operator!=(const Iter2D& another) const { return !(*this == another); }
+  constexpr bool operator!=(const Iter2D& another) const {
+    return !(*this == another);
+  }
 
   Iter2D& operator++() {
     if (j == m - 1) {
@@ -218,17 +221,19 @@ TEST_CASE("Sin") {
   CHECK(sin_field.cwiseEqual(0).all());
 }
 
-template <typename T>
-struct fmt::formatter<T, char,
-                      // Double check for Eigen::xxx.
-                      std::enable_if_t<std::is_void_v<std::void_t<typename T::Index>>,
-                                       std::void_t<decltype(std::declval<T>().derived())>>> {
+template <typename T> struct fmt::formatter<
+    T, char,
+    // Double check for Eigen::xxx.
+    std::enable_if_t<std::is_void_v<std::void_t<typename T::Index>>,
+                     std::void_t<decltype(std::declval<T>().derived())>>> {
   // Parses format specifications of the form ['f' | 'e'].
-  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+    return ctx.begin();
+  }
   // Formats the point p using the parsed format specification (presentation)
   // stored in this formatter.
-  template <typename FormatContext> auto format(const T& p, FormatContext& ctx) const
-      -> decltype(ctx.out()) {
+  template <typename FormatContext>
+  auto format(const T& p, FormatContext& ctx) const -> decltype(ctx.out()) {
     // ctx.out() is an output iterator to write to.
     return fmt::format_to(ctx.out(), "{}", fmt::streamed(p));
   }
@@ -256,7 +261,7 @@ TEST_CASE("SVD") {
   acg::Mat3x3f mat33;
   mat33.setZero();
   mat33.diagonal().setOnes();
-  
+
   acg::math::Svd svd33(mat33);
 
   std::cout << mat33 << std::endl;

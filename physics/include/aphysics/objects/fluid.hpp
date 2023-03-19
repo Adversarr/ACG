@@ -4,12 +4,32 @@
 
 namespace acg::physics {
 
+/**
+ * @brief Lagrange fluid representation, discrete fluid as particles.
+ *
+ * @tparam Scalar
+ */
 template <typename Scalar, int dim> struct LagrangeFluid {
-  Field<Scalar, dim> particle_position_;
-  Field<Scalar> particle_mass_;
-  Field<Scalar> particle_volumn_;
-  Field<Scalar, dim> particle_velocity_;
+  Field<Scalar, dim> position_;
+  Field<Scalar> mass_;
+  Field<Scalar> volumn_;
+  Field<Scalar, dim> velocity_;
   Scalar rho_, e_;
+};
+
+/**
+ * @brief Euler fluid representation, fluid velocity field is discreted as
+ *  Regular Grid.
+ *
+ * @tparam Scalar
+ */
+template <typename Scalar, int dim> struct EulerFluidRegular {
+  Field<Scalar> mass_;
+  Field<Scalar, dim> velocity_;
+  Vec<Scalar, dim> lower_bound_;
+  Vec<Scalar, dim> upper_bound_;
+  Vec<Index, dim> div_count_;
+  Scalar grid_size_;
 };
 
 }  // namespace acg::physics

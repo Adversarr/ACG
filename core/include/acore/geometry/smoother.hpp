@@ -6,13 +6,13 @@ namespace acg::geometry {
 
 class UniformLaplacianSmoother {
 private:
-  const topology::TriangleList& triangle_list_;
+  const types::topology::TriangleList& triangle_list_;
 
   template <typename S, int i> void Aggre(Field<S, i>& output, const Field<S, i>& input,
                                           Field<S, 1>& weight, Index self, Index lhs, Index rhs) const;
 
 public:
-  explicit UniformLaplacianSmoother(const topology::TriangleList& faces) : triangle_list_(faces) {}
+  explicit UniformLaplacianSmoother(const types::topology::TriangleList& faces) : triangle_list_(faces) {}
 
   template <typename S, int i> Field<S, i> Compute(const Field<S, i>&) const;
 

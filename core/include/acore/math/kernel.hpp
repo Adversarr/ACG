@@ -3,7 +3,7 @@
 namespace acg::math {
 
 /**
- * NOTE: What is a operator?
+ * NOTE: What is a Kernel?
  * 1. have zero, one, or multiple `Input`, each input should be exactly one column of some field;
  * 2. have one, or multiple `Output`, each output should be exactly one column of some field;
  * 3. have zero, one, or multiple `Constants`, each constants are shared, and not changed during the computation;
@@ -11,6 +11,7 @@ namespace acg::math {
  * Several Constrants:
  * 1. Variables in one kernel MUST share one floating point type, i.e. Scalar;
  * 2. Each variable should be indexed EXACTLY using type `acg::Index`
+ * 3. Public Member functions CANNOT HAS TEMPLATE!
  */
 
 template <typename Derived> struct Operator {

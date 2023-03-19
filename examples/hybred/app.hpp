@@ -2,6 +2,7 @@
 #include <acore/spatial/subdivision.hpp>
 #include <aphysics/constriants.hpp>
 #include <aphysics/objects/cloth.hpp>
+#include <aphysics/objects/fluid.hpp>
 #include <aphysics/objects/softbody.hpp>
 #include <vector>
 
@@ -13,6 +14,7 @@ public:
   int substeps_{1};
   physics::ClothData<Scalar, 3> cloth_;
   physics::SoftbodyData<Scalar, 3> softbody_;
+  physics::LagrangeFluid<Scalar, 3> fluid_;
   spatial::SubDivisionAABB<Scalar, physics::PhysicsObject, 3> subdivision_;
   std::vector<Constraint> position_limitation_;
 
@@ -23,6 +25,8 @@ public:
   void Step();
 
   void Reset();
+
+  void ComputeStepDirection();
 
 private:
   void SubStep();

@@ -9,8 +9,8 @@
 #include <fstream>
 
 #include "app.hpp"
-acg::geometry::topology::TetraList make_tetra() {
-  acg::geometry::topology::TetraList tetra(4, 5);
+acg::types::topology::TetraList make_tetra() {
+  acg::types::topology::TetraList tetra(4, 5);
   auto acc = acg::access(tetra);
   acc(0) = acg::Vec4Index{0, 4, 1, 3};
   acc(1) = acg::Vec4Index{2, 1, 6, 3};
@@ -34,7 +34,7 @@ acg::types::PositionField<acg::Float32, 3> make_pos() {
   return pos;
 }
 
-acg::geometry::topology::TriangleList make_face() {
+acg::types::topology::TriangleList make_face() {
   auto tri = acg::FieldBuilder<acg::Index, 3>(12).Placeholder();
   auto acc = acg::access(tri);
   acc(0) = acg::Vec3Index(0, 1, 3);
@@ -53,14 +53,14 @@ acg::geometry::topology::TriangleList make_face() {
 }
 
 auto make_tet_simple() {
-  acg::geometry::topology::TetraList tetra(4, 1);
+  acg::types::topology::TetraList tetra(4, 1);
   auto acc = acg::access(tetra);
   acc(0) = acg::Vec4Index{0, 1, 2, 3};
   return tetra;
 }
 
 auto make_face_simple() {
-  acg::geometry::topology::TriangleList faces(3, 4);
+  acg::types::topology::TriangleList faces(3, 4);
   auto acc = acg::access(faces);
 
   acc(0) = acg::Vec3Index(0, 2, 1);
@@ -114,8 +114,18 @@ int main(int argc, char** argv) {
   auto update_scene = [&]() {
     auto face = acg::geometry::Tet2Face<float>{app.position_, app.tetras_};
     face();
-    mesh_render.SetVertices(app.position_)
-        .SetIndices(face.faces_)
+    using namespace acg;
+    auto position = Field<float, 3>(3, face.faces_.cols() * 3);
+    // auto normal = Field<float, 3>(3, face.faces_.cols() * 3);
+    auto faces = Field<Index, 3>(3, face.faces_.cols());
+    for (auto [i, f]: enumerate(access(face.faces_))) {
+      faces.col(i) = Vec3Index{3 * i, 3 * i + 1, 3 * i + 2};
+      position.col(3 * i) = access(app.position_)(f.x());
+      position.col(3 * i + 1) = access(app.position_)(f.y());
+      position.col(3 * i + 2) = access(app.position_)(f.z());
+    }
+    mesh_render.SetVertices(position)
+        .SetIndices(faces)
         .SetUniformColor(acg::types::Rgba{.7, .3, .3, 1})
         .ComputeDefaultNormal()
         .SetEnableWireframe(true)
@@ -148,7 +158,7 @@ int main(int argc, char** argv) {
     gui.Tick(true);
     gui.RenderOnce();
     if ((run_once | run) && (!reset)) {
-      app.Step();
+      app.StepQuasi();
       update_scene();
     }
 

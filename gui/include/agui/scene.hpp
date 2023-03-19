@@ -95,7 +95,7 @@ public:
    *
    * @return Reference to the internal object
    */
-  Mesh& AddMesh(const geometry::topology::TriangleList& indices,
+  Mesh& AddMesh(const types::topology::TriangleList& indices,
                 const types::PositionField<float, 3>& positions,
                 std::optional<Field<float, 3>> opt_normals = std::nullopt);
 
@@ -138,7 +138,7 @@ public:
   // WIREFRAME API
   Wireframe& AddWireframe();
 
-  Wireframe& AddWireframe(const geometry::topology::LineList& indices,
+  Wireframe& AddWireframe(const types::topology::LineList& indices,
                           types::PositionField<float, 3> positions, const types::RgbField& colors);
 
   Wireframe& GetWireframe(size_t id);
@@ -161,7 +161,7 @@ struct Scene2::Mesh {
   bool update_flag;
   size_t id;
   // mesh data.
-  geometry::topology::TriangleList faces;
+  types::topology::TriangleList faces;
   types::PositionField<float, 3> vertices;
   types::RgbaField color;
   Field<float, 3> normals;
@@ -186,7 +186,7 @@ struct Scene2::Mesh {
 
   Mesh(const Mesh&) = default;
 
-  Mesh& SetIndices(const geometry::topology::TriangleList& val);
+  Mesh& SetIndices(const types::topology::TriangleList& val);
 
   Mesh& SetVertices(const types::PositionField<float, 3>& val);
 
@@ -219,7 +219,7 @@ struct Scene2::Mesh {
 
 struct Scene2::Wireframe {
   size_t id;
-  geometry::topology::LineList indices;
+  types::topology::LineList indices;
   types::PositionField<float, 3> positions;
   types::RgbField colors;
   bool update_flag{true};
@@ -230,7 +230,7 @@ struct Scene2::Wireframe {
 
   explicit Wireframe(size_t id) : id(id) {}
 
-  Wireframe& SetIndices(const geometry::topology::LineList& ind);
+  Wireframe& SetIndices(const types::topology::LineList& ind);
 
   Wireframe& SetPositions(const types::PositionField<float, 3>& pos);
 

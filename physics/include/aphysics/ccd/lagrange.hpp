@@ -2,17 +2,15 @@
  * @file
  * @brief Here is a small story of this algorithm:
  *  NOTE: The story of Fast CCD
- *  Originally, this algorithm is proposed on my Gitee, and is an exprimental one.
- *  After join GCL at USTC, we have a seminar for every to propose their own ideas,
- *  and I proposed this algorithm. However, we found that the paper "Penetration-free 
- *  Projective Dynamics on the GPU" stared the algorithm as a small contribution.
- *  I'm surprised that, the mathematics behind the algorithm is SOO SIMPLE, and the
- *  algorithm is SOO EASY to implement, but people just spend a lot of time on this
- *  simple problem, and bunches of papers were talking about bunches of methods.
+ *  Originally, this algorithm is proposed on my Gitee, and is an exprimental
+ * one. After join GCL at USTC, we have a seminar for every to propose their own
+ * ideas, and I proposed this algorithm. However, we found that the paper
+ * "Penetration-free Projective Dynamics on the GPU" stared the algorithm as a
+ * small contribution. I'm surprised that, the mathematics behind the algorithm
+ * is SOO SIMPLE, and the algorithm is SOO EASY to implement, but people just
+ * spend a lot of time on this simple problem, and bunches of papers were
+ * talking about bunches of methods.
  */
-
-
-
 
 #pragma once
 #include <acore/math/common.hpp>
@@ -20,8 +18,116 @@
 
 namespace acg::physics::ccd {
 namespace details {
-template <typename Scalar> inline void compute_value(Scalar k1, Scalar k2, Scalar k3, Scalar k4,
-                                                     Scalar t, Scalar& value, Scalar& grad) {
+
+template <typename Scalar>
+Vec3<Scalar> interpolate(double t, Vec3<Scalar> a, Vec3<Scalar> b) {
+  return t * a + (1 - t) * b;
+}
+template <typename Scalar>
+inline bool test_2d(Vec3<Scalar> v00, Vec3<Scalar> v01, Vec3<Scalar> v10,
+                    Vec3<Scalar> v11, Vec3<Scalar> v20, Vec3<Scalar> v21,
+                    Scalar epslion, Scalar &toi) {
+  auto x00 = v00.x();
+  auto y00 = v00.y();
+  auto z00 = v00.z();
+  auto x01 = v01.x();
+  auto y01 = v01.y();
+  auto z01 = v01.z();
+  auto x10 = v10.x();
+  auto y10 = v10.y();
+  auto z10 = v10.z();
+  auto x11 = v11.x();
+  auto y11 = v11.y();
+  auto z11 = v11.z();
+  auto x20 = v20.x();
+  auto y20 = v20.y();
+  auto z20 = v20.z();
+  auto x21 = v21.x();
+  auto y21 = v21.y();
+  auto z21 = v21.z();
+
+  auto c = -(x21 * y01) - x01 * y11 + x21 * y11 + x01 * y21 + x21 * z01 +
+           y11 * z01 - y21 * z01 + x01 * z11 - x21 * z11 - y01 * z11 +
+           y21 * z11 - x01 * z21 + y01 * z21 - y11 * z21 +
+           x11 * (y01 - y21 - z01 + z21);
+  auto b =
+      (x10 * y01 - x20 * y01 - x01 * y10 - x00 * y11 + 2 * x01 * y11 +
+       x20 * y11 + x01 * y20 + x00 * y21 - 2 * x01 * y21 - x10 * y21 +
+       y11 * z00 - y21 * z00 - x10 * z01 + x20 * z01 + y10 * z01 -
+       2 * y11 * z01 - y20 * z01 + 2 * y21 * z01 + x01 * z10 - y01 * z10 +
+       y21 * z10 + x00 * z11 - 2 * x01 * z11 - x20 * z11 - y00 * z11 +
+       2 * y01 * z11 + y20 * z11 - 2 * y21 * z11 +
+       x21 * (-y00 + 2 * y01 + y10 - 2 * y11 + z00 - 2 * z01 - z10 + 2 * z11) -
+       x01 * z20 + y01 * z20 - y11 * z20 +
+       x11 * (y00 - 2 * y01 - y20 + 2 * y21 - z00 + 2 * z01 + z20 - 2 * z21) -
+       x00 * z21 + 2 * x01 * z21 + x10 * z21 + y00 * z21 - 2 * y01 * z21 -
+       y10 * z21 + 2 * y11 * z21);
+  auto a =
+      (-(x20 * y00) + x21 * y00 + x20 * y01 - x21 * y01 - x00 * y10 +
+       x01 * y10 + x20 * y10 - x21 * y10 + x00 * y11 - x01 * y11 - x20 * y11 +
+       x21 * y11 + x00 * y20 - x01 * y20 - x00 * y21 + x01 * y21 + x20 * z00 -
+       x21 * z00 + y10 * z00 - y11 * z00 - y20 * z00 + y21 * z00 - x20 * z01 +
+       x21 * z01 - y10 * z01 + y11 * z01 + y20 * z01 - y21 * z01 + x00 * z10 -
+       x01 * z10 - x20 * z10 + x21 * z10 - y00 * z10 + y01 * z10 + y20 * z10 -
+       y21 * z10 - x00 * z11 + x01 * z11 + x20 * z11 - x21 * z11 + y00 * z11 -
+       y01 * z11 - y20 * z11 + y21 * z11 - x00 * z20 + x01 * z20 + y00 * z20 -
+       y01 * z20 - y10 * z20 + y11 * z20 +
+       x10 * (y00 - y01 - y20 + y21 - z00 + z01 + z20 - z21) + x00 * z21 -
+       x01 * z21 - y00 * z21 + y01 * z21 + y10 * z21 - y11 * z21 +
+       x11 * (-y00 + y01 + y20 - y21 + z00 - z01 - z20 + z21));
+
+  // Want to solve a t2 + b t + c = 0 in [0, 1]
+  auto eval_grad = [a, b, c](double value) { return 2 * a * value + b; };
+
+  auto eval_value = [a, b, c](double value) {
+    return a * value * value + b * value + c;
+  };
+
+  // Start from half:
+
+  if (abs(a) + abs(b) < epslion) {
+    // Constant.
+    toi = abs(c);
+    return abs(c) < epslion;
+  }
+  double x = 0;
+  int i = 0;
+  while (x <= 1 && x >= 0 && i < 10) {
+    x -= eval_value(x) / eval_grad(x);
+    i += 1;
+  }
+
+  double y = 1;
+  i = 0;
+  while (y <= 1 && y >= 0 && i < 10) {
+    y -= eval_value(y) / eval_grad(y);
+    i += 1;
+  }
+  if (x <= 1 && x >= 0 && abs(eval_value(x)) < epslion) {
+    auto v0 = interpolate(x, v00, v01);
+    auto v1 = interpolate(x, v10, v11);
+    auto v2 = interpolate(x, v20, v21);
+    if ((v0 - v1).dot(v0 - v2) < 0) {
+      toi = x;
+      return true;
+    }
+  }
+  if (y <= 1 && y >= 0 && abs(eval_value(y)) < epslion) {
+    auto v0 = interpolate(y, v00, v01);
+    auto v1 = interpolate(y, v10, v11);
+    auto v2 = interpolate(y, v20, v21);
+    if ((v0 - v1).dot(v0 - v2) < 0) {
+      toi = y;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+template <typename Scalar>
+inline void compute_value(Scalar k1, Scalar k2, Scalar k3, Scalar k4, Scalar t,
+                          Scalar &value, Scalar &grad) {
   Scalar t1 = k4 * t;
   Scalar t2 = k3 + t1;
   Scalar t3 = k2 + t * t2;
@@ -29,8 +135,9 @@ template <typename Scalar> inline void compute_value(Scalar k1, Scalar k2, Scala
   grad = t3 + t * (t1 + t2);
 }
 
-template <typename Scalar> inline bool inside_test(const Vec3<Scalar>& e1, const Vec3<Scalar>& e2,
-                                                   const Vec3<Scalar>& v, Scalar tolerance) {
+template <typename Scalar>
+inline bool inside_test(const Vec3<Scalar> &e1, const Vec3<Scalar> &e2,
+                        const Vec3<Scalar> &v, Scalar tolerance) {
   Vec3<Scalar> v1 = e1.cross(v);
   Vec3<Scalar> v2 = v.cross(e2);
   Vec3<Scalar> v3 = (e1 - v).cross(e2 - v);
@@ -44,12 +151,12 @@ template <typename Scalar> inline bool inside_test(const Vec3<Scalar>& e1, const
   return (std::fabs(s - s1 - s2 - s3) <= tolerance);
 }
 
-template <typename Scalar> inline bool crossing_test(const Vec3<Scalar>& e01,
-                                                     const Vec3<Scalar>& e10,
-                                                     const Vec3<Scalar>& e11, Scalar tolerance) {
+template <typename Scalar>
+inline bool crossing_test(const Vec3<Scalar> &e01, const Vec3<Scalar> &e10,
+                          const Vec3<Scalar> &e11, Scalar tolerance) {
   Vec3<Scalar> b = e10 - e01, c = e01 - e11;
-  if (e10.cwiseAbs().sum() < tolerance || e11.cwiseAbs().sum() < tolerance
-      || b.cwiseAbs().sum() < tolerance || c.cwiseAbs().sum() < tolerance) {
+  if (e10.cwiseAbs().sum() < tolerance || e11.cwiseAbs().sum() < tolerance ||
+      b.cwiseAbs().sum() < tolerance || c.cwiseAbs().sum() < tolerance) {
     return true;
   }
   Vec3<Scalar> e0110 = e01.cross(e10);
@@ -67,16 +174,21 @@ template <typename Scalar> inline bool crossing_test(const Vec3<Scalar>& e01,
   auto s4 = bc.norm();
   return std::fabs(s1 + s2 - (s3 + s4)) <= tolerance;
 }
-}  // namespace details
+} // namespace details
 template <typename Scalar> struct VertexTriangle {
   int max_iter;
   Scalar toi;
   bool valid;
-  bool operator()(const Vec3<Scalar>& vertex_start, const Vec3<Scalar>& face_vertex0_start,
-                  const Vec3<Scalar>& face_vertex1_start, const Vec3<Scalar>& face_vertex2_start,
-                  const Vec3<Scalar>& vertex_end, const Vec3<Scalar>& face_vertex0_end,
-                  const Vec3<Scalar>& face_vertex1_end, const Vec3<Scalar>& face_vertex2_end,
-                  const Scalar tolerance) const noexcept {
+
+  bool operator()(const Vec3<Scalar> &vertex_start,
+                  const Vec3<Scalar> &face_vertex0_start,
+                  const Vec3<Scalar> &face_vertex1_start,
+                  const Vec3<Scalar> &face_vertex2_start,
+                  const Vec3<Scalar> &vertex_end,
+                  const Vec3<Scalar> &face_vertex0_end,
+                  const Vec3<Scalar> &face_vertex1_end,
+                  const Vec3<Scalar> &face_vertex2_end,
+                  const Scalar tolerance) noexcept {
     Vec3<Scalar> x10 = face_vertex1_start - face_vertex0_start;
     Vec3<Scalar> x20 = face_vertex2_start - face_vertex0_start;
     Vec3<Scalar> v_relative_start = vertex_start - face_vertex0_start;
@@ -103,44 +215,72 @@ template <typename Scalar> struct VertexTriangle {
     auto c22 = v_relative_end.y();
     auto c23 = v_relative_end.z();
 
-    Scalar k1 = a22 * b23 * c21 - a21 * b23 * c22 + a23 * (-(b22 * c21) + b21 * c22)
-                - a22 * b21 * c23 + a21 * b22 * c23;
-    Scalar k2 = a22 * b23 * c11 + b23 * (-(a21 * c12) + a12 * c21 - a11 * c22 + 3 * a21 * c22)
-                + a23 * (-(b12 * c21) + b22 * (-c11 + 3 * c21) + b21 * (c12 - 3 * c22) + b11 * c22)
-                + b22 * (-(a13 * c21) + a21 * (c13 - 3 * c23) + a11 * c23)
-                + b21 * (a13 * c22 - a12 * c23) + a21 * (-(b13 * c22) + b12 * c23)
-                + a22 * (b13 * c21 - 3 * b23 * c21 - b11 * c23 + b21 * (-c13 + 3 * c23));
+    Scalar k1 = a22 * b23 * c21 - a21 * b23 * c22 +
+                a23 * (-(b22 * c21) + b21 * c22) - a22 * b21 * c23 +
+                a21 * b22 * c23;
+    Scalar k2 =
+        a22 * b23 * c11 +
+        b23 * (-(a21 * c12) + a12 * c21 - a11 * c22 + 3 * a21 * c22) +
+        a23 * (-(b12 * c21) + b22 * (-c11 + 3 * c21) + b21 * (c12 - 3 * c22) +
+               b11 * c22) +
+        b22 * (-(a13 * c21) + a21 * (c13 - 3 * c23) + a11 * c23) +
+        b21 * (a13 * c22 - a12 * c23) + a21 * (-(b13 * c22) + b12 * c23) +
+        a22 * (b13 * c21 - 3 * b23 * c21 - b11 * c23 + b21 * (-c13 + 3 * c23));
 
-    Scalar k3 = ((-a13) * b22 + a22 * (b13 - 2 * b23) + a12 * b23) * c11
-                + b23 * ((-a11 + 2 * a21) * c12 + 2 * a11 * c22 - 3 * a21 * c22)
-                + b13 * ((-a21) * c12 + a12 * c21 - a11 * c22 + 2 * a21 * c22)
-                + a13 * (b21 * c12 + 2 * b22 * c21 + b11 * c22 - 2 * b21 * c22)
-                + a23
-                      * (2 * b22 * c11 - 2 * b21 * c12 - 3 * b22 * c21 + b12 * (-c11 + 2 * c21)
-                         + b11 * (c12 - 2 * c22) + 3 * b21 * c22)
-                + b12 * ((-a13) * c21 + a21 * (c13 - 2 * c23) + a11 * c23)
-                + a22
-                      * (-2 * b13 * c21 + 3 * b23 * c21 + b21 * (2 * c13 - 3 * c23)
-                         + b11 * (-c13 + 2 * c23))
-                + a12 * (-2 * b23 * c21 - b11 * c23 + b21 * (-c13 + 2 * c23))
-                + b22 * (a11 * (c13 - 2 * c23) + a21 * (-2 * c13 + 3 * c23));
-    Scalar k4 = (-(a22 * b13) - a23 * b22 + a12 * (b13 - b23) + a22 * b23) * c11
-                + b13 * ((-a11 + a21) * c12 + a22 * c21 + a11 * c22 - a21 * c22)
-                + b23 * ((a11 - a21) * c12 - a11 * c22 + a21 * c22)
-                + a13
-                      * (b22 * c11 - b21 * c12 - b22 * c21 + b12 * (-c11 + c21) + b11 * (c12 - c22)
-                         + b21 * c22)
-                + a23 * (b21 * c12 + b22 * c21 - b21 * c22 + b11 * (-c12 + c22))
-                + b22 * (a21 * (c13 - c23) + a11 * (-c13 + c23))
-                + b12 * (a23 * c11 - a23 * c21 + a11 * (c13 - c23) + a21 * (-c13 + c23))
-                + a12 * (-(b13 * c21) + b23 * c21 + b21 * (c13 - c23) + b11 * (-c13 + c23))
-                + a22 * (-(b23 * c21) + b11 * (c13 - c23) + b21 * (-c13 + c23));
+    Scalar k3 =
+        ((-a13) * b22 + a22 * (b13 - 2 * b23) + a12 * b23) * c11 +
+        b23 * ((-a11 + 2 * a21) * c12 + 2 * a11 * c22 - 3 * a21 * c22) +
+        b13 * ((-a21) * c12 + a12 * c21 - a11 * c22 + 2 * a21 * c22) +
+        a13 * (b21 * c12 + 2 * b22 * c21 + b11 * c22 - 2 * b21 * c22) +
+        a23 * (2 * b22 * c11 - 2 * b21 * c12 - 3 * b22 * c21 +
+               b12 * (-c11 + 2 * c21) + b11 * (c12 - 2 * c22) + 3 * b21 * c22) +
+        b12 * ((-a13) * c21 + a21 * (c13 - 2 * c23) + a11 * c23) +
+        a22 * (-2 * b13 * c21 + 3 * b23 * c21 + b21 * (2 * c13 - 3 * c23) +
+               b11 * (-c13 + 2 * c23)) +
+        a12 * (-2 * b23 * c21 - b11 * c23 + b21 * (-c13 + 2 * c23)) +
+        b22 * (a11 * (c13 - 2 * c23) + a21 * (-2 * c13 + 3 * c23));
+    Scalar k4 =
+        (-(a22 * b13) - a23 * b22 + a12 * (b13 - b23) + a22 * b23) * c11 +
+        b13 * ((-a11 + a21) * c12 + a22 * c21 + a11 * c22 - a21 * c22) +
+        b23 * ((a11 - a21) * c12 - a11 * c22 + a21 * c22) +
+        a13 * (b22 * c11 - b21 * c12 - b22 * c21 + b12 * (-c11 + c21) +
+               b11 * (c12 - c22) + b21 * c22) +
+        a23 * (b21 * c12 + b22 * c21 - b21 * c22 + b11 * (-c12 + c22)) +
+        b22 * (a21 * (c13 - c23) + a11 * (-c13 + c23)) +
+        b12 * (a23 * c11 - a23 * c21 + a11 * (c13 - c23) + a21 * (-c13 + c23)) +
+        a12 * (-(b13 * c21) + b23 * c21 + b21 * (c13 - c23) +
+               b11 * (-c13 + c23)) +
+        a22 * (-(b23 * c21) + b11 * (c13 - c23) + b21 * (-c13 + c23));
 
     Scalar t1 = 0;
     Scalar t2 = 1;
     Scalar t3 = -k2 / (3 * k3);
     Scalar value, grad;
 
+    if (abs(k2) + abs(k3) + abs(k4) < tolerance) {
+      if (abs(k1) > tolerance) {
+        valid = false;
+        return false;
+      }
+      bool collid = false;
+      double t;
+      collid |=
+          test_2d(vertex_start, vertex_end, face_vertex0_start,
+                  face_vertex0_end, face_vertex1_start, face_vertex1_end, t);
+      collid |=
+          test_2d(vertex_start, vertex_end, face_vertex0_start,
+                  face_vertex0_end, face_vertex2_start, face_vertex2_end, t);
+      collid |=
+          test_2d(vertex_start, vertex_end, face_vertex2_start,
+                  face_vertex2_end, face_vertex1_start, face_vertex1_end, t);
+      if (collid) {
+        valid = true;
+        return true;
+      } else {
+        valid = false;
+        return false;
+      }
+    }
     for (int i = 0; i < max_iter; ++i) {
       details::compute_value(k1, k2, k3, k4, t1, value, grad);
       t1 = t1 - value / grad;
@@ -151,25 +291,28 @@ template <typename Scalar> struct VertexTriangle {
       acg::utils::god::sort3(t1, t2, t3);
     }
 
-    if (t1 >= 0 && t1 <= 1
-        && details::inside_test(x10 * t1 + (1 - t1) * y10, x20 * t1 + y20 * (1 - t1),
-                                v_relative_start * t1 + v_relative_end * (1 - t1), tolerance)) {
+    if (t1 >= 0 && t1 <= 1 &&
+        details::inside_test(
+            x10 * t1 + (1 - t1) * y10, x20 * t1 + y20 * (1 - t1),
+            v_relative_start * t1 + v_relative_end * (1 - t1), tolerance)) {
       toi = t1;
       valid = true;
       return true;
     }
 
-    if (0 <= t2 && t2 <= 1
-        && details::inside_test(x10 * t2 + (1 - t2) * y10, x20 * t2 + y20 * (1 - t2),
-                                v_relative_start * t2 + v_relative_end * (1 - t2), tolerance)) {
+    if (0 <= t2 && t2 <= 1 &&
+        details::inside_test(
+            x10 * t2 + (1 - t2) * y10, x20 * t2 + y20 * (1 - t2),
+            v_relative_start * t2 + v_relative_end * (1 - t2), tolerance)) {
       toi = t2;
       valid = true;
       return true;
     }
 
-    if (0 <= t3 && t3 <= 1
-        && details::inside_test(x10 * t3 + (1 - t3) * y10, x20 * t3 + y20 * (1 - t3),
-                                v_relative_start * t3 + v_relative_end * (1 - t3), tolerance)) {
+    if (0 <= t3 && t3 <= 1 &&
+        details::inside_test(
+            x10 * t3 + (1 - t3) * y10, x20 * t3 + y20 * (1 - t3),
+            v_relative_start * t3 + v_relative_end * (1 - t3), tolerance)) {
       toi = t3;
       valid = true;
       return true;
@@ -184,11 +327,15 @@ template <typename Scalar> struct EdgeEdge {
 
   Scalar toi;
   bool valid;
-  bool operator()(const Vec3<Scalar>& edge0_vertex0_start, const Vec3<Scalar>& edge0_vertex1_start,
-                  const Vec3<Scalar>& edge1_vertex0_start, const Vec3<Scalar>& edge1_vertex1_start,
-                  const Vec3<Scalar>& edge0_vertex0_end, const Vec3<Scalar>& edge0_vertex1_end,
-                  const Vec3<Scalar>& edge1_vertex0_end, const Vec3<Scalar>& edge1_vertex1_end,
-                  Scalar tolerance) {
+  bool operator()(const Vec3<Scalar> &edge0_vertex0_start,
+                  const Vec3<Scalar> &edge0_vertex1_start,
+                  const Vec3<Scalar> &edge1_vertex0_start,
+                  const Vec3<Scalar> &edge1_vertex1_start,
+                  const Vec3<Scalar> &edge0_vertex0_end,
+                  const Vec3<Scalar> &edge0_vertex1_end,
+                  const Vec3<Scalar> &edge1_vertex0_end,
+                  const Vec3<Scalar> &edge1_vertex1_end,
+                  Scalar tolerance) noexcept {
     Vec3<Scalar> e0_v1rs = edge0_vertex1_start - edge0_vertex0_start;
     Vec3<Scalar> e1_v0rs = edge1_vertex0_start - edge0_vertex0_start;
     Vec3<Scalar> e1_v1rs = edge1_vertex1_start - edge0_vertex0_start;
@@ -215,42 +362,73 @@ template <typename Scalar> struct EdgeEdge {
     auto c22 = e0_v1re.y();
     auto c23 = e0_v1re.z();
 
-    Scalar k1 = a22 * b23 * c21 - a21 * b23 * c22 + a23 * (-(b22 * c21) + b21 * c22)
-                - a22 * b21 * c23 + a21 * b22 * c23;
-    Scalar k2 = a22 * b23 * c11 + b23 * (-(a21 * c12) + a12 * c21 - a11 * c22 + 3 * a21 * c22)
-                + a23 * (-(b12 * c21) + b22 * (-c11 + 3 * c21) + b21 * (c12 - 3 * c22) + b11 * c22)
-                + b22 * (-(a13 * c21) + a21 * (c13 - 3 * c23) + a11 * c23)
-                + b21 * (a13 * c22 - a12 * c23) + a21 * (-(b13 * c22) + b12 * c23)
-                + a22 * (b13 * c21 - 3 * b23 * c21 - b11 * c23 + b21 * (-c13 + 3 * c23));
-    Scalar k3 = ((-a13) * b22 + a22 * (b13 - 2 * b23) + a12 * b23) * c11
-                + b23 * ((-a11 + 2 * a21) * c12 + 2 * a11 * c22 - 3 * a21 * c22)
-                + b13 * ((-a21) * c12 + a12 * c21 - a11 * c22 + 2 * a21 * c22)
-                + a13 * (b21 * c12 + 2 * b22 * c21 + b11 * c22 - 2 * b21 * c22)
-                + a23
-                      * (2 * b22 * c11 - 2 * b21 * c12 - 3 * b22 * c21 + b12 * (-c11 + 2 * c21)
-                         + b11 * (c12 - 2 * c22) + 3 * b21 * c22)
-                + b12 * ((-a13) * c21 + a21 * (c13 - 2 * c23) + a11 * c23)
-                + a22
-                      * (-2 * b13 * c21 + 3 * b23 * c21 + b21 * (2 * c13 - 3 * c23)
-                         + b11 * (-c13 + 2 * c23))
-                + a12 * (-2 * b23 * c21 - b11 * c23 + b21 * (-c13 + 2 * c23))
-                + b22 * (a11 * (c13 - 2 * c23) + a21 * (-2 * c13 + 3 * c23));
-    Scalar k4 = (-(a22 * b13) - a23 * b22 + a12 * (b13 - b23) + a22 * b23) * c11
-                + b13 * ((-a11 + a21) * c12 + a22 * c21 + a11 * c22 - a21 * c22)
-                + b23 * ((a11 - a21) * c12 - a11 * c22 + a21 * c22)
-                + a13
-                      * (b22 * c11 - b21 * c12 - b22 * c21 + b12 * (-c11 + c21) + b11 * (c12 - c22)
-                         + b21 * c22)
-                + a23 * (b21 * c12 + b22 * c21 - b21 * c22 + b11 * (-c12 + c22))
-                + b22 * (a21 * (c13 - c23) + a11 * (-c13 + c23))
-                + b12 * (a23 * c11 - a23 * c21 + a11 * (c13 - c23) + a21 * (-c13 + c23))
-                + a12 * (-(b13 * c21) + b23 * c21 + b21 * (c13 - c23) + b11 * (-c13 + c23))
-                + a22 * (-(b23 * c21) + b11 * (c13 - c23) + b21 * (-c13 + c23));
+    Scalar k1 = a22 * b23 * c21 - a21 * b23 * c22 +
+                a23 * (-(b22 * c21) + b21 * c22) - a22 * b21 * c23 +
+                a21 * b22 * c23;
+    Scalar k2 =
+        a22 * b23 * c11 +
+        b23 * (-(a21 * c12) + a12 * c21 - a11 * c22 + 3 * a21 * c22) +
+        a23 * (-(b12 * c21) + b22 * (-c11 + 3 * c21) + b21 * (c12 - 3 * c22) +
+               b11 * c22) +
+        b22 * (-(a13 * c21) + a21 * (c13 - 3 * c23) + a11 * c23) +
+        b21 * (a13 * c22 - a12 * c23) + a21 * (-(b13 * c22) + b12 * c23) +
+        a22 * (b13 * c21 - 3 * b23 * c21 - b11 * c23 + b21 * (-c13 + 3 * c23));
+    Scalar k3 =
+        ((-a13) * b22 + a22 * (b13 - 2 * b23) + a12 * b23) * c11 +
+        b23 * ((-a11 + 2 * a21) * c12 + 2 * a11 * c22 - 3 * a21 * c22) +
+        b13 * ((-a21) * c12 + a12 * c21 - a11 * c22 + 2 * a21 * c22) +
+        a13 * (b21 * c12 + 2 * b22 * c21 + b11 * c22 - 2 * b21 * c22) +
+        a23 * (2 * b22 * c11 - 2 * b21 * c12 - 3 * b22 * c21 +
+               b12 * (-c11 + 2 * c21) + b11 * (c12 - 2 * c22) + 3 * b21 * c22) +
+        b12 * ((-a13) * c21 + a21 * (c13 - 2 * c23) + a11 * c23) +
+        a22 * (-2 * b13 * c21 + 3 * b23 * c21 + b21 * (2 * c13 - 3 * c23) +
+               b11 * (-c13 + 2 * c23)) +
+        a12 * (-2 * b23 * c21 - b11 * c23 + b21 * (-c13 + 2 * c23)) +
+        b22 * (a11 * (c13 - 2 * c23) + a21 * (-2 * c13 + 3 * c23));
+    Scalar k4 =
+        (-(a22 * b13) - a23 * b22 + a12 * (b13 - b23) + a22 * b23) * c11 +
+        b13 * ((-a11 + a21) * c12 + a22 * c21 + a11 * c22 - a21 * c22) +
+        b23 * ((a11 - a21) * c12 - a11 * c22 + a21 * c22) +
+        a13 * (b22 * c11 - b21 * c12 - b22 * c21 + b12 * (-c11 + c21) +
+               b11 * (c12 - c22) + b21 * c22) +
+        a23 * (b21 * c12 + b22 * c21 - b21 * c22 + b11 * (-c12 + c22)) +
+        b22 * (a21 * (c13 - c23) + a11 * (-c13 + c23)) +
+        b12 * (a23 * c11 - a23 * c21 + a11 * (c13 - c23) + a21 * (-c13 + c23)) +
+        a12 * (-(b13 * c21) + b23 * c21 + b21 * (c13 - c23) +
+               b11 * (-c13 + c23)) +
+        a22 * (-(b23 * c21) + b11 * (c13 - c23) + b21 * (-c13 + c23));
 
     Scalar t1 = 0;
     Scalar t2 = 1;
     Scalar t3 = -k2 / (3 * k3);
     Scalar value, grad;
+
+    if (abs(k2) + abs(k3) + abs(k4) < tolerance) {
+      if (abs(k1) > tolerance) {
+        valid = false;
+        return false;
+      }
+      bool collid = false;
+      collid |= test_2d(edge0_vertex0_start, edge0_vertex0_end,
+                        edge1_vertex0_start, edge1_vertex1_end,
+                        edge1_vertex1_start, edge1_vertex1_end, toi);
+      collid |= test_2d(edge0_vertex1_start, edge0_vertex1_end,
+                        edge1_vertex0_start, edge1_vertex1_end,
+                        edge1_vertex1_start, edge1_vertex1_end, toi);
+      collid |= test_2d(edge1_vertex0_start, edge1_vertex0_end,
+                        edge0_vertex0_start, edge0_vertex1_end,
+                        edge0_vertex1_start, edge0_vertex1_end, toi);
+      collid |= test_2d(edge1_vertex1_start, edge1_vertex1_end,
+                        edge0_vertex0_start, edge0_vertex1_end,
+                        edge0_vertex1_start, edge0_vertex1_end, toi);
+      if (collid) {
+        valid = true;
+        return true;
+      } else {
+        valid = false;
+        return false;
+      }
+    }
 
     for (int i = 0; i < max_iter; ++i) {
       details::compute_value(k1, k2, k3, k4, t1, value, grad);
@@ -261,27 +439,27 @@ template <typename Scalar> struct EdgeEdge {
       t3 = t3 - value / grad;
       acg::utils::god::sort3(t1, t2, t3);
     }
-    if (t1 >= 0.0 && t1 <= 1.0
-        && details::crossing_test(e0_v1rs * t1 + e0_v1re * (1 - t1),
-                                  e1_v0rs * t1 + e1_v0re * (1 - t1),
-                                  e1_v1rs * t1 + e1_v1re * (1 - t1), tolerance)) {
+    if (t1 >= 0.0 && t1 <= 1.0 &&
+        details::crossing_test(e0_v1rs * t1 + e0_v1re * (1 - t1),
+                               e1_v0rs * t1 + e1_v0re * (1 - t1),
+                               e1_v1rs * t1 + e1_v1re * (1 - t1), tolerance)) {
       toi = t1;
       valid = true;
       return true;
     }
 
-    if (0.0 <= t2 && t2 <= 1.0
-        && details::crossing_test(e0_v1rs * t2 + e0_v1re * (1 - t2),
-                                  e1_v0rs * t2 + e1_v0re * (1 - t2),
-                                  e1_v1rs * t2 + e1_v1re * (1 - t2), tolerance)) {
+    if (0.0 <= t2 && t2 <= 1.0 &&
+        details::crossing_test(e0_v1rs * t2 + e0_v1re * (1 - t2),
+                               e1_v0rs * t2 + e1_v0re * (1 - t2),
+                               e1_v1rs * t2 + e1_v1re * (1 - t2), tolerance)) {
       toi = t2;
       valid = true;
       return true;
     }
-    if (0.0 <= t3 && t3 <= 1.0
-        && details::crossing_test(e0_v1rs * t3 + e0_v1re * (1 - t3),
-                                  e1_v0rs * t3 + e1_v0re * (1 - t3),
-                                  e1_v1rs * t3 + e1_v1re * (1 - t3), tolerance)) {
+    if (0.0 <= t3 && t3 <= 1.0 &&
+        details::crossing_test(e0_v1rs * t3 + e0_v1re * (1 - t3),
+                               e1_v0rs * t3 + e1_v0re * (1 - t3),
+                               e1_v1rs * t3 + e1_v1re * (1 - t3), tolerance)) {
       toi = t3;
       valid = true;
       return true;
@@ -291,4 +469,4 @@ template <typename Scalar> struct EdgeEdge {
     return false;
   }
 };
-}  // namespace acg::physics::ccd
+} // namespace acg::physics::ccd

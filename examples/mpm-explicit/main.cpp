@@ -36,18 +36,20 @@ int main(int argc, char** argv) {
       clear = ImGui::Button("Reset Scene.");
       // running = ImGui::Button("Run Once");
       ImGui::Checkbox("Run", &running);
-      acg::Float64 vel_eng = app.particle_velocity_.array().square().sum();
-      Vec3f pos = app.particle_position_.rowwise().mean().cast<Float32>();
+      acg::Float64 vel_eng = app.lag_.velocity_.array().square().sum();
+      Vec3f pos = app.lag_.position_.rowwise().mean().cast<Float32>();
       ImGui::Text("Velocity Energy = %lf, Weight %lf", vel_eng, app.weight_sum);
       ImGui::InputFloat3("Position", pos.data());
       ImGui::DragFloat3("Gravity", app.grav_.data(), 0.1, -3, 3);
+      ImGui::InputDouble("Scaling", &app.E_);
     });
 
-    gui.GetScene().AddMeshParticles()
-      .SetPositions(app.particle_position_.cast<Float32>())
-      .SetUniformColor(types::Rgba(1, 0, 0, 1))
-      .SetRadius(0.01)
-      .MarkUpdate();
+    gui.GetScene()
+        .AddMeshParticles()
+        .SetPositions(app.particle_position_.cast<Float32>())
+        .SetUniformColor(types::Rgba(1, 0, 0, 1))
+        .SetRadius(0.01)
+        .MarkUpdate();
     while (!Window::Instance().ShouldClose()) {
       glfwPollEvents();
       gui.Tick();
@@ -55,18 +57,21 @@ int main(int argc, char** argv) {
       gui.UpdateScene();
       if (clear) {
         app.Init();
-        gui.GetScene().GetMeshParticles().front()
-          .SetPositions(app.particle_position_.cast<Float32>())
-          .MarkUpdate();
+        gui.GetScene()
+            .GetMeshParticles()
+            .front()
+            .SetPositions(app.lag_.position_.cast<Float32>())
+            .MarkUpdate();
       }
 
       if (running) {
-        app.Run();
-        gui.GetScene().GetMeshParticles().front()
-          .SetPositions(app.particle_position_.cast<Float32>())
-          .MarkUpdate();
+        app.Step();
+        gui.GetScene()
+            .GetMeshParticles()
+            .front()
+            .SetPositions(app.lag_.position_.cast<Float32>())
+            .MarkUpdate();
         // running = false;
-        // acg::utils::SleepMs(500);
       }
     }
   }

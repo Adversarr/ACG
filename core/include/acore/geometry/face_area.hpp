@@ -7,7 +7,7 @@ namespace acg {
 
 namespace geometry {
 template <typename Scalar, int dim = 3>
-types::ScalarList<Scalar> face_area(const topology::TriangleList& triangles,
+types::ScalarList<Scalar> face_area(const types::topology::TriangleList& triangles,
                                    const types::PositionField<Scalar, dim>& positions) {
   static_assert(dim == 2 || dim == 3, "Face area computing requires dim = 2 or 3.");
   types::ScalarList<Scalar> areas;

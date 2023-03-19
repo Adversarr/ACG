@@ -63,7 +63,7 @@ public:
   };
 
 private:
-  explicit HalfEdgeMesh(const topology::TriangleList& mesh);
+  explicit HalfEdgeMesh(const types::topology::TriangleList& mesh);
 
   std::vector<std::unique_ptr<Edge>> edges_;
 

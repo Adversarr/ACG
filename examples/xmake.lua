@@ -23,6 +23,12 @@ target('bench_sad')
   add_packages('benchmark', 'autodiff')
 target_end()
 
+target('bench_eigen_call')
+  add_files('bench_eigen_call/*.cpp')
+  add_deps('acg_core')
+  add_packages('benchmark')
+target_end()
+
 target('bench_math_utils')
   add_files('bench_math_utils/*.cpp')
   add_deps('acg_core')
@@ -31,11 +37,11 @@ target_end()
 
 target('mpm-explicit')
   add_files('mpm-explicit/**.cpp')
-  add_deps('acg_gui')
+  add_deps('acg_gui', 'acg_physics')
 target_end()
 
 target('fem-implicit') 
-  add_files('fem-implicit/**.cpp')
+  add_files('fem-implicit/**.cpp'--[[{cxflags = "-ftime-trace", cflags = '-ftime-trace'}]])
   add_deps('acg_gui', 'acg_physics', 'acg_data')
 target_end()
 

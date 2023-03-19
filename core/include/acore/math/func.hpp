@@ -6,10 +6,10 @@ namespace acg::math {
 
 template <typename T> constexpr T constant(T val) { return val; }
 
-template <int times, typename T> constexpr auto pow(T&& value) noexcept {
+template <int times, typename T> constexpr auto pow(T value) noexcept {
   if constexpr (std::is_arithmetic_v<std::decay_t<T>>) {
     if constexpr (times > 0) {
-      return value;
+      return value * pow<times - 1, T>(value);
     } else {
       return static_cast<T>(1);
     }
@@ -38,6 +38,18 @@ template <typename... Args> constexpr auto mean(Args&&... args) {
 }
 
 template <typename... Args> constexpr auto product(Args&&... args) { return (args * ...); }
+
+template <typename Scalar, typename = std::enable_if<std::is_floating_point_v<Scalar>>>
+constexpr Scalar cubic_bspline(Scalar v) {
+  Scalar av = std::abs(v);
+  if (av < 1) {
+    return .5 * pow<3>(av) - pow<2>(av) + (constant<Scalar>(2) / constant<Scalar>(3));
+  } else if (av < 2) {
+    return constant<Scalar>(1) / constant<Scalar>(6) * pow<3>(2 - av);
+  } else {
+    return 0;
+  }
+}
 
 }  // namespace acg::math
 
