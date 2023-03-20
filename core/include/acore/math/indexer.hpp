@@ -55,36 +55,39 @@ public:
   template <typename... Args>
   constexpr explicit NdRangeIndexer(Index this_dim, Args... arg)
       : NdRangeIndexer<dim - 1>(arg...),
-        this_dim(this_dim),
-        multiplier(acg::utils::god::product(static_cast<Index>(arg)...)) {}
+        this_dim_(this_dim),
+        multiplier_(acg::utils::god::product(static_cast<Index>(arg)...)) {}
 
   constexpr explicit NdRangeIndexer(Index dim_universal)
       : NdRangeIndexer<dim - 1>(dim_universal),
-        this_dim(dim_universal),
-        multiplier(acg::utils::god::pow<dim - 1>(dim_universal)) {}
+        this_dim_(dim_universal),
+        multiplier_(acg::utils::god::pow<dim - 1>(dim_universal)) {}
+
+  constexpr NdRangeIndexer():
+    NdRangeIndexer<dim - 1>(), this_dim_(0), multiplier_(0) {}
 
 
   template <typename... Args>
   constexpr bool IsValid(Index this_size, Args... indices) {
-    return (0 <= this_size && this_size < this_dim)
+    return (0 <= this_size && this_size < this_dim_)
            && NdRangeIndexer<dim - 1>::IsValid(static_cast<Index>(indices)...);
   }
 
 
   template <typename... Args>
   constexpr Index operator()(Index this_size, Args... indices) const noexcept {
-    return this_size * multiplier
+    return this_size * multiplier_
            + NdRangeIndexer<dim - 1>::operator()(
                static_cast<Index>(indices)...);
   }
 
   constexpr auto operator[](Index id) const noexcept {
-    return std::tuple_cat(std::tuple<Index>(id / multiplier),
-                          NdRangeIndexer<dim - 1>::operator[](id % multiplier));
+    return std::tuple_cat(std::tuple<Index>(id / multiplier_),
+                          NdRangeIndexer<dim - 1>::operator[](id % multiplier_));
   }
 
   constexpr auto Shape() const noexcept {
-    return std::tuple_cat(std::tuple<Index>(this_dim),
+    return std::tuple_cat(std::tuple<Index>(this_dim_),
                           NdRangeIndexer<dim - 1>::Shape());
   }
 
@@ -93,8 +96,8 @@ public:
   template <typename T> inline void Fit(T&& /*field*/) {}
 
 protected:
-  const Index this_dim{0};
-  const Index multiplier{0};
+  const Index this_dim_{0};
+  const Index multiplier_{0};
 };
 
 template <typename Scalar, int dim> struct GridCoordConventer {

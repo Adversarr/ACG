@@ -14,17 +14,18 @@ public:
 
   void StepMF();
 
+  using Scalar = Float64;
   void StepQuasi();
-  Field<Float32, 3> position_;
-  Field<Float32, 3> rest_position_;
-  Field<Float32, 3> velocity_;
+  Field<Scalar, 3> position_;
+  Field<Scalar, 3> rest_position_;
+  Field<Scalar, 3> velocity_;
   types::topology::TetraList tetras_;
 
-  Float32 lambda_{1.0}, mu_{1.};
+  Scalar lambda_{1.0}, mu_{1.};
 
-  Float32 dt_{.001};
+  Scalar dt_{.001};
 
-  Float32 eps_{0.0001};
+  Scalar eps_{0.0001};
 
   bool apply_force_;
 
@@ -32,11 +33,11 @@ public:
 
   bool explicit_{true};
 
-  Float32 mass_{1};
+  Scalar mass_{1};
 
   int steps_ {10};
 
-  acg::SpMat<Float32> pc_hes_;
-  Eigen::SimplicialCholesky<acg::SpMat<Float32>> solver_;
+  acg::SpMat<Scalar> pc_hes_;
+  Eigen::SimplicialCholesky<acg::SpMat<Scalar>> solver_;
 };
 }  // namespace app

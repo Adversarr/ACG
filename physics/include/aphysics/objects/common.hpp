@@ -1,5 +1,5 @@
 #pragma once
-#include "../common.hpp"
+#include <acore/common.hpp>
 
 namespace acg::physics {
 
@@ -8,16 +8,21 @@ enum class PhysicsObjectType {
   kCloth,
   kSoftbody,
   kLaglangianFluid,
-  kEulerFluid,
+  kEulerRegularFluid,
 };
 
 struct PhysicsObject {
   PhysicsObjectType type_;
-  Index object_;  // ID for object
-  Index id_;      // ID for component
+  Index object_; // ID for object
+  Index id_;     // ID for component
+
+  // Use SELECT_ALL_COMPONENT for every component.
+  static constexpr Index ALL_COMPONENT = std::numeric_limits<Index>::max();
+
+  inline PhysicsObject(PhysicsObjectType type, Index o, Index i) noexcept
+      : type_(type), object_(o), id_(i) {}
+
+  inline PhysicsObject(PhysicsObjectType type, Index i) noexcept
+      : type_(type), object_(ALL_COMPONENT), id_(i) {}
 };
-
-// Use SELECT_ALL_COMPONENT for every component.
-static constexpr Index SELECT_ALL_COMPONENT = std::numeric_limits<Index>::max();
-
-}  // namespace acg::physics
+} // namespace acg::physics

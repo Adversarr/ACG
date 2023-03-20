@@ -24,7 +24,7 @@ TEST_CASE("apic") {
   euler.mass_.resize(1, 64);
   euler.velocity_.resize(3, 64);
 
-  physics::mpm::ApicRegular<float, physics::mpm::CubicBSplineKernel<float, 3>>
+  physics::mpm::ApicRegular<float, 3>
       apic(lag, euler);
   apic.Forward();
   fmt::print("{}\n", euler.velocity_);

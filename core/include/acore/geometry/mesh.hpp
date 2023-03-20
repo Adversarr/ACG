@@ -4,7 +4,6 @@
 
 #include "../common.hpp"
 #include "../math/common.hpp"
-#include "common.hpp"
 
 namespace acg::geometry {
 

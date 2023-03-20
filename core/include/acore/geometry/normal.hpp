@@ -1,7 +1,6 @@
 #pragma once
 
-#include "acore/geometry/fv_transform.hpp"
-#include "common.hpp"
+#include <acore/geometry/fv_transform.hpp>
 #include "face_area.hpp"
 
 namespace acg::geometry {

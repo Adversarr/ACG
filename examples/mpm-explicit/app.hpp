@@ -178,7 +178,7 @@ public:
   Float64 particle_mass_;
   Float64 particle_vol_;
   Float64 E_ = 4;
-  Float64 weight_sum;
+  Float64 weight_sum_;
 
   Index n_particles_;
   Field<Float64, 3> grid_velocity_;
@@ -192,6 +192,6 @@ public:
   physics::LagrangeFluid<Float64, 3> lag_;
   physics::EulerFluidRegular<Float64, 3> euler_;
 
-  std::unique_ptr<physics::mpm::ApicRegular<Float64, physics::mpm::CubicBSplineKernel<Float64, 3>>>
+  std::unique_ptr<physics::mpm::ApicRegular<Float64, 3>>
     apic_;
 };

@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "acore/common.hpp"
-#include "autils/common.hpp"
 #include "autils/god/utilities.hpp"
 
 namespace acg {
@@ -18,25 +17,25 @@ struct FieldAccessor {
   using type = Type;
   using origin_type = std::decay_t<Type>;
 
-  Type data;
-  Indexer indexer;
-  Transform transform;
+  Type data_;
+  Indexer indexer_;
+  Transform transform_;
 
   inline explicit FieldAccessor(origin_type& x, Indexer getter,
                                 utils::god::LvalueTag)
-      : data(x), indexer(getter) {}
+      : data_(x), indexer_(getter) {}
 
   inline explicit FieldAccessor(const origin_type& x, Indexer getter,
                                 utils::god::ConstLvalueTag)
-      : data(x), indexer(getter) {}
+      : data_(x), indexer_(getter) {}
 
   inline explicit FieldAccessor(origin_type&& x, Indexer getter,
                                 utils::god::RvalueTag)
-      : data(std::forward<origin_type>(x)), indexer(getter) {}
+      : data_(std::forward<origin_type>(x)), indexer_(getter) {}
 
   inline explicit FieldAccessor(const origin_type&& x, Indexer getter,
                                 utils::god::ConstRvalueTag)
-      : data(x), indexer(getter) {}
+      : data_(x), indexer_(getter) {}
 
   FieldAccessor(const FieldAccessor&) = default;
 
@@ -45,12 +44,12 @@ struct FieldAccessor {
   /****************************************
    * @brief size of field.
    ****************************************/
-  inline Index Size() const noexcept { return data.cols(); }
+  inline Index Size() const noexcept { return data_.cols(); }
 
   /****************************************
    * Access internal data without indexer
    ****************************************/
-  inline decltype(auto) operator[](Index i) noexcept { return data.col(i); }
+  inline decltype(auto) operator[](Index i) noexcept { return data_.col(i); }
 
   inline decltype(auto) operator[](Index i) const noexcept {
     return (*this)(i);
@@ -59,10 +58,10 @@ struct FieldAccessor {
   template <typename... Args>
   inline decltype(auto) operator()(Args... args) const noexcept {
     if constexpr (details::Trait<origin_type>::rows == 1) {
-      return data(indexer(std::forward<Args>(args)...));
+      return data_(indexer_(std::forward<Args>(args)...));
     } else {
       auto transformed
-          = transform(data.col(indexer(std::forward<Args>(args)...)));
+          = transform_(data_.col(indexer_(std::forward<Args>(args)...)));
       return transformed;
     }
   }
@@ -70,17 +69,17 @@ struct FieldAccessor {
   template <typename... Args>
   inline decltype(auto) operator()(Args... args) noexcept {
     if constexpr (details::Trait<origin_type>::rows == 1) {
-      return data(indexer(std::forward<Args>(args)...));
+      return data_(indexer_(std::forward<Args>(args)...));
     } else {
       auto transformed
-          = transform(data.col(indexer(std::forward<Args>(args)...)));
+          = transform_(data_.col(indexer_(std::forward<Args>(args)...)));
       return transformed;
     }
   }
 
-  inline decltype(auto) begin() const { return data.colwise().begin(); }
+  inline decltype(auto) begin() const { return data_.colwise().begin(); }
 
-  inline decltype(auto) end() const { return data.colwise().end(); }
+  inline decltype(auto) end() const { return data_.colwise().end(); }
 };
 
 /****************************************
@@ -88,38 +87,38 @@ struct FieldAccessor {
  *
  ****************************************/
 template <typename Access, typename It> struct Iterator {
-  const Access& acc;
-  It it;
+  const Access& acc_;
+  It it_;
 
   inline decltype(auto) operator*() const noexcept {
-    auto index = *it;
-    auto result = std::apply(acc, index);
+    auto index = *it_;
+    auto result = std::apply(acc_, index);
     return std::tuple_cat(index, std::make_tuple(result));
   }
 
   inline Iterator& operator++() noexcept {
-    ++it;
+    ++it_;
     return *this;
   }
 
   inline bool operator==(const Iterator& rhs) const noexcept {
-    return it == rhs.it;
+    return it_ == rhs.it_;
   }
   inline bool operator!=(const Iterator& rhs) const noexcept {
-    return it != rhs.it;
+    return it_ != rhs.it_;
   }
 
-  explicit Iterator(const Access& a, It i) : acc(a), it(i) {}
+  explicit Iterator(const Access& a, It i) : acc_(a), it_(i) {}
 };
 template <typename Access> class FieldEnumerate {
 public:
   Access acc_;
 
   inline decltype(auto) begin() const noexcept {
-    return Iterator(acc_, acc_.indexer.Iterate().begin());
+    return Iterator(acc_, acc_.indexer_.Iterate().begin());
   }
   inline decltype(auto) end() const noexcept {
-    return Iterator(acc_, acc_.indexer.Iterate().end());
+    return Iterator(acc_, acc_.indexer_.Iterate().end());
   }
 
   explicit FieldEnumerate(Access a) : acc_(a) {}

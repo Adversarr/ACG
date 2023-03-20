@@ -1,21 +1,33 @@
 #pragma once
+
 #include "aphysics/objects/common.hpp"
+#include <acore/math/common.hpp>
 namespace acg::physics {
 
-template <typename Scalar, int dim> struct PositionLimit {
+/**
+ * @brief Represents object_ should have the given position
+ * 
+ * @tparam Scalar 
+ * @tparam dim 
+ */
+template <typename Scalar, int dim> struct PositionStaticConstraint {
   Vec<Scalar, dim> value_;
   PhysicsObject object_;
-  PositionLimit(PhysicsObject type, Vec<Scalar, dim> v)
+  PositionStaticConstraint(PhysicsObject type, Vec<Scalar, dim> v)
       : object_(type), value_(v) {}
 };
 
-template <typename Scalar, int dim> struct VelocityLimit {
+/**
+ * @brief Represents object_ should have the given velocity.
+ * 
+ * @tparam Scalar 
+ * @tparam dim 
+ */
+template <typename Scalar, int dim> struct VelocityStaticLimit {
   Vec<Scalar, dim> value_;
   PhysicsObject object_;
-  VelocityLimit(PhysicsObject type, Vec<Scalar, dim> v)
+  VelocityStaticLimit(PhysicsObject type, Vec<Scalar, dim> v)
       : object_(type), value_(v) {}
 };
-
-// template <typename Scalar, int dim> struct VelocityLimit<
 
 } // namespace acg::physics

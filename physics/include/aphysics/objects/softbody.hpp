@@ -7,19 +7,49 @@
 #include "common.hpp"
 
 namespace acg::physics {
-template <typename Scalar = Float, int dim = 3> struct SoftbodyData {
+template <typename Scalar = Float, int dim = 3> struct HyperElasticSoftbody {
+  /**
+   * @brief position for vertices.
+   *
+   */
   Field<Scalar, dim> position_;
+
+  /**
+   * @brief Velocity for vertices
+   *
+   */
   Field<Scalar, dim> velocity_;
+
+  /**
+   * @brief (Backuped) rest position for vertices.
+   *
+   */
   Field<Scalar, dim> rest_position_;
 
+  /**
+   * @brief (Helper) Tetras Rest post matrix inverse.
+   *
+   */
   Field<Scalar, dim * dim> tetra_rinvs_;
+
+  /**
+   * @brief Tetras topology
+   *
+   */
   Field<Index, dim + 1> tetras_;
+
+  /**
+   * @brief Coefficients for Hyperelastic models.
+   *
+   */
   Float32 lambda_, mu_;
+  
+  HyperElasticSoftbody() = default;
 
-  SoftbodyData() = default;
-
-  SoftbodyData(Field<Scalar, dim> position, Field<Index, dim + 1> tetras, Scalar lambda, Scalar mu)
-      : position_(std::move(position)), tetras_(std::move(tetras)), lambda_(lambda), mu_(mu) {
+  HyperElasticSoftbody(Field<Scalar, dim> position,
+                       Field<Index, dim + 1> tetras, Scalar lambda, Scalar mu)
+      : position_(std::move(position)), tetras_(std::move(tetras)),
+        lambda_(lambda), mu_(mu) {
     velocity_.resizeLike(position);
     velocity_.setZero();
     rest_position_ = position;
@@ -41,4 +71,4 @@ template <typename Scalar = Float, int dim = 3> struct SoftbodyData {
   }
 };
 
-}  // namespace acg::physics
+} // namespace acg::physics

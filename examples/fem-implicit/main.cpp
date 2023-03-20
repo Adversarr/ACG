@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
   auto reset_f = [&]() {
     // app.position_ = make_pos();
     // app.tetras_ = make_tetra();
-    app.position_ = house_node.GetData().cast<float>();
+    app.position_ = house_node.GetData().cast<app::FemImplicitApp::Scalar>();
     app.tetras_ = house_ele.GetData().cast<acg::Index>();
     app.tetras_.array() -= house_node.GetOffset();
     app.position_ *= 0.1;
@@ -112,17 +112,16 @@ int main(int argc, char** argv) {
   reset_f();
   bool reset = false;
   auto update_scene = [&]() {
-    auto face = acg::geometry::Tet2Face<float>{app.position_, app.tetras_};
+    auto face = acg::geometry::Tet2Face<app::FemImplicitApp::Scalar>{app.position_, app.tetras_};
     face();
     using namespace acg;
-    auto position = Field<float, 3>(3, face.faces_.cols() * 3);
-    // auto normal = Field<float, 3>(3, face.faces_.cols() * 3);
+    auto position = Field<Float32, 3>(3, face.faces_.cols() * 3);
     auto faces = Field<Index, 3>(3, face.faces_.cols());
     for (auto [i, f]: enumerate(access(face.faces_))) {
       faces.col(i) = Vec3Index{3 * i, 3 * i + 1, 3 * i + 2};
-      position.col(3 * i) = access(app.position_)(f.x());
-      position.col(3 * i + 1) = access(app.position_)(f.y());
-      position.col(3 * i + 2) = access(app.position_)(f.z());
+      position.col(3 * i) = access(app.position_)(f.x()).cast<Float32>();
+      position.col(3 * i + 1) = access(app.position_)(f.y()).cast<Float32>();
+      position.col(3 * i + 2) = access(app.position_)(f.z()).cast<Float32>();
     }
     mesh_render.SetVertices(position)
         .SetIndices(faces)
@@ -139,12 +138,12 @@ int main(int argc, char** argv) {
     ImGui::Checkbox("Run", &run);
 
     reset = false;
-    reset |= ImGui::InputFloat3("x0", app.position_.col(0).data());
-    reset |= ImGui::InputFloat3("x1", app.position_.col(1).data());
-    reset |= ImGui::InputFloat3("x2", app.position_.col(2).data());
-    reset |= ImGui::InputFloat3("x3", app.position_.col(3).data());
-    reset |= ImGui::InputFloat("Lambda", &app.lambda_);
-    reset |= ImGui::InputFloat("mu", &app.mu_);
+    // reset |= ImGui::InputFloat3("x0", app.position_.col(0).data());
+    // reset |= ImGui::InputFloat3("x1", app.position_.col(1).data());
+    // reset |= ImGui::InputFloat3("x2", app.position_.col(2).data());
+    // reset |= ImGui::InputFloat3("x3", app.position_.col(3).data());
+    reset |= ImGui::InputDouble("Lambda", &app.lambda_);
+    reset |= ImGui::InputDouble("mu", &app.mu_);
     reset |= ImGui::Checkbox("Explicit solver", &app.explicit_);
     reset |= ImGui::InputInt("Maximum Iterate Steps", &app.steps_);
     if (ImGui::Button("Reset Rest Pose.")) {

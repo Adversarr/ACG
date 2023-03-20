@@ -10,10 +10,10 @@ namespace acg::app {
 class HybredApp {
 public:
   using Scalar = Float32;
-  using Constraint = physics::PositionLimit<Scalar, 3>;
+  using Constraint = physics::PositionStaticConstraint<Scalar, 3>;
   int substeps_{1};
   physics::ClothData<Scalar, 3> cloth_;
-  physics::SoftbodyData<Scalar, 3> softbody_;
+  physics::HyperElasticSoftbody<Scalar, 3> softbody_;
   physics::LagrangeFluid<Scalar, 3> fluid_;
   spatial::SubDivisionAABB<Scalar, physics::PhysicsObject, 3> subdivision_;
   std::vector<Constraint> position_limitation_;
@@ -32,4 +32,4 @@ private:
   void SubStep();
 };
 
-}  // namespace acg::app
+} // namespace acg::app

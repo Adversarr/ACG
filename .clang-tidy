@@ -173,12 +173,14 @@ CheckOptions:
     value: ''
   - key: readability-identifier-naming.ClassMemberSuffix
     value: '_'
+  - key: readability-identifier-naming.ClassConstantIgnoredRegexp
+    value: '[A-Z_]+'
   - key: readability-identifier-naming.PrivateMemberPrefix
     value: ''
   - key: readability-identifier-naming.ProtectedMemberPrefix
     value: ''
   - key: readability-identifier-naming.MethodCase
-    value: CamelCack
+    value: CamelCase
   - key: readability-identifier-naming.PrivateMethodPrefix
     value: ''
   - key: readability-identifier-naming.ProtectedMethodPrefix
@@ -188,7 +190,7 @@ CheckOptions:
   - key: readability-identifier-naming.StructCase
     value: CamelCase
   - key: readability-identifier-naming.MemberSuffix
-    value: ''
+    value: '_'
   - key: readability-identifier-naming.TemplateTemplateParameterCase
     value: CamelCase
   - key: readability-identifier-naming.TemplateUsingCase

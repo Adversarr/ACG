@@ -38,9 +38,7 @@ void MpmExplictApp::Init() {
   euler_.upper_bound_.setOnes();
   euler_.mass_.resize(1, math::pow<3>(n_grid_));
   euler_.velocity_.resize(3, math::pow<3>(n_grid_));
-  using APIC
-      = physics::mpm::ApicRegular<Float64,
-                                  physics::mpm::CubicBSplineKernel<Float64, 3>>;
+  using APIC = physics::mpm::ApicRegular<Float64, 3>;
   apic_ = std::make_unique<APIC>(lag_, euler_);
 }
 
@@ -138,7 +136,7 @@ void MpmExplictApp::G2P() {
   Field<Float64, 3> new_vel;
   new_vel.resizeLike(particle_velocity_);
   new_vel.setZero();
-  weight_sum = 0;
+  weight_sum_ = 0;
   for (Index i = 0; i < n_particles_; ++i) {
     Vec3d xp = (particle_position_.col(i) / dx_);
     Vec3d base_f = xp.array().floor().matrix();
@@ -160,12 +158,12 @@ void MpmExplictApp::G2P() {
         }
       }
     }
-    weight_sum += weight_sum_local;
+    weight_sum_ += weight_sum_local;
   }
-  weight_sum /= n_particles_;
+  weight_sum_ /= n_particles_;
 
-  auto new_position
-      = (particle_position_ + (particle_velocity_ + new_vel) * dt_ * .5).eval();
+  auto new_position =
+      (particle_position_ + (particle_velocity_ + new_vel) * dt_ * .5).eval();
   for (auto blk : new_position.colwise()) {
     blk.x() = std::clamp(blk.x(), 0.01, 0.99);
     blk.y() = std::clamp(blk.y(), 0.01, .99);
@@ -197,27 +195,26 @@ void MpmExplictApp::Step() {
   auto density = access(euler_.mass_, apic_->grid_idxer_);
   for (auto [i, j, k] : acg::NdRange<3>({n_grid_, n_grid_, n_grid_})) {
     // compute diff
-    Float64 dx, dy, dz;
     if (i != n_grid_ - 1) {
-      vel(i, j, k)
-          -= E_ * Vec3d::UnitX() * (density(i + 1, j, k) - density(i, j, k));
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitX() * (density(i + 1, j, k) - density(i, j, k));
     } else {
-      vel(i, j, k)
-          -= E_ * Vec3d::UnitX() * (density(i, j, k) - density(i - 1, j, k));
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitX() * (density(i, j, k) - density(i - 1, j, k));
     }
     if (j != n_grid_ - 1) {
-      vel(i, j, k)
-          -= E_ * Vec3d::UnitY() * (density(i, j + 1, k) - density(i, j, k));
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitY() * (density(i, j + 1, k) - density(i, j, k));
     } else {
-      vel(i, j, k)
-          -= E_ * Vec3d::UnitY() * (density(i, j, k) - density(i, j - 1, k));
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitY() * (density(i, j, k) - density(i, j - 1, k));
     }
     if (k != n_grid_ - 1) {
-      vel(i, j, k)
-          -= E_ * Vec3d::UnitZ() * (density(i, j, k + 1) - density(i, j, k));
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitZ() * (density(i, j, k + 1) - density(i, j, k));
     } else {
-      vel(i, j, k)
-          -= E_ * Vec3d::UnitZ() * (density(i, j, k) - density(i, j, k - 1));
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitZ() * (density(i, j, k) - density(i, j, k - 1));
     }
   }
   apic_->Backward();

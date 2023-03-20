@@ -1,7 +1,7 @@
 #pragma once
 #include <Eigen/Core>
+#include <acore/common.hpp>
 
-#include "../common.hpp"
 namespace acg {
 
 template <typename PlainObjectType, int Options = 0,

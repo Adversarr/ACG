@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
       ImGui::Checkbox("Run", &running);
       acg::Float64 vel_eng = app.lag_.velocity_.array().square().sum();
       Vec3f pos = app.lag_.position_.rowwise().mean().cast<Float32>();
-      ImGui::Text("Velocity Energy = %lf, Weight %lf", vel_eng, app.weight_sum);
+      ImGui::Text("Velocity Energy = %lf, Weight %lf", vel_eng, app.weight_sum_);
       ImGui::InputFloat3("Position", pos.data());
       ImGui::DragFloat3("Gravity", app.grav_.data(), 0.1, -3, 3);
       ImGui::InputDouble("Scaling", &app.E_);

@@ -15,6 +15,8 @@ template <typename Scalar, int dim> struct LagrangeFluid {
   Field<Scalar> volumn_;
   Field<Scalar, dim> velocity_;
   Scalar rho_, e_;
+  LagrangeFluid() = default;
+  explicit LagrangeFluid(Index particle_count);
 };
 
 /**
@@ -30,6 +32,9 @@ template <typename Scalar, int dim> struct EulerFluidRegular {
   Vec<Scalar, dim> upper_bound_;
   Vec<Index, dim> div_count_;
   Scalar grid_size_;
+  EulerFluidRegular() = default;
+  EulerFluidRegular(Vec<Index, dim> div_count, Vec<Scalar, dim> lower_bound,
+                    Vec<Scalar, dim> upper_bound);
 };
 
-}  // namespace acg::physics
+} // namespace acg::physics

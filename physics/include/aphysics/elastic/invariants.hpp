@@ -76,4 +76,4 @@ template <typename Scalar, int dim> struct SmithInvariants {
   InvariantHessianResult<Scalar, dim> ComputeHessian() const;
 };
 }  // namespace acg::physics::elastic
-#include "details/invarients-inl.hpp"
+#include "details/invarients-inl.hpp" // IWYU pragma: export
