@@ -71,7 +71,7 @@ void ApicRegular<Scalar, dim, KernT>::Foreach(
     Vec<Scalar, dim> p_position_local = cor.World2LocalContinuous(po);
     Vec<Index, dim> most_close_grid = p_position_local.template cast<Index>();
     for (auto idx :
-         NdRange<dim>(utils::god::duplicate<dim>(kern_size * 2 + 1))) {
+         NdRange<dim>(utils::god::tuple_duplicate<dim>(kern_size * 2 + 1))) {
       Vec<Index, dim> dijk{std::make_from_tuple<Vec<Index, dim>>(idx)};
       Vec<Index, dim> ijk = (most_close_grid + dijk).array() - kern_size;
       Vec<Scalar, dim> displacement =

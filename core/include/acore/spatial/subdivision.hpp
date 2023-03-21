@@ -16,9 +16,9 @@ public:
   using container_type = std::vector<std::pair<AABB<F, dim>, D>>;
   // using iterator_type = typename container_type::iterator;
   // using const_iterator_type = typename container_type::const_iterator_type;
-  static constexpr UInt32 subdivision_count_total_ = utils::god::pow<dim>(subdivision_count);
+  static constexpr UInt32 subdivision_count_total = utils::god::pow<dim>(subdivision_count);
   static_assert(max_depth > 0, "Max depth should be greater than 0.");
-  static_assert(utils::god::pow<max_depth>(subdivision_count_total_)
+  static_assert(utils::god::pow<max_depth>(subdivision_count_total)
                     < std::numeric_limits<size_t>::max(),
                 "subdivision too large.");
 
@@ -63,13 +63,13 @@ public:
       : epsilon_(epsilon),
         unit_(unit_length),
         indexer_(std::make_from_tuple<NdRangeIndexer<dim>>(
-            utils::god::duplicate<dim>(subdivision_count))) {}
+            utils::god::tuple_duplicate<dim>(subdivision_count))) {}
 
   struct Node {
     AABB<F, dim> box_;
     F unit_;
     std::vector<size_t> leafs_;
-    std::array<size_t, subdivision_count_total_> sub_nodes_;
+    std::array<size_t, subdivision_count_total> sub_nodes_;
     AABB<F, dim> GetChildAABB(utils::god::IndexTuple<dim> index) const;
     explicit Node(F unit, AABB<F, dim> box) : box_(box), unit_(unit) {
       std::fill(std::begin(sub_nodes_), std::end(sub_nodes_), InvalidSubscript);

@@ -1,22 +1,49 @@
 #pragma once
 
-#include "../func.hpp"
-#include "../traits.hpp"
+#include "../func.hpp"   // IWYU pragma: export
+#include "../traits.hpp" // IWYU pragma: export
 
 namespace acg::math {
-template <typename InputType, typename = void> struct Func {};
+template <typename InputType, typename = void> struct Func;
 
 template <typename InputType>
-struct Func<InputType, std::enable_if_t<!std::is_arithmetic_v<std::decay_t<InputType>>>> {
-  template <typename Derived> constexpr auto sin(const Eigen::MatrixBase<Derived>& mat) const {
+struct Func<InputType,
+            std::enable_if_t<!std::is_arithmetic_v<std::decay_t<InputType>>>> {
+  // assert is `Eigen::Matrix`
+  template <typename Derived>
+  constexpr auto Sin(const Eigen::MatrixBase<Derived> &mat) const {
     return mat.array().sin().matrix();
+  }
+
+  template<int times, typename Derived>
+  constexpr auto Pow(const Eigen::MatrixBase<Derived>& v) const noexcept {
+    return v.array().pow(times);
+  }
+
+  template<typename Derived>
+  constexpr auto Sqrt(const Eigen::MatrixBase<Derived>& v) const noexcept {
+    return v.array.sqrt();
   }
 };
 
-template <typename InputType>
-struct Func<InputType, std::enable_if_t<std::is_arithmetic_v<std::decay_t<InputType>>>> {
-  constexpr auto sin(InputType input) const { return ::sin(input); }
+template <typename T>
+struct Func<T, std::enable_if_t<std::is_arithmetic_v<std::decay_t<T>>>> {
+  constexpr T Sin(T input) const { return ::sin(input); }
+
+  template <int times> constexpr T Pow(T value) const noexcept {
+    if constexpr (times > 0) {
+      if constexpr (times % 2 == 0) {
+        return Pow<times / 2>(value) * Pow<times / 2>(value);
+      } else {
+        return value * Pow<times / 2>(value) * Pow<times / 2>(value);
+      }
+    } else {
+      return static_cast<T>(1);
+    }
+  }
 };
 
-template <typename T> auto sin(T&& value) { return Func<std::decay_t<T>>{}.sin(value); }
-}  // namespace acg::math
+template <typename T> auto sin(T &&value) {
+  return Func<std::decay_t<T>>{}.Sin(value);
+}
+} // namespace acg::math

@@ -11,8 +11,9 @@ namespace acg::physics::mpm {
  *
  * @tparam Scalar
  */
-template <typename Scalar, int dim, template <typename KScalar, int kdim> typename KernT =
-                               CubicBSplineKernel>
+template <typename Scalar, int dim,
+          template <typename KScalar, int kdim> typename KernT =
+              CubicBSplineKernel>
 class ApicRegular {
 public:
   using Kern = KernT<Scalar, dim>;
@@ -35,13 +36,18 @@ public:
   explicit ApicRegular(LagrangeFluid<Scalar, dim> &lag,
                        EulerFluidRegular<Scalar, dim> &euler);
 
-  // HACK: private:
+  /**
+   * @brief Foreach Transfer [P, G], call the given function.
+   *
+   * @param f
+   */
   void Foreach(std::function<void(Index pid, Vec<Index, dim> grid_id,
                                   Scalar weight, Vec<Scalar, dim> displacement)>
                    f) const;
+  // HACK: private:
   LagrangeFluid<Scalar, dim> &lagrange_;  // Standard Lagrange Fluid Model
   EulerFluidRegular<Scalar, dim> &euler_; // Standard Euler Fluid Model
-  Kern interp_kernel_;                  // Kernel for P2G and G2P
+  Kern interp_kernel_;                    // Kernel for P2G and G2P
   Field<Scalar, dim * dim> matrix_b_;
   NdRangeIndexer<dim> grid_idxer_;
 };

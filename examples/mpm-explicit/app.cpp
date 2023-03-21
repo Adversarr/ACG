@@ -67,7 +67,6 @@ void MpmExplictApp::P2G() {
           // compute the weight.
           auto weight_d = (Vec3d(1 - di, 1 - dj, 1 - dk) - fx);
           Float64 weight = abs(weight_d.x() * weight_d.y() * weight_d.z());
-          // TODO: Affine Transform.
           grid_mass_(gid) += weight;
           grid_velocity_.col(gid) += weight * (particle_velocity_.col(i));
         }

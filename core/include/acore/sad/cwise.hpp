@@ -39,7 +39,6 @@ template <typename X> struct CwiseAbs2 : public Expr<GetRunTimeType_t<X>, X> {
 ///< CwiseAbs2
 
 ///> CwiseNanToZero
-/// TODO: Test needed.
 template <typename X> struct CwiseNanToZero : public Expr<typename X::type, X> {
   static double campd(double x) { return std::isfinite(x) ? x : static_cast<double>(0); }
   static float campf(float x) { return std::isfinite(x) ? x : static_cast<float>(0); }

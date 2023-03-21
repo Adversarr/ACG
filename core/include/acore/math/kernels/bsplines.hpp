@@ -12,7 +12,7 @@ struct CubicBSpline {
 
   template <int dim>
   auto operator()(const Vec<Scalar, dim>& v) {
-    return v.unaryExpr(std::function(cubic_bspline<Scalar>)).prod();
+    return matrix_apply<CubicBSpline<Scalar>>(v).prod();
   }
 };
 }  // namespace acg::math
