@@ -2,14 +2,14 @@
  * @file
  * @brief Here is a small story of this algorithm:
  *  NOTE: The story of Fast CCD
- *  Originally, this algorithm is proposed on my Gitee, and is an exprimental
- * one. After join GCL at USTC, we have a seminar for every to propose their own
- * ideas, and I proposed this algorithm. However, we found that the paper
- * "Penetration-free Projective Dynamics on the GPU" stared the algorithm as a
- * small contribution. I'm surprised that, the mathematics behind the algorithm
- * is SOO SIMPLE, and the algorithm is SOO EASY to implement, but people just
- * spend a lot of time on this simple problem, and bunches of papers were
- * talking about bunches of methods.
+ *   Originally, this algorithm is proposed on my Gitee, and is an exprimental
+ *  one. After join GCL at USTC, we have a seminar for every to propose their own
+ *  ideas, and I proposed this algorithm. However, we found that the paper
+ *  "Penetration-free Projective Dynamics on the GPU" stared the algorithm as a
+ *  small contribution. I'm surprised that, the mathematics behind the algorithm
+ *  is SOO SIMPLE, and the algorithm is SOO EASY to implement, but people just
+ *  spend a lot of time on this simple problem, and bunches of papers were
+ *  talking about bunches of methods.
  */
 
 #pragma once

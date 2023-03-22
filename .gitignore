@@ -22,7 +22,8 @@ cmake-build-*
 **.spv
 
 logs
-
+__pycache__
+.ipynb_checkpoints
 **/.xmake
 **/build
 .xmake

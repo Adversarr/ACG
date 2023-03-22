@@ -9,7 +9,9 @@
 using namespace acg::utils::god;
 using namespace acg::sad;
 
-template <typename T> decltype(auto) identity(T&& value) { return std::forward<T>(value); }
+template <typename T> decltype(auto) identity(T&& value) {
+  return std::forward<T>(value);
+}
 
 namespace test {
 
@@ -25,6 +27,16 @@ TEST_CASE("sad-lazy") {
     LazyContext<List<P, dx, ddx>> c;  // Compute Context
     c.Set<X>(10);                     // Setup Input X
     c.Set<Y>(20);                     // Setup Input Y
+    acg::sad::details::GradGenerate<P,
+                                    acg::sad::details::VariableAllDirections<X>,
+                                    acg::sad::details::VariableAllDirections<Y>>
+        gg;
+    using t = decltype(gg);
+    t::type d;
+    t::type::cast<std::tuple> tup;
+    Back<t::directions>::type f;
+    Back<t::variables>::type g;
+    Back<t::type>::type h;
     auto r = LazyResult(c);
     CHECK_EQ(r.Get<X>(), 10);
     CHECK_EQ(r.Get<Y>(), 20);
@@ -55,6 +67,7 @@ TEST_CASE("sad-lazy") {
     using d2 = acg::sad::Dirac<acg::Vec3f, 2>;
     Variable(acg::Vec3f, X);
     Variable(acg::Vec3f, Y);
+
     using FinalExp = Sum<CwiseMul<Reshape<X, 1, 3>, Reshape<Y, 1, 3>>>;
     using Dx0 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d0>>;
     using Dx1 = Simpliest_t<DirectionalDiff_t<FinalExp, X, d1>>;
@@ -65,6 +78,7 @@ TEST_CASE("sad-lazy") {
     LazyContext<List<FinalExp, Dx0, Dx1, Dx2, Dy0, Dy1, Dy2>> context;
     context.Set<X>(acg::Vec3f{1, 2, 3});
     context.Set<Y>(acg::Vec3f{3, 2, 1});
+
     auto result = LazyResult(context);
     CHECK_EQ(result.Get<Dy0>(), 1);
     CHECK_EQ(result.Get<Dy1>(), 2);
@@ -278,7 +292,9 @@ TEST_CASE("sad_general") {
     CHECK_EQ(result.Get<Dx1>(), 4);
     CHECK_EQ(result.Get<Dx2>(), 6);
   }
-  SUBCASE("transpose") { std::cout << Dirac<Eigen::Matrix3f, 1, 2>{}() << std::endl; }
+  SUBCASE("transpose") {
+    std::cout << Dirac<Eigen::Matrix3f, 1, 2>{}() << std::endl;
+  }
 
   SUBCASE("CwiseMul") {
     Variable(acg::Vec3f, X);
