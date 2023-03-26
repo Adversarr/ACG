@@ -17,6 +17,7 @@ template <typename Scalar, int dim> struct ClothData {
   Field<Index, 3> face_;
   Field<Scalar> stiffness_;
   void InitAuxiliary() {
+    velocity_.resizeLike(position_);
     original_length_.resizeLike(stiffness_);
     auto pacc = access(position_);
     for (auto [i, v] : enumerate(access(constraints_))) {

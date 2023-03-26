@@ -20,6 +20,8 @@ public:
 
   Scalar dt_{.005};
 
+  Scalar cloth_k_{1000};
+
   void Init();
 
   void Step();

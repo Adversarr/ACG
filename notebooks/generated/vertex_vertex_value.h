@@ -11,8 +11,7 @@
 #define ACGIPC__VERTEX_VERTEX_VALUE__H
 
 double vertex_vertex_value(double a_0, double a_1, double a_2, double b_0, double b_1, double b_2, double d_h);
-void vertex_vertex_grad(double a_0, double a_1, double a_2, double b_0, double b_1, double b_2, double d_h, double *out_8244818615857473380);
-void vertex_vertex_hessian(double a_0, double a_1, double a_2, double b_0, double b_1, double b_2, double d_h, double *out_8361029790532263509);
+void vertex_vertex_grad(double a_0, double a_1, double a_2, double b_0, double b_1, double b_2, double d_h, double *out_5290998971776097939);
 
 #endif
 

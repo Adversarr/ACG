@@ -16,14 +16,22 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
 
   auto& gui = Gui::Instance();
+  auto& cloth = gui.GetScene().AddMesh();
+
   app::HybredApp app;
-  {
-    auto c = geometry::make_plane_xy(10);
-    app.cloth_.face_ = c.GetFaces();
-    app.cloth_.position_ = c.GetVertices().cast<float>();
-  }
   app.Init();
 
+  auto update_scene = [&] (){
+    cloth.SetVertices(app.cloth_.position_)
+      .SetIndices(app.cloth_.face_)
+      .ComputeDefaultNormal()
+      .SetUniformColor(types::Rgba{.7, .7, .7, 1})
+      .MarkUpdate();
+
+    gui.UpdateScene();
+  };
+
+  update_scene();
   while (!Window::Instance().ShouldClose()) {
     gui.Tick(true);
     gui.RenderOnce();
