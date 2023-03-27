@@ -1,0 +1,13 @@
+{
+  "name": "acg",
+  "version-string": "0.0.2",
+  "dependencies": [
+    "eigen3",
+    "cxxopts",
+    "spdlog",
+    "vulkan",
+    "doctest",
+    "taskflow",
+    "nlohmann-json"
+  ]
+}

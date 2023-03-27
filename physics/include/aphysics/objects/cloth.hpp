@@ -16,6 +16,12 @@ template <typename Scalar, int dim> struct ClothData {
   Field<Scalar> original_length_;
   Field<Index, 3> face_;
   Field<Scalar> stiffness_;
+  /**
+   * @brief Following fields will be initialized:
+   *
+   *  1. velocity
+   *  2. original length.
+   */
   void InitAuxiliary() {
     velocity_.resizeLike(position_);
     original_length_.resizeLike(stiffness_);
@@ -27,8 +33,8 @@ template <typename Scalar, int dim> struct ClothData {
 
   ClothData() = default;
 
-  ClothData(Field<Scalar, dim> position, Field<Scalar> mass, Field<Index, 2> constraints,
-      Field<Index, 3> face,
+  ClothData(Field<Scalar, dim> position, Field<Scalar> mass,
+            Field<Index, 2> constraints, Field<Index, 3> face,
             Field<Scalar> stiffness)
       : position_(std::move(position)),
         mass_(std::move(mass)),

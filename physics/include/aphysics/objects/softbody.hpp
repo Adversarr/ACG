@@ -1,8 +1,7 @@
 #pragma once
+#include <Eigen/LU>
 #include <acore/geometry/common.hpp>
 #include <acore/math/common.hpp>
-
-#include <Eigen/LU>
 
 #include "common.hpp"
 
@@ -13,6 +12,8 @@ template <typename Scalar = Float, int dim = 3> struct HyperElasticSoftbody {
    *
    */
   Field<Scalar, dim> position_;
+
+  Field<Scalar> mass_;
 
   /**
    * @brief Velocity for vertices
@@ -43,13 +44,15 @@ template <typename Scalar = Float, int dim = 3> struct HyperElasticSoftbody {
    *
    */
   Float32 lambda_, mu_;
-  
+
   HyperElasticSoftbody() = default;
 
   HyperElasticSoftbody(Field<Scalar, dim> position,
                        Field<Index, dim + 1> tetras, Scalar lambda, Scalar mu)
-      : position_(std::move(position)), tetras_(std::move(tetras)),
-        lambda_(lambda), mu_(mu) {
+      : position_(std::move(position)),
+        tetras_(std::move(tetras)),
+        lambda_(lambda),
+        mu_(mu) {
     velocity_.resizeLike(position);
     velocity_.setZero();
     rest_position_ = position;
@@ -71,4 +74,4 @@ template <typename Scalar = Float, int dim = 3> struct HyperElasticSoftbody {
   }
 };
 
-} // namespace acg::physics
+}  // namespace acg::physics

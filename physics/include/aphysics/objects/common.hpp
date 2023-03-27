@@ -6,7 +6,7 @@ namespace acg::physics {
 // NOTE: Whenever you implement a new PO, add the type here.
 enum class PhysicsObjectType {
   kCloth,
-  kSoftbody,
+  kHyperElasticSoftbody,
   kLaglangianFluid,
   kEulerRegularFluid,
 };

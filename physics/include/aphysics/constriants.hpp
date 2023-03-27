@@ -17,6 +17,11 @@ template <typename Scalar, int dim> struct PositionStaticConstraint {
       : object_(type), value_(v) {}
 };
 
+template <typename Scalar, int dim> struct ExternForceConstraint {
+  Vec<Scalar, dim> value_;
+  PhysicsObject object_;
+};
+
 /**
  * @brief Represents object_ should have the given velocity.
  * 
