@@ -24,6 +24,7 @@ template <typename Scalar, int dim> struct Cloth {
    */
   void InitAuxiliary() {
     velocity_.resizeLike(position_);
+    velocity_.setZero();
     original_length_.resizeLike(stiffness_);
     auto pacc = view(position_);
     for (auto [i, v] : enumerate(acg::view(constraints_))) {

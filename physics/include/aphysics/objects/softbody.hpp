@@ -43,7 +43,7 @@ template <typename Scalar = Float, int dim = 3> struct HyperElasticSoftbody {
    * @brief Coefficients for Hyperelastic models.
    *
    */
-  Float32 lambda_, mu_;
+  Scalar lambda_, mu_;
 
   HyperElasticSoftbody() = default;
 
@@ -55,13 +55,14 @@ template <typename Scalar = Float, int dim = 3> struct HyperElasticSoftbody {
         mass_(std::move(mass)),
         lambda_(lambda),
         mu_(mu) {
-    velocity_.resizeLike(position);
-    velocity_.setZero();
-    rest_position_ = position;
+    InitAuxiliary();
   }
 
 
   void InitAuxiliary() {
+    velocity_.resizeLike(position_);
+    velocity_.setZero();
+    rest_position_ = position_;
     velocity_.resizeLike(position_);
     rest_position_ = position_;
     tetra_rinvs_.resize(Eigen::NoChange, tetras_.cols());

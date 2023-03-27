@@ -182,9 +182,11 @@ struct Scene2::Mesh {
 
   explicit Mesh(size_t id) : id(id) {}
 
-  Mesh& operator=(const Mesh&) = default;
+  Mesh& operator=(const Mesh&) = delete;
 
-  Mesh(const Mesh&) = default;
+  Mesh(const Mesh&) = delete;
+
+  Mesh(Mesh&& ) = default;
 
   Mesh& SetIndices(const types::topology::TriangleList& val);
 

@@ -90,7 +90,7 @@ public:
 
   void AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody);
 
-  void AddSoftbody(Field<Scalar, 3> position, Field<Scalar, 3> tetras,
+  void AddSoftbody(Field<Scalar, 3> position, Field<Index, 4> tetras,
                    Field<Scalar> mass, Scalar lambda, Scalar mu);
 
   void ForceConstraints();

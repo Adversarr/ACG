@@ -64,6 +64,10 @@ void HybredApp::ComputeLinesearchTerminalThreshold() {
     linesearch_terminal_thre_ +=
         (o.grad_.array() * o.update_direction_.array()).sum();
   }
+  for (auto &o : softbody_) {
+    linesearch_terminal_thre_ +=
+        (o.grad_.array() * o.update_direction_.array()).sum();
+  }
 }
 
 void HybredApp::Init() {}
@@ -141,11 +145,47 @@ void HybredApp::AddCloth(physics::Cloth<Scalar, 3> cloth) {
   cloth_.push_back(std::move(cl));
 }
 
-void HybredApp::AddSoftbody(Field<Scalar, 3> position, Field<Scalar, 3> tetras,
+void HybredApp::AddSoftbody(Field<Scalar, 3> position, Field<Index, 4> tetras,
                             Field<Scalar> mass, Scalar lambda, Scalar mu) {
   physics::HyperElasticSoftbody<Scalar, 3> sb{position, tetras, mass, lambda,
                                               mu};
   AddSoftbody(sb);
+}
+
+void HybredApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> sb) {
+  Softbody s;
+  s.data_ = std::move(sb);
+  s.update_position_.resizeLike(s.data_.position_);
+  s.inertia_position_.resizeLike(s.update_position_);
+  s.update_direction_.resizeLike(s.update_position_);
+  s.grad_.resizeLike(s.update_position_);
+  s.hessian_.resize(s.data_.position_.size(), s.data_.position_.size());
+  using T = Eigen::Triplet<Scalar>;
+  std::vector<T> hdata;
+
+  Mat<Scalar, 9, 12> gi;
+  auto i = Mat3x3<Scalar>::Identity();
+  auto o = Mat3x3<Scalar>::Zero();
+  gi << -i, i, o, o, -i, o, i, o, -i, o, o, i;
+  auto coeff = 2 * s.data_.mu_ + s.data_.lambda_;
+  auto li = (gi.transpose() * gi).eval();
+  for (auto v : view(s.data_.tetras_)) {
+    for (auto [i, j, di, dj] : NdRange<4>{{4, 4, 3, 3}}) {
+      auto t =
+          T{3 * v(i) + di, 3 * v(j) + dj, li(3 * i + di, 3 * j + dj) * coeff};
+      hdata.push_back(t);
+    }
+  }
+  for (auto [i, v] : enumerate(view(s.data_.mass_))) {
+    hdata.push_back(T{3 * i, 3 * i, v});
+    hdata.push_back(T{3 * i + 1, 3 * i + 1, v});
+    hdata.push_back(T{3 * i + 2, 3 * i + 2, v});
+  }
+  s.hessian_.setFromTriplets(hdata.begin(), hdata.end());
+  s.hessian_.makeCompressed();
+  s.solver_ = std::make_unique<Eigen::SimplicialCholesky<acg::SpMat<Scalar>>>();
+  s.solver_->compute(s.hessian_);
+  softbody_.push_back(std::move(s));
 }
 
 void HybredApp::ComputeExtForces() {
@@ -156,12 +196,11 @@ void HybredApp::ComputeExtForces() {
   }
 
   for (auto &o : softbody_) {
-    // TODO: Bug
-    o.update_direction_ += dt_ * o.data_.velocity_;
+    o.inertia_position_ = o.data_.position_ + dt_ * o.data_.velocity_;
     o.inertia_position_.colwise() += .5 * dt_ * dt_ * gravity_;
   }
-  // TODO: Compute force for fluids.
 
+  // TODO: Compute force for fluids.
   for (auto &e : external_forces_) {
     if (e.object_.type_ == physics::PhysicsObjectType::kCloth) {
       cloth_[e.object_.object_].inertia_position_.col(e.object_.id_) +=
@@ -175,11 +214,19 @@ void HybredApp::ComputeExtForces() {
     }
   }
 
+
   for (auto &o : cloth_) {
     o.update_position_ = o.inertia_position_;
   }
   for (auto &o : softbody_) {
     o.update_position_ = o.inertia_position_;
+  }
+  EnforceConstraints();
+  for (auto &o : cloth_) {
+    o.inertia_position_ = o.update_position_;
+  }
+  for (auto &o : softbody_) {
+    o.inertia_position_ = o.update_position_;
   }
 }
 
@@ -236,7 +283,7 @@ void HybredApp::ComputeStepDirection() {
                         .ComputeGradient();
       auto g = pfpx.transpose() * result.grad_;
 
-      for (auto [p] : NdRange<1>{4}) {
+      for (auto [p] : NdRange(4)) {
         gacc(tet(p)) += g.block<3, 1>(p * 3, 0);
       }
     }

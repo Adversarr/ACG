@@ -57,5 +57,5 @@ target_end()
 
 target('hybred')
   add_files('hybred/**.cpp')
-  add_deps('acg_gui', 'acg_physics')
+  add_deps('acg_gui', 'acg_physics',  'acg_data')
 target_end()

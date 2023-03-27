@@ -107,10 +107,10 @@ Scene& Scene::AddMesh(geometry::SimpleMesh<Float32> mesh,
     auto normal = normal_compute.PerVertex(geometry::NormalPerVertexMode::kArea);
     normals_.push_back(normal);
   } else {
-    normals_.emplace_back(opt_normals);
+    normals_.push_back(opt_normals);
   }
-  mesh_colors_.emplace_back(std::move(colors));
-  meshes_.emplace_back(std::move(mesh));
+  mesh_colors_.push_back(std::move(colors));
+  meshes_.push_back(std::move(mesh));
   return *this;
 }
 
@@ -122,7 +122,7 @@ Scene2::Mesh& Scene2::AddMesh() {
 Scene2::Mesh& Scene2::AddMesh(const types::topology::TriangleList& indices,
                               const types::PositionField<float, 3>& positions,
                               std::optional<Field<float, 3>> opt_normals) {
-  decltype(auto) mesh = AddMesh();
+  auto& mesh = AddMesh();
   mesh.SetIndices(indices).SetVertices(positions);
   if (opt_normals.has_value()) {
     mesh.SetNormals(opt_normals.value());
