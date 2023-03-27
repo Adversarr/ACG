@@ -21,8 +21,5 @@ struct PhysicsObject {
 
   inline PhysicsObject(PhysicsObjectType type, Index o, Index i) noexcept
       : type_(type), object_(o), id_(i) {}
-
-  inline PhysicsObject(PhysicsObjectType type, Index i) noexcept
-      : type_(type), object_(ALL_COMPONENT), id_(i) {}
 };
 } // namespace acg::physics

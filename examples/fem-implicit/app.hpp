@@ -2,7 +2,7 @@
 
 #include <Eigen/SparseCholesky>
 #include <acore/geometry/common.hpp>
-#include <acore/math/access.hpp>
+#include <acore/math/view.hpp>
 #include <acore/math/sparse.hpp>
 
 namespace app {

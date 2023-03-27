@@ -1,4 +1,5 @@
 ---
+  ColumnLimit: 120
   BasedOnStyle: Google
   AccessModifierOffset: '-2'
   AlignTrailingComments: 'true'

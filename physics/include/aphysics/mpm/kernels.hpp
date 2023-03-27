@@ -1,6 +1,6 @@
 #pragma once
 
-#include <acore/math/access.hpp>
+#include <acore/math/view.hpp>
 #include <acore/math/kernels/bsplines.hpp>
 
 namespace acg::physics::mpm {

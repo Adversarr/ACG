@@ -1,5 +1,5 @@
 #pragma once
-#include <acore/math/access.hpp>
+#include <acore/math/view.hpp>
 #include <acore/math/decompositions/polar.hpp>
 #include <acore/math/ops/average.hpp>
 #include <aphysics/elastic/shape_matching.hpp>
@@ -29,7 +29,7 @@ Field<Scalar, dim> ShapeMatching<Scalar, dim>::ComputeGoalPositions(
   }
 
   math::PolarDecomposition polar{apq};
-  for (auto [i, col] : enumerate(access(p))) {
+  for (auto [i, col] : enumerate(view(p))) {
     col = polar.rot_ * rest_pose_local_.col(i) + current_pose_center;
   }
   return p;

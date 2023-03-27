@@ -156,8 +156,8 @@ std::pair<Field<F, dim>, types::topology::LineList>
 SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Visualize() const {
   Field<F, dim> position = FieldBuilder<F, dim>(nodes_.size() * 8).Placeholder();
   types::topology::LineList lines = FieldBuilder<Index, 2>(nodes_.size() * 12).Placeholder();
-  auto pacc = access(position);
-  auto iacc = access(lines);
+  auto pacc = view(position);
+  auto iacc = view(lines);
   Index np = 0, nl = 0;
   for (const auto &node : nodes_) {
     auto l = node.box_.lower_bound;

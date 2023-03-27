@@ -1,7 +1,7 @@
 #pragma once
 
 #include <acore/geometry/common.hpp>
-#include <acore/math/access.hpp>
+#include <acore/math/view.hpp>
 #include <autils/god/god.hpp>
 #include <autils/log.hpp>
 #include <vector>

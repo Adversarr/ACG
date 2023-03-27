@@ -23,12 +23,12 @@ ApicRegular<Scalar, dim, KernT>::ApicRegular(
 template <typename Scalar, int dim,
           template <typename KScalar, int kdim> typename KernT>
 void ApicRegular<Scalar, dim, KernT>::Forward() {
-  auto mass = access(lagrange_.mass_);
-  auto velo = access(lagrange_.velocity_);
+  auto mass = view(lagrange_.mass_);
+  auto velo = view(lagrange_.velocity_);
   euler_.mass_.setZero();
   euler_.velocity_.setZero();
-  auto grid_m = access(euler_.mass_, grid_idxer_);
-  auto grid_v = access(euler_.velocity_, grid_idxer_);
+  auto grid_m = view(euler_.mass_, grid_idxer_);
+  auto grid_v = view(euler_.velocity_, grid_idxer_);
   // Transfer mass.
   Foreach([&mass, &grid_m](Index p, Vec<Index, dim> g, Scalar weight,
                            Vec3<Scalar>) {
@@ -39,7 +39,7 @@ void ApicRegular<Scalar, dim, KernT>::Forward() {
   // Transfer momentum
   auto dp = interp_kernel_.GetMatrixD(euler_.grid_size_);
   Mat<Scalar, dim, dim> dp_inv = dp.inverse();
-  auto bp = access<acg::DefaultIndexer, acg::ReshapeTransform<dim, dim>>(
+  auto bp = view<acg::DefaultIndexer, acg::ReshapeTransform<dim, dim>>(
       utils::as_const_arg(matrix_b_));
   Foreach([&](Index p, Vec<Index, dim> g, Scalar weight,
               Vec<Scalar, dim> displacement) -> void {
@@ -49,8 +49,8 @@ void ApicRegular<Scalar, dim, KernT>::Forward() {
     std::apply(grid_v, gt) += momentum_inc;
   });
   // compute velocity.
-  auto acc = access(euler_.mass_);
-  for (auto [i, v] : enumerate(access(euler_.velocity_))) {
+  auto acc = view(euler_.mass_);
+  for (auto [i, v] : enumerate(view(euler_.velocity_))) {
     if (acc(i) != math::constant<Scalar>(0)) {
       v /= acc(i);
     }
@@ -64,7 +64,7 @@ void ApicRegular<Scalar, dim, KernT>::Foreach(
                        Vec<Scalar, dim>)>
         f) const {
   constexpr Index kern_size = Kern::KernelSize();
-  auto posi = access(lagrange_.position_);
+  auto posi = view(lagrange_.position_);
   auto cor = GridCoordConventer<Scalar, 3>(
       euler_.lower_bound_, euler_.upper_bound_, euler_.grid_size_);
   for (auto [p, po] : enumerate(posi)) {
@@ -85,10 +85,10 @@ void ApicRegular<Scalar, dim, KernT>::Foreach(
 template <typename Scalar, int dim,
           template <typename KScalar, int kdim> typename KernT>
 void ApicRegular<Scalar, dim, KernT>::Backward() {
-  auto particle_v = access(lagrange_.velocity_);
-  auto grid_v = access(euler_.velocity_, grid_idxer_);
+  auto particle_v = view(lagrange_.velocity_);
+  auto grid_v = view(euler_.velocity_, grid_idxer_);
   auto bp =
-      access<acg::DefaultIndexer, acg::ReshapeTransform<dim, dim>>(matrix_b_);
+      view<acg::DefaultIndexer, acg::ReshapeTransform<dim, dim>>(matrix_b_);
   matrix_b_.setZero();
   lagrange_.velocity_.setZero();
 

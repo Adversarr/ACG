@@ -539,8 +539,8 @@ void Gui::UpdateLightCamera() {
 }
 
 void Gui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) {
-  auto vert_count = acg::access(mesh.vertices).Size();
-  auto face_count = acg::access(mesh.faces).Size();
+  auto vert_count = acg::view(mesh.vertices).Size();
+  auto face_count = acg::view(mesh.faces).Size();
   auto instance_count = mesh.instance_count;
   auto vert_buffer_size = static_cast<vk::DeviceSize>(vert_count * sizeof(details::MeshVertex));
   auto index_buffer_size = static_cast<vk::DeviceSize>(face_count * 3 * sizeof(uint32_t));
@@ -595,13 +595,13 @@ void Gui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) {
     std::vector<WireframePoint> wf_vert(mesh.vertices.cols());
     std::vector<uint32_t> wf_index(info.index_count * 2);
 
-    for (const auto& [i, p] : acg::enumerate(acg::access((mesh.vertices)))) {
+    for (const auto& [i, p] : acg::enumerate(acg::view((mesh.vertices)))) {
       auto& vert = wf_vert[i];
       vert.position = glm::vec3(p.x(), p.y(), p.z());
       vert.color = glm::make_vec4(mesh_outline_color_.data());
     }
 
-    for (const auto& [i, v] : acg::enumerate(acg::access((mesh.faces)))) {
+    for (const auto& [i, v] : acg::enumerate(acg::view((mesh.faces)))) {
       wf_index[i * 6] = v.x();
       wf_index[i * 6 + 1] = v.y();
       wf_index[i * 6 + 2] = v.y();
@@ -658,8 +658,8 @@ void Gui::PrepareIndexBufferHelper(vk::DeviceSize size, BufferID& id) {
 
 void Gui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshRenderInfo& info) {
   auto [ind, v] = get_default_ball();
-  auto vert_count = access(v).Size();
-  auto face_count = access(ind).Size();
+  auto vert_count = view(v).Size();
+  auto face_count = view(ind).Size();
   auto vert_buffer_size = static_cast<vk::DeviceSize>(vert_count * sizeof(MeshVertex));
   auto index_buffer_size = static_cast<vk::DeviceSize>(face_count * 3 * sizeof(uint32_t));
   auto instance_buffer_size = info.instance_count * sizeof(details::MeshInstance);
@@ -703,7 +703,7 @@ void Gui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshRe
 
 void Gui::FillParticleBuffer(const Scene2::Particles& particle, const ParticleRenderInfo& info) {
   std::vector<PointVertex> vert(particle.positions.cols());
-  for (const auto& [i, p] : acg::enumerate(acg::access(particle.positions))) {
+  for (const auto& [i, p] : acg::enumerate(acg::view(particle.positions))) {
     auto& v = vert[i];
     v.position = glm::vec3(p.x(), p.y(), p.z());
     Vec4f c = particle.colors.col(particle.use_uniform_color ? 0 : i);
@@ -715,7 +715,7 @@ void Gui::FillParticleBuffer(const Scene2::Particles& particle, const ParticleRe
 
 void Gui::FillWireframeBuffer(const Scene2::Wireframe& wireframe, const WireframeRenderInfo& info) {
   std::vector<WireframePoint> vert(wireframe.positions.cols());
-  for (const auto& [i, p] : acg::enumerate(acg::access(wireframe.positions))) {
+  for (const auto& [i, p] : acg::enumerate(acg::view(wireframe.positions))) {
     auto& v = vert[i];
     Vec3f c = wireframe.colors.col(wireframe.colors.cols() > 1 ? i : 0);
     v.position = glm::vec3(p.x(), p.y(), p.z());
@@ -725,7 +725,7 @@ void Gui::FillWireframeBuffer(const Scene2::Wireframe& wireframe, const Wirefram
       StagingUpdateInfo(info.vertex, vert.size() * sizeof(vert.front())), vert.data()));
 
   std::vector<uint32_t> indi(wireframe.indices.cols() * 2);
-  for (const auto& [id, i] : acg::enumerate(acg::access((wireframe.indices)))) {
+  for (const auto& [id, i] : acg::enumerate(acg::view((wireframe.indices)))) {
     indi[id * 2] = i.x();
     indi[id * 2 + 1] = i.y();
   }

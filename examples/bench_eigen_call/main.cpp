@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <acore/math/access.hpp>
+#include <acore/math/view.hpp>
 
 using namespace acg;
 template <typename Scalar> struct Func {

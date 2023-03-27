@@ -20,9 +20,14 @@ int main(int argc, char** argv) {
 
   app::HybredApp app;
   app.Init();
-  auto plane = geometry::make_plane_xy(4);
-  app.AddCloth(plane.GetVertices().cast<app::HybredApp::Scalar>(),
-               plane.GetFaces(), 100);
+  auto plane = geometry::make_plane_xy(10).Cast<app::HybredApp::Scalar>();
+  app.AddCloth(plane.GetVertices(),
+               plane.GetFaces(), 1000);
+
+  physics::PositionStaticConstraint<app::HybredApp::Scalar, 3> constraint(
+    physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0, 0)
+    , plane.GetVertices().col(0));
+  app.constraints_.push_back(constraint);
 
   auto update_scene = [&]() {
     cloth.SetVertices(app.cloth_.front().data_.position_)
@@ -36,8 +41,10 @@ int main(int argc, char** argv) {
   };
 
   bool running = false;
+  bool run_once = false;
   gui.SetUIDrawCallback([&]()->void{
       ImGui::Checkbox("Run", &running);
+      run_once = ImGui::Button("Run Once");
       });
 
   update_scene();
@@ -45,8 +52,9 @@ int main(int argc, char** argv) {
     gui.Tick(true);
     gui.RenderOnce();
 
-    if (running) {
+    if (running || run_once) {
       app.Step();
+      update_scene();
     }
   }
   acg::clean_up();

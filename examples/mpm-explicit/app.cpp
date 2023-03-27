@@ -180,7 +180,7 @@ void MpmExplictApp::Run() {
 
 void MpmExplictApp::Step() {
   auto new_pos = (lag_.position_ + lag_.velocity_ * dt_).eval();
-  for (auto [i, blk] : enumerate(access(new_pos))) {
+  for (auto [i, blk] : enumerate(view(new_pos))) {
     blk.x() = std::clamp(blk.x(), 0.1, .9);
     blk.y() = std::clamp(blk.y(), 0.1, .9);
     blk.z() = std::clamp(blk.z(), 0.1, .9);
@@ -190,8 +190,8 @@ void MpmExplictApp::Step() {
   apic_->Forward();
 
   euler_.velocity_.array().row(2) -= 9.8 * dt_;
-  auto vel = access(euler_.velocity_, apic_->grid_idxer_);
-  auto density = access(euler_.mass_, apic_->grid_idxer_);
+  auto vel = view(euler_.velocity_, apic_->grid_idxer_);
+  auto density = view(euler_.mass_, apic_->grid_idxer_);
   for (auto [i, j, k] : acg::NdRange<3>({n_grid_, n_grid_, n_grid_})) {
     // compute diff
     if (i != n_grid_ - 1) {

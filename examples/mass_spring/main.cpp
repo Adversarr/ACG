@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
   auto& render_wf = gui.GetScene().AddWireframe();
 
   acg::spatial::SubDivisionAABB<Float, Index, 3, 4, 8> sd;
-  for (auto [i, v] : acg::enumerate(acg::access(app.position_))) {
+  for (auto [i, v] : acg::enumerate(acg::view(app.position_))) {
     acg::spatial::AABB<float, 3> aabb(v, (v.array() + 0.001).matrix());
     sd.Insert({aabb, i});
   }
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
       }
       timer.TickEnd();
       sd.Clear();
-      for (auto [i, v] : acg::enumerate(acg::access(app.position_))) {
+      for (auto [i, v] : acg::enumerate(acg::view(app.position_))) {
         acg::spatial::AABB<float, 3> aabb(v, (v.array() + 0.001).matrix());
         sd.Insert({aabb, i});
       }

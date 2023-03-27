@@ -15,7 +15,7 @@ public:
   using Scalar = Float32;
   using Constraint = physics::PositionStaticConstraint<Scalar, 3>;
   struct Cloth {
-    physics::ClothData<Scalar, 3> data_;
+    physics::Cloth<Scalar, 3> data_;
     Field<Scalar, 3> inertia_position_;
     Field<Scalar, 3> update_position_;
     Field<Scalar, 3> update_direction_;
@@ -33,7 +33,7 @@ public:
     Field<Scalar, 3> update_direction_;
 
     acg::SpMat<Scalar> hessian_;
-    Eigen::SimplicialCholesky<acg::SpMat<Scalar>> solver_;
+    std::unique_ptr<Eigen::SimplicialCholesky<acg::SpMat<Scalar>>> solver_;
   };
 
   struct Fluid {
@@ -43,7 +43,7 @@ public:
     Field<Scalar, 3> update_direction_;
   };
 
-  int steps_{1};
+  int steps_{10};
   std::vector<Cloth> cloth_;
   std::vector<Softbody> softbody_;
   // only one kind of fluid is allowed in this demo
@@ -83,18 +83,24 @@ public:
 
   void ComputeEnergy();
 
-  void AddCloth(physics::ClothData<Scalar, 3> cloth);
+  void AddCloth(physics::Cloth<Scalar, 3> cloth);
 
-  void AddCloth(Field<Scalar, 3> vert, Field<Index, 3> face, Scalar stiffness);
+  void AddCloth(Field<Scalar, 3> vert, Field<Index, 3> face, Field<Scalar> mass,
+                Scalar stiffness);
 
-  void AddSoftbody(physics::ClothData<Scalar, 3> softbody);
+  void AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody);
+
+  void AddSoftbody(Field<Scalar, 3> position, Field<Scalar, 3> tetras,
+                   Field<Scalar> mass, Scalar lambda, Scalar mu);
 
   void ForceConstraints();
 
   void DetectAllCollisions();
 
+  void EnforceConstraints();
+
 private:
   void SubStep();
 };
 
-}  // namespace acg::app
+} // namespace acg::app

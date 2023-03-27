@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
       particles.resize(3, seed_count);
       particles.setRandom();
       ss.Clear();
-      for (auto [i, v] : acg::enumerate(acg::access(particles))) {
+      for (auto [i, v] : acg::enumerate(acg::view(particles))) {
         ss.Insert({{
                        v - Vec3f::Constant(particles_size),
                        v + Vec3f::Constant(particles_size),

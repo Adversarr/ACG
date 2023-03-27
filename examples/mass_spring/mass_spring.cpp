@@ -4,7 +4,7 @@
 #include <Eigen/SparseQR>
 #include <acore/geometry/common.hpp>
 #include <acore/geometry/common_models.hpp>
-#include <acore/math/access.hpp>
+#include <acore/math/view.hpp>
 #include <acore/math/constants.hpp>
 
 using namespace acg;
@@ -55,7 +55,7 @@ void MassSpringApp::Init() {
       AddSpring(indexer(i + 1, j), indexer(i + 1, j + 1));
     }
   }
-  for (auto tri : access(faces_)) {
+  for (auto tri : view(faces_)) {
     AddSpring(tri.x(), tri.y());
     AddSpring(tri.y(), tri.z());
     AddSpring(tri.z(), tri.x());
@@ -96,9 +96,9 @@ void MassSpringApp::AddSpring(acg::Index i, acg::Index j) {
 
 void MassSpringApp::Step() {
   auto acceleration = acg::FieldBuilder<float, 3>(position_.cols()).Zeros();
-  auto p_acc = access(position_);
-  auto o_acc = access(origin_position_);
-  auto a_acc = access(acceleration);
+  auto p_acc = view(position_);
+  auto o_acc = view(origin_position_);
+  auto a_acc = view(acceleration);
   for (auto sp : springs_) {
     auto [i, j] = sp;
     auto xij = (p_acc(i) - p_acc(j)).eval();
@@ -124,8 +124,8 @@ void MassSpringApp::Step() {
 }
 
 void MassSpringApp::StepProjDyn() {
-  auto o_acc = access(origin_position_);
-  auto d_acc = access(d_);
+  auto o_acc = view(origin_position_);
+  auto d_acc = view(d_);
   d_.resize(Eigen::NoChange, springs_.size());
   Vec<float> x_tilde(n_vertices_ * 3);
   x_tilde.setZero();
@@ -140,7 +140,7 @@ void MassSpringApp::StepProjDyn() {
       Step Local
     ****************************************/
     Index sp_id = 0;
-    auto p_acc = access(current_solution);
+    auto p_acc = view(current_solution);
     //
     tf::Taskflow tf;
     tf.for_each_index(static_cast<int>(0), static_cast<int>(springs_vec_.size()), 1,
@@ -156,7 +156,7 @@ void MassSpringApp::StepProjDyn() {
       Step Global
     ****************************************/
     Field<float, 3> sdt = FieldBuilder<float, 3>(n_vertices_).Zeros();
-    auto sdt_acc = access(sdt);
+    auto sdt_acc = view(sdt);
     sp_id = 0;
     for (auto [i, j] : springs_) {
       sdt_acc(i) += k_ * dt_ * dt_ * d_acc(sp_id);
@@ -180,8 +180,8 @@ void MassSpringApp::StepProjDyn() {
 }
 
 void MassSpringApp::StepProjDynMf() {
-  auto o_acc = access(origin_position_);
-  auto d_acc = access(d_);
+  auto o_acc = view(origin_position_);
+  auto d_acc = view(d_);
   d_.resize(Eigen::NoChange, springs_.size());
   auto x_tilde = (position_ + velocity_ * dt_).eval();
   x_tilde.array().row(2) -= 9.8 * dt_ * dt_;
@@ -192,7 +192,7 @@ void MassSpringApp::StepProjDynMf() {
     /****************************************
       Step Local
     ****************************************/
-    auto p_acc = access(current_solution);
+    auto p_acc = view(current_solution);
     tf::Taskflow tf;
     tf.for_each_index(static_cast<int>(0), static_cast<int>(springs_vec_.size()), 1,
                       [&d_acc, &p_acc, &o_acc, this](int sp_id) {
@@ -214,7 +214,7 @@ void MassSpringApp::StepProjDynMf() {
       Vec<float> weight(n_vertices_);
       weight.setConstant(mass_);
       auto expected_position = (x_tilde * mass_).eval();
-      auto expected_position_acc = access(expected_position);
+      auto expected_position_acc = view(expected_position);
       auto constraint_weight = k_ * dt_ * dt_;
       for (size_t c = 0; c < springs_vec_.size(); ++c) {
         auto [i, j] = springs_vec_[c];
@@ -240,7 +240,7 @@ void MassSpringApp::StepProjDynMf() {
      ****************************************/
     if (eval_error_) {
       auto force = FieldBuilder<Float32, 3>(n_vertices_).Zeros();
-      auto facc = access(force);
+      auto facc = view(force);
       for (auto sp : springs_) {
         auto [i, j] = sp;
         auto xij = (p_acc(i) - p_acc(j)).eval();

@@ -2,7 +2,7 @@
 #include <acore/geometry/common.hpp>
 #include <acore/geometry/mesh.hpp>
 #include <acore/geometry/particle.hpp>
-#include <acore/math/access.hpp>
+#include <acore/math/view.hpp>
 #include <memory>
 #include <optional>
 #include <vector>

@@ -1,5 +1,5 @@
 #pragma once
-#include <acore/math/access.hpp>
+#include <acore/math/view.hpp>
 namespace acg::geometry {
 
 template <typename Scalar> class Tet2Face {

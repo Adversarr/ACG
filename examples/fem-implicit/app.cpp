@@ -15,16 +15,16 @@ void FemImplicitApp::Step() {
   // Hes = M + Hessian
   // Grad = M (x - x^)
   Field<Scalar, 3> acceleration;
-  auto racc = access(rest_position_);
-  auto pacc = access(position_);
-  auto aacc = access(acceleration);
+  auto racc = view(rest_position_);
+  auto pacc = view(position_);
+  auto aacc = view(acceleration);
   acceleration.setZero(3, position_.cols());
   if (explicit_) {
     // Vec<Scalar> rhs
     //     = ((position_ + dt_ * velocity_).colwise() - 9.8 * Vec3f::UnitZ() * dt_ *
     //     dt_).reshaped();
 
-    for (auto [i, tet] : enumerate(access(tetras_))) {
+    for (auto [i, tet] : enumerate(view(tetras_))) {
       // rest:
       Mat3x3<Scalar> rest;
       rest.col(0) = racc(tet.y()) - racc(tet.x());
@@ -68,19 +68,19 @@ void FemImplicitApp::Step() {
     x_tilde.row(2).array() += dt_ * dt_ * -9.8;
     Vec<Scalar> x_tilde_vec = x_tilde.reshaped();
     auto current_solution = position_;
-    auto pacc = access(position_);
+    auto pacc = view(position_);
     for (auto [iter] : NdRange<1>({steps_})) {
       rhs = (current_solution.reshaped() - x_tilde_vec) * mass_ / (dt_ * dt_);
       std::vector<Tri> hessian_data;
       // Put diagnal, i.e. Inertia Part.
-      for (auto [i, p] : enumerate(access(position_))) {
+      for (auto [i, p] : enumerate(view(position_))) {
         // mass = 1
         hessian_data.push_back(Tri{3 * i, 3 * i, mass_ / dt_ / dt_});
         hessian_data.push_back(Tri{3 * i + 1, 3 * i + 1, mass_ / dt_ / dt_});
         hessian_data.push_back(Tri{3 * i + 2, 3 * i + 2, mass_ / dt_ / dt_});
       }
       // Put crossings, i.e. Potential Energy Part.
-      for (auto [i, tet] : enumerate(access(tetras_))) {
+      for (auto [i, tet] : enumerate(view(tetras_))) {
         // rest:
         Mat3x3<Scalar> rest;
         rest.col(0) = racc(tet.y()) - racc(tet.x());
@@ -122,7 +122,7 @@ void FemImplicitApp::Step() {
 
       ACG_INFO("Iteration {}, delta={}", iter, result.norm());
 
-      for (auto pos : access(current_solution)) {
+      for (auto pos : view(current_solution)) {
         if (pos.z() < 0) {
           pos.z() = 0;
         }
@@ -148,7 +148,7 @@ void FemImplicitApp::Init() {
   auto o = Mat3x3<Scalar>::Zero();
   gi << -i, i, o, o, -i, o, i, o, -i, o, o, i;
   auto li = (gi.transpose() * gi).eval();
-  for (auto v : access(tetras_)) {
+  for (auto v : view(tetras_)) {
     for (auto [i, j, di, dj] : NdRange<4>{{4, 4, 3, 3}}) {
       auto t = Trip{3 * v(i) + di, 3 * v(j) + dj, li(3 * i + di, 3 * j + dj) * coeff};
       laplacian_data.push_back(t);
@@ -168,23 +168,23 @@ void FemImplicitApp::StepMF() {
   // Ext forces:
   x_tilde.array().row(2) -= 9.8 * dt_ * dt_;
 
-  auto racc = access(rest_position_);
+  auto racc = view(rest_position_);
   Field<Scalar, 3> current_solution = x_tilde;
-  auto pacc = access(current_solution);
+  auto pacc = view(current_solution);
 
   auto mdd = mass_ / dt_ / dt_;
   for (auto [iter] : NdRange<1>(steps_)) {
     Field<Scalar, 9> weights = FieldBuilder<Scalar, 9>(position_.cols()).Zeros();
     // Inertia:
-    auto wacc = access<DefaultIndexer, ReshapeTransform<3, 3>>(weights);
+    auto wacc = view<DefaultIndexer, ReshapeTransform<3, 3>>(weights);
     auto rhs = (mdd * (x_tilde - current_solution)).eval();
 
-    auto rhsacc = access(rhs);
+    auto rhsacc = view(rhs);
     for (auto w : wacc) {
       w.setZero();
       w.reshaped(3, 3).diagonal().setConstant(mdd);
     }
-    for (auto [i, tet] : enumerate(access(tetras_))) {
+    for (auto [i, tet] : enumerate(view(tetras_))) {
       // Foreach tetra. gather the weights.
       Mat3x3<Scalar> rest;
       rest.col(0) = racc(tet.y()) - racc(tet.x());
@@ -220,7 +220,7 @@ void FemImplicitApp::StepMF() {
       auto delta = wacc(i).reshaped(3, 3).inverse() * rhsacc(i);
       p += delta * 0.7;
     }
-    for (auto pos : access(current_solution)) {
+    for (auto pos : view(current_solution)) {
       if (pos.z() < 0) {
         pos.z() = 0;
       }
@@ -237,12 +237,12 @@ void FemImplicitApp::StepQuasi() {
   // Ext forces:
   x_tilde.array().row(2) -= 9.8 * dt_ * dt_;
 
-  auto racc = access(rest_position_);
+  auto racc = view(rest_position_);
   Field<Scalar, 3> current_solution = x_tilde;
-  auto pacc = access(current_solution);
+  auto pacc = view(current_solution);
   auto eval_object = [&]() -> Scalar {
     Scalar o = 0;
-    for (auto [i, tet] : enumerate(access(tetras_))) {
+    for (auto [i, tet] : enumerate(view(tetras_))) {
       // Foreach tetra. gather the weights.
       Mat3x3<Scalar> rest;
       rest.col(0) = racc(tet.y()) - racc(tet.x());
@@ -263,7 +263,7 @@ void FemImplicitApp::StepQuasi() {
 
   auto eval_grad = [&]() {
     Vec<Scalar> g = Vec<Scalar>::Zero(position_.size());
-    for (auto [i, tet] : enumerate(access(tetras_))) {
+    for (auto [i, tet] : enumerate(view(tetras_))) {
       // Foreach tetra. gather the weights.
       Mat3x3<Scalar> rest;
       rest.col(0) = racc(tet.y()) - racc(tet.x());
@@ -313,7 +313,7 @@ void FemImplicitApp::StepQuasi() {
       }
     } while (!converged && alpha > eps_);
 
-    for (auto pos : access(current_solution)) {
+    for (auto pos : view(current_solution)) {
       if (pos.z() < 0) {
         pos.z() = 0;
       }

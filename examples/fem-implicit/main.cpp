@@ -11,7 +11,7 @@
 #include "app.hpp"
 acg::types::topology::TetraList make_tetra() {
   acg::types::topology::TetraList tetra(4, 5);
-  auto acc = acg::access(tetra);
+  auto acc = acg::view(tetra);
   acc(0) = acg::Vec4Index{0, 4, 1, 3};
   acc(1) = acg::Vec4Index{2, 1, 6, 3};
   acc(2) = acg::Vec4Index{7, 6, 4, 3};
@@ -22,7 +22,7 @@ acg::types::topology::TetraList make_tetra() {
 
 acg::types::PositionField<acg::Float32, 3> make_pos() {
   auto pos = acg::FieldBuilder<acg::Float32, 3>(8).Placeholder();
-  auto acc = acg::access(pos);
+  auto acc = acg::view(pos);
   acc(0) = acg::Vec3f(0, 0, 0);
   acc(1) = acg::Vec3f(0, 1, 0);
   acc(2) = acg::Vec3f(1, 1, 0);
@@ -36,7 +36,7 @@ acg::types::PositionField<acg::Float32, 3> make_pos() {
 
 acg::types::topology::TriangleList make_face() {
   auto tri = acg::FieldBuilder<acg::Index, 3>(12).Placeholder();
-  auto acc = acg::access(tri);
+  auto acc = acg::view(tri);
   acc(0) = acg::Vec3Index(0, 1, 3);
   acc(1) = acg::Vec3Index(1, 2, 3);
   acc(2) = acg::Vec3Index(4, 0, 3);
@@ -54,14 +54,14 @@ acg::types::topology::TriangleList make_face() {
 
 auto make_tet_simple() {
   acg::types::topology::TetraList tetra(4, 1);
-  auto acc = acg::access(tetra);
+  auto acc = acg::view(tetra);
   acc(0) = acg::Vec4Index{0, 1, 2, 3};
   return tetra;
 }
 
 auto make_face_simple() {
   acg::types::topology::TriangleList faces(3, 4);
-  auto acc = acg::access(faces);
+  auto acc = acg::view(faces);
 
   acc(0) = acg::Vec3Index(0, 2, 1);
   acc(1) = acg::Vec3Index(0, 1, 3);
@@ -72,7 +72,7 @@ auto make_face_simple() {
 
 auto make_position_simple() {
   acg::types::PositionField<float, 3> pos(3, 4);
-  auto acc = acg::access(pos);
+  auto acc = acg::view(pos);
   acc(0) = acg::Vec3f{0, 0, 0};
   acc(1) = acg::Vec3f{1, 0, 0};
   acc(2) = acg::Vec3f{0, 1, 0};
@@ -117,11 +117,11 @@ int main(int argc, char** argv) {
     using namespace acg;
     auto position = Field<Float32, 3>(3, face.faces_.cols() * 3);
     auto faces = Field<Index, 3>(3, face.faces_.cols());
-    for (auto [i, f]: enumerate(access(face.faces_))) {
+    for (auto [i, f]: enumerate(view(face.faces_))) {
       faces.col(i) = Vec3Index{3 * i, 3 * i + 1, 3 * i + 2};
-      position.col(3 * i) = access(app.position_)(f.x()).cast<Float32>();
-      position.col(3 * i + 1) = access(app.position_)(f.y()).cast<Float32>();
-      position.col(3 * i + 2) = access(app.position_)(f.z()).cast<Float32>();
+      position.col(3 * i) = view(app.position_)(f.x()).cast<Float32>();
+      position.col(3 * i + 1) = view(app.position_)(f.y()).cast<Float32>();
+      position.col(3 * i + 2) = view(app.position_)(f.z()).cast<Float32>();
     }
     mesh_render.SetVertices(position)
         .SetIndices(faces)

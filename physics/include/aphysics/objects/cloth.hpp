@@ -1,12 +1,12 @@
 #pragma once
 #include <acore/geometry/common.hpp>
-#include <acore/math/common.hpp>
+#include <acore/math/view.hpp>
 
 #include "common.hpp"
 
 namespace acg::physics {
 
-template <typename Scalar, int dim> struct ClothData {
+template <typename Scalar, int dim> struct Cloth {
   // For each vertex:
   Field<Scalar, dim> position_;
   Field<Scalar, dim> velocity_;
@@ -25,15 +25,15 @@ template <typename Scalar, int dim> struct ClothData {
   void InitAuxiliary() {
     velocity_.resizeLike(position_);
     original_length_.resizeLike(stiffness_);
-    auto pacc = access(position_);
-    for (auto [i, v] : enumerate(access(constraints_))) {
+    auto pacc = view(position_);
+    for (auto [i, v] : enumerate(acg::view(constraints_))) {
       original_length_(i) = (pacc(v.x()) - pacc(v.y())).norm();
     }
   }
 
-  ClothData() = default;
+  Cloth() = default;
 
-  ClothData(Field<Scalar, dim> position, Field<Scalar> mass,
+  Cloth(Field<Scalar, dim> position, Field<Scalar> mass,
             Field<Index, 2> constraints, Field<Index, 3> face,
             Field<Scalar> stiffness)
       : position_(std::move(position)),

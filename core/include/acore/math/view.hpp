@@ -3,7 +3,7 @@
 #include <autils/common.hpp>
 #include <tuple>
 
-#include "./details/access-inl.hpp"
+#include "./details/view-inl.hpp"
 #include "indexer.hpp"
 #include "transform.hpp"
 
@@ -31,7 +31,7 @@ using DefaultIndexer = NdRangeIndexer<1>;
 // 1. For r-value.
 template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
           typename Type>
-decltype(auto) access(Type&& field, Indexer getter = Indexer()) {
+decltype(auto) view(Type&& field, Indexer getter = Indexer()) {
   getter.Fit(field);
   return details::FieldAccessor<const std::remove_cv_t<Type>, Transform, Indexer>(
       std::forward<Type>(field), getter, utils::god::RvalueTag{});
@@ -40,7 +40,7 @@ decltype(auto) access(Type&& field, Indexer getter = Indexer()) {
 // 2. For cr-value
 template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
           typename Type>
-decltype(auto) access(const Type&& field, Indexer getter = Indexer()) {
+decltype(auto) view(const Type&& field, Indexer getter = Indexer()) {
   getter.Fit(field);
   return details::FieldAccessor<Type, Transform, Indexer>(std::forward<decltype(field)>(field),
                                                           getter, utils::god::ConstRvalueTag{});
@@ -49,7 +49,7 @@ decltype(auto) access(const Type&& field, Indexer getter = Indexer()) {
 // 3. For cl-value
 template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
           typename Type>
-decltype(auto) access(const Type& field, Indexer getter = Indexer()) {
+decltype(auto) view(const Type& field, Indexer getter = Indexer()) {
   getter.Fit(field);
   return details::FieldAccessor<const Type&, Transform, Indexer>(field, getter,
                                                                  utils::god::ConstLvalueTag{});
@@ -58,7 +58,7 @@ decltype(auto) access(const Type& field, Indexer getter = Indexer()) {
 // 4. For l-value
 template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
           typename Type>
-decltype(auto) access(Type& field, Indexer getter = Indexer()) {
+decltype(auto) view(Type& field, Indexer getter = Indexer()) {
   getter.Fit(field);
   return details::FieldAccessor<Type&, Transform, Indexer>(field, getter, utils::god::LvalueTag{});
 }
