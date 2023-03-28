@@ -20,9 +20,9 @@ int main(int argc, char** argv) {
     app.faces_ = sphere.GetFaces();
     app.Init();
   };
-  auto& mesh_render = gui.GetScene().AddMesh();
+  auto* mesh_render = gui.GetScene().AddMesh();
   auto update_scene = [&]() {
-    mesh_render.SetEnableWireframe()
+    mesh_render->SetEnableWireframe()
         .SetUniformColor(types::Rgba{.8, .3, .3, 1})
         .SetIndices(app.faces_)
         .SetVertices(app.position_)

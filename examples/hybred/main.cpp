@@ -22,9 +22,9 @@ int main(int argc, char **argv) {
   acg::init(argc, argv);
 
   auto &gui = Gui::Instance();
-  auto &mesh = gui.GetScene().AddMesh();
+  auto *mesh = gui.GetScene().AddMesh();
 
-  auto &cloth = gui.GetScene().AddMesh();
+  auto *cloth = gui.GetScene().AddMesh();
   int plane_density = 10;
   auto plane =
       geometry::make_plane_xy(plane_density).Cast<app::HybredApp::Scalar>();
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
   app.constraints_.push_back(constraint);
 
   auto update_scene = [&]() {
-    cloth.SetVertices(app.cloth_.front().data_.position_)
+    cloth->SetVertices(app.cloth_.front().data_.position_)
         .SetIndices(app.cloth_.front().data_.face_)
         .ComputeDefaultNormal()
         .SetUniformColor(types::Rgba{.7, .7, .7, 1})
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
       position.col(3 * i + 1) = view(sposition)(f.y()).cast<Float32>();
       position.col(3 * i + 2) = view(sposition)(f.z()).cast<Float32>();
     }
-    mesh.SetVertices(position)
+    mesh->SetVertices(position)
         .SetIndices(faces)
         .SetUniformColor(acg::types::Rgba{.7, .7, .7, 1})
         .ComputeDefaultNormal()

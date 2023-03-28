@@ -70,7 +70,7 @@ void Gui::InitDefaultScene(bool init_default_scene) {
   if (init_default_scene) {
     auto [i, v] = get_default_ball();
     scene_.AddMesh()
-        .SetIndices(i)
+        ->SetIndices(i)
         .SetVertices(v)
         .SetNormals(v)
         .SetUniformColor(Vec4f{.7, .7, .7, 1})
@@ -79,13 +79,13 @@ void Gui::InitDefaultScene(bool init_default_scene) {
         .MarkUpdate();
 
     scene_.AddParticles()
-        .SetPositions(Vec3f(2, 0, 0))
+        ->SetPositions(Vec3f(2, 0, 0))
         .SetUniformColor(Vec4f(1, 0, 0, 1))
         .SetRadius(32)
         .MarkUpdate();
 
     scene_.AddMeshParticles()
-        .SetUniformColor(types::Rgba(0, 1, 0, 1))
+        ->SetUniformColor(types::Rgba(0, 1, 0, 1))
         .SetRadius(.5)
         .SetPositions(Vec3f(0, 2, 0))
         .MarkUpdate();
@@ -175,7 +175,8 @@ void Gui::UpdateScene(bool force) {
 }
 
 void Gui::PrepareBuffers() {
-  for (const auto& mesh : scene_.GetMesh()) {
+  for (const auto& pmesh : scene_.GetMesh()) {
+    auto& mesh = *pmesh;
     // collect info
     if (mesh.id >= mesh_render_info_.size()) {
       mesh_render_info_.emplace_back();
@@ -193,7 +194,8 @@ void Gui::PrepareBuffers() {
     PrepareMeshBuffer(info);
   }
 
-  for (const auto& part : scene_.GetMeshParticles()) {
+  for (const auto& ppart : scene_.GetMeshParticles()) {
+    auto& part = *ppart;
     if (part.id >= mesh_particle_render_info_.size()) {
       mesh_particle_render_info_.emplace_back();
     }
@@ -211,7 +213,8 @@ void Gui::PrepareBuffers() {
     PrepareMeshBuffer(info);
   }
 
-  for (const auto& part : scene_.GetParticles()) {
+  for (const auto& ppart : scene_.GetParticles()) {
+    auto& part = *ppart;
     if (part.id >= particle_render_info_.size()) {
       particle_render_info_.emplace_back();
     }
@@ -229,7 +232,8 @@ void Gui::PrepareBuffers() {
     PrepareParticleBuffer(info);
   }
 
-  for (const auto& wf : scene_.GetWireframe()) {
+  for (const auto& pwf : scene_.GetWireframe()) {
+    auto& wf = *pwf;
     if (wf.id >= wireframe_render_info_.size()) {
       wireframe_render_info_.emplace_back();
     }
@@ -331,7 +335,7 @@ Status Gui::CommitStagingBuffer(StagingUpdateInfo info, void* data, bool flush_i
 
 void Gui::FillBuffers(bool force) {
   for (size_t i = 0; i < scene_.GetMeshCount(); ++i) {
-    auto& mesh = scene_.GetMesh(i);
+    auto& mesh = *scene_.GetMesh(i);
     if (mesh.update_flag | force) {
       mesh.update_flag = false;
       ACG_DEBUG_LOG("Update mesh #{}", mesh.id);
@@ -339,7 +343,7 @@ void Gui::FillBuffers(bool force) {
     }
   }
   for (size_t i = 0; i < scene_.GetParticlesCount(); ++i) {
-    auto& part = scene_.GetParticles(i);
+    auto& part = *scene_.GetParticles(i);
     if (part.update_flag | force) {
       part.update_flag = false;
       ACG_DEBUG_LOG("Update particle #{}", part.id);
@@ -347,7 +351,7 @@ void Gui::FillBuffers(bool force) {
     }
   }
   for (size_t i = 0; i < scene_.GetMeshParticleCount(); ++i) {
-    auto& part = scene_.GetMeshParticle(i);
+    auto& part = *scene_.GetMeshParticle(i);
     if (part.update_flag | force) {
       part.update_flag = false;
       ACG_DEBUG_LOG("Update mesh particle #{}", part.id);
@@ -356,7 +360,7 @@ void Gui::FillBuffers(bool force) {
   }
 
   for (size_t i = 0; i < scene_.GetWireframeCount(); ++i) {
-    auto& wf = scene_.GetWireframe(i);
+    auto& wf = *scene_.GetWireframe(i);
     if (wf.update_flag | force) {
       wf.update_flag = false;
       FillWireframeBuffer(wf, wireframe_render_info_[i]);

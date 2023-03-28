@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
   auto& gui = acg::gui::Gui::Instance();
   auto& window = acg::gui::Window::Instance();
-  auto& mesh_render = gui.GetScene().AddMesh();
+  auto* mesh_render = gui.GetScene().AddMesh();
   auto data_path = acg::data::get_data_dir();
   std::ifstream ele_file(data_path + "/house-ele-node/house.ele");
   std::ifstream node_file(data_path + "/house-ele-node/house.node");
@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
       position.col(3 * i + 1) = view(app.position_)(f.y()).cast<Float32>();
       position.col(3 * i + 2) = view(app.position_)(f.z()).cast<Float32>();
     }
-    mesh_render.SetVertices(position)
+    mesh_render->SetVertices(position)
         .SetIndices(faces)
         .SetUniformColor(acg::types::Rgba{.7, .3, .3, 1})
         .ComputeDefaultNormal()

@@ -12,7 +12,7 @@
 #include "mass_spring.hpp"
 using namespace acg;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   using namespace gui;
   acg::utils::hook_default_utils_environment();
   acg::gui::hook_default_gui_environment("Mass Spring");
@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
   MassSpringApp app;
   app.n_grids_ = 100;
   app.Init();
-  auto& gui = Gui::Instance();
+  auto &gui = Gui::Instance();
   bool running = false;
   bool run_once = false;
   bool init_once = false;
@@ -40,10 +40,11 @@ int main(int argc, char** argv) {
     ImGui::Checkbox("Matrix Free Solver", &matfree);
     ImGui::Checkbox("Check result of MF", &checking_mode);
     ImGui::Checkbox("Evaluate Error Term", &app.eval_error_);
-    ImGui::PlotHistogram("Error Term", app.record_.Ptr(), app.steps_, 0, nullptr, FLT_MAX, FLT_MAX,
-                         ImVec2(0, 80));
-    ImGui::Text("Error Mean = %f, Max = %f", app.record_.Mean(),
-                app.record_.Reduce(0, [](float a, float b) { return std::max(a, b); }));
+    ImGui::PlotHistogram("Error Term", app.record_.Ptr(), app.steps_, 0,
+                         nullptr, FLT_MAX, FLT_MAX, ImVec2(0, 80));
+    ImGui::Text(
+        "Error Mean = %f, Max = %f", app.record_.Mean(),
+        app.record_.Reduce(0, [](float a, float b) { return std::max(a, b); }));
     ImGui::InputFloat("Delta t for TimeStep", &app.dt_);
 
     ImGui::InputFloat3("lb", aabb.lower_bound.data());
@@ -53,8 +54,8 @@ int main(int argc, char** argv) {
     init_once |= ImGui::InputFloat("Spring K", &app.k_);
   });
 
-  auto& render_mesh = gui.GetScene().AddMesh();
-  auto& render_wf = gui.GetScene().AddWireframe();
+  auto *render_mesh = gui.GetScene().AddMesh();
+  auto *render_wf = gui.GetScene().AddWireframe();
 
   acg::spatial::SubDivisionAABB<Float, Index, 3, 4, 8> sd;
   for (auto [i, v] : acg::enumerate(acg::view(app.position_))) {
@@ -64,7 +65,7 @@ int main(int argc, char** argv) {
   auto update_mesh = [&]() {
     auto indices = app.faces_;
     auto positions = app.position_;
-    render_mesh.SetVertices(app.position_)
+    render_mesh->SetVertices(app.position_)
         .SetUniformColor(acg::types::Rgba{.7, .7, .3, 1})
         .ComputeDefaultNormal()
         .SetIndices(app.faces_)
@@ -76,10 +77,10 @@ int main(int argc, char** argv) {
       auto colls = sd.QueryInternal();
       ACG_INFO("Count = {}", colls.size());
     }
-    render_wf.SetPositions(position);
-    render_wf.SetIndices(lines);
-    render_wf.SetColors(types::Rgb{.7, 0, 0});
-    render_wf.MarkUpdate();
+    render_wf->SetPositions(position)
+        .SetIndices(lines)
+        .SetColors(types::Rgb{.7, 0, 0})
+        .MarkUpdate();
   };
 
   update_mesh();
@@ -110,8 +111,10 @@ int main(int argc, char** argv) {
         app.velocity_ = backup_velocity;
         app.StepProjDynMf();
 
-        auto err_position = (app.position_ - position_pd).array().abs().maxCoeff();
-        auto err_velocity = (app.velocity_ - velocity_pd).array().abs().maxCoeff();
+        auto err_position =
+            (app.position_ - position_pd).array().abs().maxCoeff();
+        auto err_velocity =
+            (app.velocity_ - velocity_pd).array().abs().maxCoeff();
         auto err_d = (app.d_ - d_pd).array().abs().maxCoeff();
         ACG_INFO("Error of Position = {}", err_position);
         ACG_INFO("Error of Velocity = {}", err_velocity);

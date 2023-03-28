@@ -15,8 +15,8 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
   spatial::SubDivisionAABB<Float, Index, 3, 2, 7> ss;
   auto& gui = acg::gui::Gui::Instance();
-  auto& wireframe = gui.GetScene().AddWireframe();
-  auto& particles_render = gui.GetScene().AddMeshParticles();
+  auto* wireframe = gui.GetScene().AddWireframe();
+  auto* particles_render = gui.GetScene().AddMeshParticles();
 
   Field<Float, 3> particles;
   Float particles_size = 0.01;
@@ -30,16 +30,16 @@ int main(int argc, char** argv) {
   });
 
   auto update = [&]() {
-    particles_render.SetRadius(particles_size)
+    particles_render->SetRadius(particles_size)
         .SetUseInstanceRendering(true)
         .SetUniformColor(types::Rgba{0.7, 0, 0, 1})
         .SetPositions(particles)
         .MarkUpdate();
     auto [position, lines] = ss.Visualize();
-    wireframe.SetPositions(position);
-    wireframe.SetIndices(lines);
-    wireframe.SetColors(types::Rgb{.7, .7, .7});
-    wireframe.MarkUpdate();
+    wireframe->SetPositions(position);
+    wireframe->SetIndices(lines);
+    wireframe->SetColors(types::Rgb{.7, .7, .7});
+    wireframe->MarkUpdate();
     gui.UpdateScene();
   };
   while (!Window::Instance().ShouldClose()) {
