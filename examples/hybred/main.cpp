@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
   tet.array() -= house_node.GetOffset();
   app.AddSoftbody(
       house_node.GetData().cast<app::HybredApp::Scalar>(), tet,
-      Field<app::HybredApp::Scalar>::Ones(house_node.GetData().cols()), 0.5, 2);
+      Field<app::HybredApp::Scalar>::Ones(house_node.GetData().cols()), 0.5, 2000);
 
   physics::PositionStaticConstraint<app::HybredApp::Scalar, 3> constraint(
       physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0, 0),

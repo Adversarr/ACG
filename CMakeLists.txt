@@ -43,7 +43,8 @@ acg_add_cxx_compiler_flag("-march=native")
 
 
 
-# add_subdirectory(core)
-# add_subdirectory(gui)
-# add_subdirectory(examples)
-# add_subdirectory(physics)
+add_subdirectory(core)
+add_subdirectory(gui)
+add_subdirectory(physics)
+add_subdirectory(data)
+add_subdirectory(examples)

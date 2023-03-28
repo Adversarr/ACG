@@ -307,12 +307,12 @@ void HybredApp::ComputeEnergy() {
       auto l = d.norm();
       linesearch_energy_ += .5 * k * math::square(l - ol);
     }
-    ACG_INFO("Elastic Energy = {}", linesearch_energy_);
+    // ACG_INFO("Elastic Energy = {}", linesearch_energy_);
     Scalar inertia_energy = 0;
     for (auto [i, c] : enumerate(view(o.inertia_position_))) {
       inertia_energy += .5 * o.data_.mass_(i) * (c - pacc(i)).squaredNorm();
     }
-    ACG_INFO("Inertia Energy = {} / dt / dt", inertia_energy);
+    // ACG_INFO("Inertia Energy = {} / dt / dt", inertia_energy);
     linesearch_energy_ += inertia_energy / dt_ / dt_;
   }
 

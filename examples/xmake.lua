@@ -1,9 +1,8 @@
 set_group('examples')
 add_requires('taskflow')
 target('mass-spring')
-  add_files('mass_spring/**.cpp')
+  add_files('mass-spring/**.cpp')
   add_deps('acg_gui', 'acg_core')
-  add_packages('taskflow')
 target_end()
 
 target('ggui')

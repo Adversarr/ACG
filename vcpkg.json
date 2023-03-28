@@ -7,7 +7,14 @@
     "spdlog",
     "vulkan",
     "doctest",
+    "glfw3",
     "taskflow",
-    "nlohmann-json"
+    "glm",
+    "nlohmann-json",
+    "benchmark",
+    {
+      "name": "imgui",
+      "features": ["vulkan-binding", "glfw-binding"]
+    }
   ]
 }

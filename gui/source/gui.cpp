@@ -510,10 +510,12 @@ void Gui::RenderOnce(bool verbose) {
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
   if (ui_draw_callback_.has_value()) {
+    ImGui::Begin("ImGui User Window");
     (*ui_draw_callback_)();
+    ImGui::End();
   }
   DrawDefaultUI();
-  ImGui::End();
+  // ImGui::End();
   ImGui::Render();
   auto* data = ImGui::GetDrawData();
   auto ui_cbuf = ui_pass_->Render(data);
