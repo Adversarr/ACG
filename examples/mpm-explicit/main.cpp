@@ -32,7 +32,6 @@ int main(int argc, char **argv) {
     MpmExplictApp app;
     app.Init();
     gui.SetUIDrawCallback([&clear, &running, &app]() {
-      ImGui::Begin("GGui User Window");
       clear = ImGui::Button("Reset Scene.");
       // running = ImGui::Button("Run Once");
       ImGui::Checkbox("Run", &running);

@@ -9,7 +9,7 @@
 
 namespace acg::app {
 
-void HybredApp::Step() {
+void HybredApp::Step(bool verbose) {
   ComputeExtForces();
   // Linesearch:
   for (auto [i] : NdRange(steps_)) {
@@ -22,22 +22,38 @@ void HybredApp::Step() {
     auto initial_energy = linesearch_energy_;
     ACG_INFO("Initial Energy = {}, Thre = {}", linesearch_energy_,
              linesearch_terminal_thre_);
-    int ls_count = 0;
-    do {
+    Scalar least_energy_alpha = 0;
+    Scalar least_energy = initial_energy;
+    for (auto [ls_count] : NdRange(15)) {
       linesearch_alpha_ /= 2;
-      EnforceConstraints();
       ComputeEnergy();
+      if (linesearch_energy_ < least_energy) {
+        least_energy_alpha = linesearch_alpha_;
+        least_energy = linesearch_energy_;
+      }
       ls_count += 1;
-      ACG_INFO("Linesearch {}: Energy = {}, IE = {}, alpha = {}", ls_count,
-               linesearch_energy_, initial_energy, linesearch_alpha_);
-      // ACG_CHECK(ls_count <= 10,"Linesearch does not converge???");
-    } while (linesearch_energy_ - initial_energy <=
-                 linesearch_gamma_ * linesearch_alpha_ *
-                     linesearch_terminal_thre_ &&
-             abs(linesearch_terminal_thre_) > 1e-4 && ls_count <= 10);
+      if (verbose) {
+        ACG_INFO("Linesearch {}: Energy = {}, IE = {}, alpha = {}", ls_count,
+                 linesearch_energy_, initial_energy, linesearch_alpha_);
+      }
+      if (isinf(linesearch_energy_)) {
+        continue;
+      }
+      if (linesearch_energy_ - initial_energy <
+          linesearch_gamma_ * linesearch_alpha_ * linesearch_terminal_thre_) {
+        // less than threshold, break
+        break;
+      }
+    }
+    linesearch_alpha_ = least_energy_alpha;
+    ACG_INFO("Alpha = {}", linesearch_alpha_);
     for (auto &o : cloth_) {
       o.update_position_ += linesearch_alpha_ * o.update_direction_;
     }
+    for (auto &o : softbody_) {
+      o.update_position_ += linesearch_alpha_ * o.update_direction_;
+    }
+    EnforceConstraints();
   }
 
   CopyIterateResult();
@@ -53,6 +69,14 @@ void HybredApp::EnforceConstraints() {
       auto &o = cloth_[c.object_.object_];
       view(o.update_position_)(c.object_.id_) = c.value_;
       view(o.update_direction_)(c.object_.id_).setZero();
+    }
+  }
+
+  for (auto &o : softbody_) {
+    for (auto [i, c] : enumerate(view(o.update_position_))) {
+      if (c.z() < 0) {
+        c.z() = 0;
+      }
     }
   }
 }
@@ -149,12 +173,13 @@ void HybredApp::AddSoftbody(Field<Scalar, 3> position, Field<Index, 4> tetras,
                             Field<Scalar> mass, Scalar lambda, Scalar mu) {
   physics::HyperElasticSoftbody<Scalar, 3> sb{position, tetras, mass, lambda,
                                               mu};
+  sb.InitAuxiliary();
   AddSoftbody(sb);
 }
 
-void HybredApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> sb) {
+void HybredApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody) {
   Softbody s;
-  s.data_ = std::move(sb);
+  s.data_ = std::move(softbody);
   s.update_position_.resizeLike(s.data_.position_);
   s.inertia_position_.resizeLike(s.update_position_);
   s.update_direction_.resizeLike(s.update_position_);
@@ -177,9 +202,9 @@ void HybredApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> sb) {
     }
   }
   for (auto [i, v] : enumerate(view(s.data_.mass_))) {
-    hdata.push_back(T{3 * i, 3 * i, v});
-    hdata.push_back(T{3 * i + 1, 3 * i + 1, v});
-    hdata.push_back(T{3 * i + 2, 3 * i + 2, v});
+    hdata.push_back(T{3 * i, 3 * i, v / math::square(dt_)});
+    hdata.push_back(T{3 * i + 1, 3 * i + 1, v / math::square(dt_)});
+    hdata.push_back(T{3 * i + 2, 3 * i + 2, v / math::square(dt_)});
   }
   s.hessian_.setFromTriplets(hdata.begin(), hdata.end());
   s.hessian_.makeCompressed();
@@ -213,7 +238,6 @@ void HybredApp::ComputeExtForces() {
           softbody_[e.object_.object_].data_.mass_(e.object_.id_);
     }
   }
-
 
   for (auto &o : cloth_) {
     o.update_position_ = o.inertia_position_;
@@ -254,16 +278,14 @@ void HybredApp::ComputeStepDirection() {
       gacc(c.y()) -= force;
     }
 
-    auto result = o.solver_->solve(grad.reshaped());
-    o.update_direction_.reshaped() = -result;
+    auto result = o.solver_->solve(grad.reshaped()).eval();
+    o.update_direction_ = -result.reshaped(3, o.update_position_.cols());
   }
 
   for (auto &o : softbody_) {
-    auto &grad = o.grad_;
-    auto &direction = o.update_direction_;
-    grad.setZero();
+    o.grad_.setZero();
     auto pacc = view(o.update_position_);
-    auto gacc = view(grad);
+    auto gacc = view(o.grad_);
 
     for (auto [i, c] : enumerate(view(o.inertia_position_))) {
       gacc(i) += o.data_.mass_(i) / dt_ / dt_ * (pacc(i) - c);
@@ -288,64 +310,52 @@ void HybredApp::ComputeStepDirection() {
       }
     }
 
-    auto result = o.solver_->solve(grad.reshaped());
-    direction.reshaped() = -result;
+    auto result = o.solver_->solve(o.grad_.reshaped()).eval();
+    o.update_direction_ = -result.reshaped(3, o.update_position_.cols());
   }
 }
 
 void HybredApp::ComputeEnergy() {
   linesearch_energy_ = 0;
+  for (auto &o : cloth_) {
+    o.linesearch_position_ =
+        o.update_position_ + o.update_direction_ * linesearch_alpha_;
+  }
+  for (auto &o : softbody_) {
+    o.linesearch_position_ =
+        o.update_position_ + o.update_direction_ * linesearch_alpha_;
+  }
+
+  if (!ComputeInertiaEnergy()) {
+    return;
+  }
+  if (!ComputeConstraintEnergy()) {
+    return;
+  }
+}
+
+bool HybredApp::ComputeInertiaEnergy() {
   // 1. Cloth Energies
   for (auto &o : cloth_) {
-    auto current =
-        (o.update_position_ + o.update_direction_ * linesearch_alpha_).eval();
-    auto pacc = view(current);
-    for (auto [i, c] : enumerate(view(o.data_.constraints_))) {
-      auto k = o.data_.stiffness_(i);
-      auto ol = o.data_.original_length_(i);
-      auto d = pacc(c.x()) - pacc(c.y());
-      auto l = d.norm();
-      linesearch_energy_ += .5 * k * math::square(l - ol);
-    }
-    // ACG_INFO("Elastic Energy = {}", linesearch_energy_);
+    auto pacc = view(o.linesearch_position_);
     Scalar inertia_energy = 0;
     for (auto [i, c] : enumerate(view(o.inertia_position_))) {
       inertia_energy += .5 * o.data_.mass_(i) * (c - pacc(i)).squaredNorm();
     }
-    // ACG_INFO("Inertia Energy = {} / dt / dt", inertia_energy);
     linesearch_energy_ += inertia_energy / dt_ / dt_;
   }
 
   // 2. Softbody Energies.
   for (auto &o : softbody_) {
-    auto p =
-        (o.update_position_ + o.update_direction_ * linesearch_alpha_).eval();
-    auto pacc = view(p);
+    auto pacc = view(o.linesearch_position_);
     Scalar inertia_energy = 0;
     for (auto [i, c] : enumerate(view(o.inertia_position_))) {
       // M/(2 h^2) | x - xhat |^2
       inertia_energy += o.data_.mass_(i) * (pacc(i) - c).squaredNorm();
     }
-    ACG_INFO("Inertia Energy = {} / dt / dt", inertia_energy);
     linesearch_energy_ += inertia_energy / dt_ / dt_;
-
-    Scalar elastic_energy = 0;
-    for (auto [i, tet] : enumerate(view(o.data_.tetras_))) {
-      Mat3x3<Scalar> cur;
-      cur.col(0) = pacc(tet.y()) - pacc(tet.x());
-      cur.col(1) = pacc(tet.z()) - pacc(tet.x());
-      cur.col(2) = pacc(tet.w()) - pacc(tet.x());
-      auto rinv = ReshapeTransform<3, 3>{}(o.data_.tetra_rinvs_.col(i));
-      Mat3x3<Scalar> deform_grad = cur * rinv;
-      auto result = physics::elastic::OgdenNeoHookean<Scalar, 3>(
-                        deform_grad, o.data_.lambda_, o.data_.mu_)
-                        .ComputeEnergy();
-      elastic_energy += result;
-    }
-
-    ACG_INFO("Elastic Energy = {}", elastic_energy);
-    linesearch_energy_ += elastic_energy;
   }
+  return true;
 }
 
 void HybredApp::CopyIterateResult() {
@@ -359,6 +369,56 @@ void HybredApp::CopyIterateResult() {
     auto d_pos = o.update_position_ - o.data_.position_;
     o.data_.velocity_ = d_pos / dt_;
     o.data_.position_ = o.update_position_;
+  }
+}
+
+bool HybredApp::ComputeConstraintEnergy() {
+  // 1. Cloth Energies
+  for (auto &o : cloth_) {
+    auto pacc = view(o.linesearch_position_);
+    for (auto [i, c] : enumerate(view(o.data_.constraints_))) {
+      auto k = o.data_.stiffness_(i);
+      auto ol = o.data_.original_length_(i);
+      auto d = pacc(c.x()) - pacc(c.y());
+      auto l = d.norm();
+      linesearch_energy_ += .5 * k * math::square(l - ol);
+    }
+    Scalar inertia_energy = 0;
+    for (auto [i, c] : enumerate(view(o.inertia_position_))) {
+      inertia_energy += .5 * o.data_.mass_(i) * (c - pacc(i)).squaredNorm();
+    }
+    linesearch_energy_ += inertia_energy / dt_ / dt_;
+  }
+
+  // 2. Softbody Energies.
+  for (auto &o : softbody_) {
+    auto pacc = view(o.linesearch_position_);
+    Scalar inertia_energy = 0;
+    for (auto [i, c] : enumerate(view(o.inertia_position_))) {
+      inertia_energy += o.data_.mass_(i) * (pacc(i) - c).squaredNorm();
+    }
+    linesearch_energy_ += inertia_energy / dt_ / dt_;
+
+    Scalar elastic_energy = 0;
+
+    for (auto [i, tet] : enumerate(view(o.data_.tetras_))) {
+      Mat3x3<Scalar> cur;
+      cur.col(0) = pacc(tet.y()) - pacc(tet.x());
+      cur.col(1) = pacc(tet.z()) - pacc(tet.x());
+      cur.col(2) = pacc(tet.w()) - pacc(tet.x());
+      auto rinv = ReshapeTransform<3, 3>()(o.data_.tetra_rinvs_.col(i));
+      Mat3x3<Scalar> deform_grad = cur * rinv;
+      auto result = physics::elastic::OgdenNeoHookean<Scalar, 3>(
+                        deform_grad, o.data_.lambda_, o.data_.mu_)
+                        .ComputeEnergy();
+      if (isnan(result)) {
+        linesearch_energy_ = std::numeric_limits<Scalar>().infinity();
+        return false;
+      }
+      elastic_energy += result;
+    }
+
+    linesearch_energy_ += elastic_energy;
   }
 }
 

@@ -1,5 +1,3 @@
-#pragma once
-
 #include <doctest/doctest.h>
 #include <fmt/format.h>
 
@@ -16,25 +14,25 @@ TEST_CASE("apic") {
   lag.velocity_.resizeLike(lag.position_);
   lag.velocity_.setOnes();
   lag.volumn_.resizeLike(lag.mass_);
-  euler.grid_size_ = 1;
   euler.lower_bound_ = Vec3f(-2, -2, -2);
   euler.upper_bound_ = Vec3f(2, 2, 2);
   euler.div_count_ = Vec3Index(4, 4, 4);
+  euler.grid_size_ = 1;
   euler.mass_.resize(1, 64);
   euler.velocity_.resize(3, 64);
 
   physics::mpm::ApicRegular<float, 3>
       apic(lag, euler);
   apic.Forward();
-  fmt::print("{}\n", euler.velocity_);
+  // fmt::print("{}\n", euler.velocity_);
   apic.Backward();
   fmt::print("{}\n", lag.velocity_);
   apic.Forward();
-  fmt::print("{}\n", euler.velocity_);
+  // fmt::print("{}\n", euler.velocity_);
   apic.Backward();
   fmt::print("{}\n", lag.velocity_);
   apic.Forward();
-  fmt::print("{}\n", euler.velocity_);
+  // fmt::print("{}\n", euler.velocity_);
   apic.Backward();
   fmt::print("{}\n", lag.velocity_);
 }

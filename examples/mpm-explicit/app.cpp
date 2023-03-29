@@ -192,7 +192,7 @@ void MpmExplictApp::Step() {
   euler_.velocity_.array().row(2) -= 9.8 * dt_;
   auto vel = view(euler_.velocity_, apic_->grid_idxer_);
   auto density = view(euler_.mass_, apic_->grid_idxer_);
-  for (auto [i, j, k] : acg::NdRange<3>({n_grid_, n_grid_, n_grid_})) {
+  for (auto [i, j, k] : acg::NdRange(n_grid_, n_grid_, n_grid_)) {
     // compute diff
     if (i != n_grid_ - 1) {
       vel(i, j, k) -=

@@ -12,13 +12,14 @@ namespace acg::app {
 
 class HybredApp {
 public:
-  using Scalar = Float32;
+  using Scalar = Float64;
   using Constraint = physics::PositionStaticConstraint<Scalar, 3>;
   struct Cloth {
     physics::Cloth<Scalar, 3> data_;
     Field<Scalar, 3> inertia_position_;
     Field<Scalar, 3> update_position_;
     Field<Scalar, 3> update_direction_;
+    Field<Scalar, 3> linesearch_position_;
     Field<Scalar, 3> grad_;
 
     acg::SpMat<Scalar> hessian_;
@@ -31,6 +32,7 @@ public:
     Field<Scalar, 3> update_position_;
     Field<Scalar, 3> grad_;
     Field<Scalar, 3> update_direction_;
+    Field<Scalar, 3> linesearch_position_;
 
     acg::SpMat<Scalar> hessian_;
     std::unique_ptr<Eigen::SimplicialCholesky<acg::SpMat<Scalar>>> solver_;
@@ -62,13 +64,11 @@ public:
   Scalar linesearch_energy_initial_;
   Scalar linesearch_terminal_thre_;
 
-  Scalar dt_{.005};
-
-  Scalar cloth_k_{1000};
+  Scalar dt_{.003};
 
   void Init();
 
-  void Step();
+  void Step(bool verbose = false);
 
   void Reset();
 
@@ -82,6 +82,10 @@ public:
   void ComputeExtForces();
 
   void ComputeEnergy();
+
+  bool ComputeInertiaEnergy();
+
+  bool ComputeConstraintEnergy();
 
   void AddCloth(physics::Cloth<Scalar, 3> cloth);
 

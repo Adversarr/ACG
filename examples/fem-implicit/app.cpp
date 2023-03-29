@@ -173,7 +173,7 @@ void FemImplicitApp::StepMF() {
   auto pacc = view(current_solution);
 
   auto mdd = mass_ / dt_ / dt_;
-  for (auto [iter] : NdRange<1>(steps_)) {
+  for (auto [iter] : NdRange(steps_)) {
     Field<Scalar, 9> weights = FieldBuilder<Scalar, 9>(position_.cols()).Zeros();
     // Inertia:
     auto wacc = view<DefaultIndexer, ReshapeTransform<3, 3>>(weights);
@@ -256,7 +256,11 @@ void FemImplicitApp::StepQuasi() {
 
       Mat3x3<Scalar> rinv = rest.inverse();
       Mat3x3<Scalar> deform_grad = cur * rinv;
-      o += physics::elastic::SNHNeoHookean<Scalar, 3>(deform_grad, lambda_, mu_).ComputeEnergy();
+      o += physics::elastic::OgdenNeoHookean<Scalar, 3>(deform_grad, lambda_, mu_).ComputeEnergy();
+    }
+
+    for (auto [i, c]: enumerate(view(x_tilde))) {
+      o += 1 / math::square(dt_) * (pacc(i) - c).squaredNorm();
     }
     return o;
   };
@@ -301,7 +305,7 @@ void FemImplicitApp::StepQuasi() {
 
     auto backup_sol = current_solution.eval();
 
-    ACG_INFO("Step {}", i);
+    ACG_INFO("Step {} thre = {}", i, thre);
     do {
       alpha /= 2;
       ACG_INFO("Linesearch... alpha = {} g = {}, eps = {}", alpha, g, eps_);

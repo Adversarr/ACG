@@ -22,18 +22,27 @@ int main(int argc, char **argv) {
   acg::init(argc, argv);
 
   auto &gui = Gui::Instance();
-  auto *mesh = gui.GetScene().AddMesh();
 
   auto *cloth = gui.GetScene().AddMesh();
   int plane_density = 10;
   auto plane =
       geometry::make_plane_xy(plane_density).Cast<app::HybredApp::Scalar>();
+  auto position = plane.GetVertices();
+  position.array().row(2) += 1;
+  position.array().row(1) -= 1;
+
   app.AddCloth(
-      plane.GetVertices(), plane.GetFaces(),
+      position, plane.GetFaces(),
       1.0 / (math::square(plane_density)) *
           Field<app::HybredApp::Scalar>::Ones(plane.GetVertices().cols()),
-      10.0 * plane_density);
-
+      100.0 * plane_density);
+  physics::PositionStaticConstraint<app::HybredApp::Scalar, 3> constraint(
+      physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0, 0),
+      position.col(0));
+  app.constraints_.push_back(constraint);
+  constraint.object_.id_ = plane_density - 1;
+  constraint.value_ = position.col(constraint.object_.id_);
+  app.constraints_.push_back(constraint);
 
   auto data_path = acg::data::get_data_dir();
   std::ifstream ele_file(data_path + "/house-ele-node/house.ele");
@@ -48,36 +57,23 @@ int main(int argc, char **argv) {
            house_node.GetData().cols());
   auto tet = house_ele.GetData().cast<acg::Index>();
   tet.array() -= house_node.GetOffset();
+  auto *mesh = gui.GetScene().AddMesh();
   app.AddSoftbody(
-      house_node.GetData().cast<app::HybredApp::Scalar>(), tet,
-      Field<app::HybredApp::Scalar>::Ones(house_node.GetData().cols()), 0.5, 2000);
-
-  physics::PositionStaticConstraint<app::HybredApp::Scalar, 3> constraint(
-      physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0, 0),
-      plane.GetVertices().col(0));
-  app.constraints_.push_back(constraint);
-  constraint.object_.id_ = plane_density - 1;
-  constraint.value_ = plane.GetVertices().col(constraint.object_.id_);
-  app.constraints_.push_back(constraint);
-
-  constraint.object_.id_ = plane_density * plane_density - 1;
-  constraint.value_ = plane.GetVertices().col(constraint.object_.id_);
-  app.constraints_.push_back(constraint);
-  constraint.object_.id_ = plane_density * plane_density - plane_density;
-  constraint.value_ = plane.GetVertices().col(constraint.object_.id_);
-  app.constraints_.push_back(constraint);
+      house_node.GetData().cast<app::HybredApp::Scalar>() * 0.1, tet,
+      0.1 * Field<app::HybredApp::Scalar>::Ones(house_node.GetData().cols()), 1,
+      1);
 
   auto update_scene = [&]() {
-    cloth->SetVertices(app.cloth_.front().data_.position_)
+    cloth->SetVertices(app.cloth_.front().data_.position_.cast<float>())
         .SetIndices(app.cloth_.front().data_.face_)
         .ComputeDefaultNormal()
         .SetUniformColor(types::Rgba{.7, .7, .7, 1})
         .SetEnableWireframe()
         .MarkUpdate();
 
-    auto& sposition = app.softbody_.front().data_.position_;
-    auto face = acg::geometry::Tet2Face<app::HybredApp::Scalar>{
-        app.softbody_.front().data_.position_,
+    auto sposition = app.softbody_.front().data_.position_.cast<float>();
+    auto face = acg::geometry::Tet2Face<float>{
+        sposition,
         app.softbody_.front().data_.tetras_};
     face();
     using namespace acg;
@@ -95,7 +91,7 @@ int main(int argc, char **argv) {
         .ComputeDefaultNormal()
         .SetEnableWireframe(true)
         .MarkUpdate();
-    
+
     gui.UpdateScene();
   };
 

@@ -106,8 +106,7 @@ template <typename Scalar, int dim> struct GridCoordConventer {
       : lower_bound_(lower_bound),
         upper_bound_(upper_bound),
         grid_size_(grid_size) {
-    physical_local_scaling_ = (static_cast<Scalar>(1) / grid_size)
-                              / (upper_bound_ - lower_bound_).array();
+    physical_local_scaling_.setConstant(static_cast<Scalar>(1) / grid_size);
     local_physical_scaling_ = physical_local_scaling_.cwiseInverse();
   }
 

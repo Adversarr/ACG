@@ -30,6 +30,7 @@ template <typename Scalar, int dim> struct EulerFluidRegular {
   Field<Scalar, dim> velocity_;
   Vec<Scalar, dim> lower_bound_;
   Vec<Scalar, dim> upper_bound_;
+  // NOTE: Grid size and Div count should match.
   Vec<Index, dim> div_count_;
   Scalar grid_size_;
   EulerFluidRegular() = default;

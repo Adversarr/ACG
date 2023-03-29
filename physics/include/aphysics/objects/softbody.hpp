@@ -55,7 +55,6 @@ template <typename Scalar = Float, int dim = 3> struct HyperElasticSoftbody {
         mass_(std::move(mass)),
         lambda_(lambda),
         mu_(mu) {
-    InitAuxiliary();
   }
 
 

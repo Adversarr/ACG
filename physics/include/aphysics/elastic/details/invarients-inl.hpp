@@ -46,7 +46,6 @@ InvariantGradientResult<Scalar, dim> SmithInvariants<Scalar, dim>::ComputeGrad()
   InvariantGradientResult<Scalar> result;
   result.i1_ = polar_result_.symm_.trace();
   result.i2_ = f_.array().square().sum();
-  // result.i2_ = (f_.transpose() * f_).trace();
   result.i3_ = f_.determinant();
 
   result.i1_grad_ = polar_result_.rot_.reshaped();

@@ -2,6 +2,8 @@
 
 #include <Eigen/SVD>
 
+// #define DISABLE_IMPLICIT_QRSVD
+
 #include "../svd.hpp"
 
 #ifndef DISABLE_IMPLICIT_QRSVD
