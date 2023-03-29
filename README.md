@@ -60,10 +60,21 @@ Now, mass spring will also show the dynamic computed grid (SubdivisonAABB) for f
 
 ### fem-implicit
 
-Quasi Newton solver.
+Quasi Newton solver, the algorithm is same as example "hybred" below.
+
+### hybred
+
+Quasi newton based solver for both `cloth` and `softbody` solve. (Implicit Euler)
+
+- Left: Mass Spring
+- Right: Ogden Neo-Hookean
+
+![image-20230329134931068](./media//image-20230329134931068.png)
+
+
 
 ### Other Stuffs
 
 1. `fem-implicit`: first-order explicit integrator. NeoHookean or StVK FEM Soft Body Simulation.
-2. `mpm-explicit`: PIC-Fluid simulation, toy P2G and G2P process, weakly-compressible.
+2. `mpm-explicit`: APIC-Fluid simulation, toy P2G and G2P process, weakly-compressible.
 
