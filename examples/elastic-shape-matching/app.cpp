@@ -10,7 +10,7 @@ void ShapeMatchingApp::Step() {
   position_ += velocity_ * dt_;
 
 
-  for (auto [i, pos]: enumerate(access(position_))) {
+  for (auto [i, pos]: enumerate(view(position_))) {
     if (pos.z() < 0) {
       pos.z() = 0;
       velocity_.col(i) = - 0.5 * velocity_.col(i);

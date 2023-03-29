@@ -2,17 +2,17 @@
 
 #include <iostream>
 
-#include "common.hpp"
 #include <autils/log.hpp>
+#include <acore/math/common.hpp>
 
 namespace acg::geometry {
 
 
 struct FVTransform {
-  const topology::TriangleList& triangle_list_;
+  const types::topology::TriangleList& triangle_list_;
   const Index n_vertices_;
 
-  inline FVTransform(const topology::TriangleList& triangle_list, Index n_vertices)
+  inline FVTransform(const types::topology::TriangleList& triangle_list, Index n_vertices)
       : triangle_list_(triangle_list), n_vertices_(n_vertices) {}
 
   template <typename Scalar0, int n_attr>

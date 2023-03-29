@@ -1,7 +1,6 @@
 #pragma once
 
-#include "acore/geometry/fv_transform.hpp"
-#include "common.hpp"
+#include <acore/geometry/fv_transform.hpp>
 #include "face_area.hpp"
 
 namespace acg::geometry {
@@ -13,7 +12,7 @@ enum class NormalPerVertexMode { kArea, kAngle, kUniform };
 //   for x0, x1, x2, computes: (x1 - x0) x (x2 - x0) for normal of face.
 template <typename Scalar> class Normal {
 private:
-  const topology::TriangleList& triangle_list_;
+  const types::topology::TriangleList& triangle_list_;
 
   const types::PositionField<Scalar, 3>& positions_;
 
@@ -22,7 +21,7 @@ public:
 
   Field<Scalar, 3> PerFace() const noexcept;
 
-  Normal(const topology::TriangleList& triangle_list,
+  Normal(const types::topology::TriangleList& triangle_list,
          const types::PositionField<Scalar, 3>& vertices_position)
       : triangle_list_(triangle_list), positions_(vertices_position) {}
 };

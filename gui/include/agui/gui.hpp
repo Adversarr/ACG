@@ -101,7 +101,6 @@ struct StagingUpdateInfo {
   StagingUpdateInfo(size_t dst, vk::DeviceSize size) : dst_buffer_id(dst), offset(0), size(size) {}
 };
 
-// TODO: add torch light support
 class Gui {
 public:
   struct Config {

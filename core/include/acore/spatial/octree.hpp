@@ -4,7 +4,6 @@
 
 namespace acg::spatial {
 
-class Octree {
-
-};
-}
+// TODO: Octree.
+class Octree {};
+}  // namespace acg::spatial

@@ -5,7 +5,7 @@
 #include <iostream>
 
 TEST_CASE("FVTransform") {
-  acg::geometry::topology::TriangleList triangle_list(3, 4);
+  acg::types::topology::TriangleList triangle_list(3, 4);
   Eigen::MatrixX3<acg::Index> triangles_transpose(4, 3);
   triangles_transpose << 0, 1, 2, 1, 3, 2, 3, 0, 2, 0, 3, 1;
   triangle_list = triangles_transpose.transpose();
@@ -18,7 +18,7 @@ TEST_CASE("FVTransform") {
 }
 
 TEST_CASE("Normal") {
-  acg::geometry::topology::TriangleList triangle_list(3, 4);
+  acg::types::topology::TriangleList triangle_list(3, 4);
   Eigen::MatrixX3<acg::Index> triangles_transpose(4, 3);
   triangles_transpose << 0, 1, 2, 1, 3, 2, 3, 0, 2, 0, 3, 1;
   triangle_list = triangles_transpose.transpose();

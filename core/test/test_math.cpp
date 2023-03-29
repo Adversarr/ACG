@@ -9,7 +9,9 @@
 #include <iomanip>
 #include <iostream>
 
-#include "acore/math/access.hpp"
+
+#include <acore/math/utilities.hpp>
+#include "acore/math/view.hpp"
 
 TEST_CASE("Check Col copy status") {
   acg::Field<acg::Float32, 3> positions;
@@ -24,14 +26,14 @@ TEST_CASE("Check Col copy status") {
 
 TEST_CASE("Field Enumerate") {
   acg::Field<acg::Float32, 3> positions(3, 4);
-  for (auto [i, v] : acg::enumerate(acg::access(positions))) {
+  for (auto [i, v] : acg::enumerate(acg::view(positions))) {
     v.setConstant(i);
   }
   for (int i = 0; i < 4; ++i) {
     CHECK((positions.col(i).array() == i).all());
   }
 
-  auto acc2d = acg::access(positions, acg::NdRangeIndexer<2>(2, 2));
+  auto acc2d = acg::view(positions, acg::NdRangeIndexer<2>(2, 2));
   for (auto [i, j, v] : acg::enumerate(acc2d)) {
     v.setConstant(i);
   }
@@ -55,7 +57,8 @@ TEST_CASE("FieldGetter") {
   NdRangeIndexer<3> getter(p, q, r);
   getter[3];
   CHECK(getter(x, y, z) == x * r * q + r * y + z);
-  CHECK(getter[x * r * q + r * y + z] == std::tuple<Index, Index, Index>(x, y, z));
+  CHECK(getter[x * r * q + r * y + z]
+        == std::tuple<Index, Index, Index>(x, y, z));
 }
 
 TEST_CASE("Field Rvalue") {
@@ -64,7 +67,7 @@ TEST_CASE("Field Rvalue") {
   NdRangeIndexer<3> getter(p, q, r);
   Field<float, 3> ones(3, 1);
   ones.setOnes();
-  auto acc = access((ones + ones).eval());
+  auto acc = view((ones + ones).eval());
   for (auto blk : acc) {
     CHECK(blk.array().sum() == 6);
   }
@@ -77,7 +80,7 @@ TEST_CASE("Field accessor") {
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
   std::cout << field << std::endl;
-  auto acc = access(field, getter);
+  auto acc = view(field, getter);
   acc[x * r * q + r * y + z].setOnes();
   CHECK(acc(x, y, z).array().sum() == 3);
 }
@@ -88,9 +91,9 @@ TEST_CASE("Row") {
   Index x = 1, y = 2, z = 4;
   NdRangeIndexer<3> getter(p, q, r);
   Field<float, 1> field(1, p * q * r);
-  auto acc = access(field, getter);
+  auto acc = view(field, getter);
   acc[x * r * q + r * y + z].setOnes();
-  CHECK(acc(x, y, z).array().sum() == 1);
+  CHECK(acc(x, y, z) == 1);
 }
 
 TEST_CASE("Access standard iterate") {
@@ -99,7 +102,7 @@ TEST_CASE("Access standard iterate") {
   NdRangeIndexer<3> getter(p, q, r);
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
-  auto acc = access(field, getter);
+  auto acc = view(field, getter);
   for (auto blk : acc) {
     blk.setZero();
   }
@@ -112,7 +115,7 @@ TEST_CASE("Default getter") {
   NdRangeIndexer<3> getter(p, q, r);
   Field<float, 3> field(3, p * q * r);
   field.setOnes();
-  auto acc = access(field);
+  auto acc = view(field);
   for (auto blk : acc) {
     blk.setZero();
   }
@@ -122,7 +125,7 @@ TEST_CASE("Default getter") {
 TEST_CASE("Field Access Trasnform") {
   using namespace acg;
   auto field = FieldBuilder<float, 4>(3).Constant(0).eval();
-  auto acc = access<NdRangeIndexer<1>, ReshapeTransform<2, 2>>(field);
+  auto acc = view<NdRangeIndexer<1>, ReshapeTransform<2, 2>>(field);
   auto acc1 = acc[1];
   acc1.setOnes();
   CHECK_EQ(acc(1).trace(), 2);
@@ -152,7 +155,7 @@ TEST_CASE("Kronecker") {
 TEST_CASE("FieldReshape") {
   acg::Mat3x3f mat;
   acg::Field<float, 9> field(9, 1);
-  auto acc = acg::access(field);
+  auto acc = acg::view(field);
 
   for (int i = 0; i < 5; ++i) {
     mat.setRandom();
@@ -177,7 +180,9 @@ struct Iter2D {
     return i == another.i && j == another.j && n == another.n && m == another.m;
   }
 
-  constexpr bool operator!=(const Iter2D& another) const { return !(*this == another); }
+  constexpr bool operator!=(const Iter2D& another) const {
+    return !(*this == another);
+  }
 
   Iter2D& operator++() {
     if (j == m - 1) {
@@ -218,22 +223,6 @@ TEST_CASE("Sin") {
   CHECK(sin_field.cwiseEqual(0).all());
 }
 
-template <typename T>
-struct fmt::formatter<T, char,
-                      // Double check for Eigen::xxx.
-                      std::enable_if_t<std::is_void_v<std::void_t<typename T::Index>>,
-                                       std::void_t<decltype(std::declval<T>().derived())>>> {
-  // Parses format specifications of the form ['f' | 'e'].
-  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
-  // Formats the point p using the parsed format specification (presentation)
-  // stored in this formatter.
-  template <typename FormatContext> auto format(const T& p, FormatContext& ctx) const
-      -> decltype(ctx.out()) {
-    // ctx.out() is an output iterator to write to.
-    return fmt::format_to(ctx.out(), "{}", fmt::streamed(p));
-  }
-};
-
 TEST_CASE("Format Matrix") {
   acg::Mat3x3f mat;
   mat.setOnes();
@@ -256,7 +245,7 @@ TEST_CASE("SVD") {
   acg::Mat3x3f mat33;
   mat33.setZero();
   mat33.diagonal().setOnes();
-  
+
   acg::math::Svd svd33(mat33);
 
   std::cout << mat33 << std::endl;

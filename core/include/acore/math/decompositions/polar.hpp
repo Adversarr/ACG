@@ -11,14 +11,14 @@ template <typename Derived> class PolarDecomposition {
   static_assert(Trait<Derived>::cols == Trait<Derived>::rows,
                 "Polar Decomposition requires rows == cols");
 
-  static constexpr Index dim_ = Trait<Derived>::cols;
+  static constexpr Index dim = Trait<Derived>::cols;
 
 public:
   explicit PolarDecomposition(const Eigen::MatrixBase<Derived>& matrix);
 
   Svd<Derived> svd_;
-  Mat<Scalar, dim_, dim_> rot_;
-  Mat<Scalar, dim_, dim_> symm_;
+  Mat<Scalar, dim, dim> rot_;
+  Mat<Scalar, dim, dim> symm_;
 };
 
 template <typename Derived> class PolarDecompositionRv {
@@ -36,4 +36,5 @@ public:
   Mat<Scalar, 3, 3> symm_;
 };
 }  // namespace acg::math
-#include "./details/polar-inl.hpp"
+
+#include "./details/polar-inl.hpp" // IWYU pragma: export

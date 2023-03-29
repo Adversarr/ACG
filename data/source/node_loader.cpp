@@ -1,4 +1,4 @@
-#include <acore/math/access.hpp>
+#include <acore/math/view.hpp>
 #include <acore/math/utilities.hpp>
 #include <adata/triangle/node_loader.hpp>
 #include <autils/common.hpp>
@@ -42,7 +42,7 @@ void NodeLoader::Load() {
   }
   nodes_.resize(dimension_, num_points_);
   node_is_boundary_.resize(num_points_);
-  auto accessor = access(nodes_);
+  auto accessor = view(nodes_);
   offset_ = 0;
   for (Index i = 0; i < num_points_; ++i) {
     Index point_id;

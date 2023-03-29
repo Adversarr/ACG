@@ -9,7 +9,7 @@ namespace acg::geometry {
 template <typename Scalar> Tet2Face<Scalar>& Tet2Face<Scalar>::operator()() noexcept {
   std::map<std::tuple<Index, Index, Index>, bool> face_data;
 
-  auto pac = access(position_);
+  auto pac = view(position_);
 
   auto update_face = [&](Index i, Index j, Index k, Index l) {
     // For ijk, test l.
@@ -41,7 +41,7 @@ template <typename Scalar> Tet2Face<Scalar>& Tet2Face<Scalar>::operator()() noex
       face_data.insert({tup, invert});
     }
   };
-  for (auto [i, v] : enumerate(access(tetras_))) {
+  for (auto [i, v] : enumerate(view(tetras_))) {
     Index x = v.x(), y = v.y(), z = v.z(), w = v.w();
     update_face(x, y, z, w);
     update_face(w, x, y, z);

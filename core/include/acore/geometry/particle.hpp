@@ -1,5 +1,5 @@
 #pragma once
-#include "../math/common.hpp"
+#include <acore/math/common.hpp>
 
 namespace acg::geometry {
 

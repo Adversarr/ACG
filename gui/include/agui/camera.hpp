@@ -2,9 +2,8 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-
 #include <acore/math/common.hpp>
+#include <glm/glm.hpp>
 
 namespace acg::gui {
 
@@ -20,21 +19,21 @@ public:
 
   glm::mat4 GetModel() const;
 
-  Vec3f &GetPosition();
+  Vec3f& GetPosition();
 
-  const Vec3f &GetPosition() const;
+  const Vec3f& GetPosition() const;
 
-  const Vec3f &GetFront() const;
+  const Vec3f& GetFront() const;
 
-  Vec3f &GetFront();
+  Vec3f& GetFront();
 
-  Vec3f &GetUp();
+  Vec3f& GetUp();
 
   void Move(Vec3f direction, Float64 dt);
   // Set the position of the camera.
   bool SetPosition(glm::vec3 position);
 
-  // Set the front direction of the camera. 
+  // Set the front direction of the camera.
   bool SetFront(glm::vec3 front);
 
   Camera& SetFov(Float32 angle);
@@ -58,10 +57,9 @@ public:
   Float32 GetRoll() const;
   Float32 GetPitch() const;
 
-
   bool& GetProjectionMode() { return is_perspective_; }
-private:
 
+private:
   bool is_perspective_{true};
   // Extra Rotation/transform applied to each model.
   Vec3f model_rotate_axis_{0.0f, 0.0f, 1.0f};
@@ -77,6 +75,5 @@ private:
 
   float yaw_{0}, roll_{0}, pitch_{0};
   float left_, right_, top_, bottom_;
-
 };
 }  // namespace acg::gui

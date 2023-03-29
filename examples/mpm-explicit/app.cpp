@@ -13,7 +13,7 @@ void MpmExplictApp::Init() {
   grid_size_ = grid_size;
 
   // Particles.
-  n_particles_ = grid_size * 2;
+  n_particles_ = grid_size;
   particle_C_.resize(Eigen::NoChange, n_particles_);
   particle_J_.resize(Eigen::NoChange, n_particles_);
   particle_position_.resize(Eigen::NoChange, n_particles_);
@@ -27,6 +27,19 @@ void MpmExplictApp::Init() {
   }
   particle_vol_ = std::pow(dx_, 3) * 0.3;
   particle_mass_ = rho_ * particle_vol_;
+
+  lag_.mass_.setConstant(1, n_particles_, particle_mass_);
+  lag_.velocity_ = particle_velocity_;
+  lag_.position_ = particle_position_;
+
+  euler_.grid_size_ = dx_;
+  euler_.div_count_ = Vec3Index::Constant(n_grid_);
+  euler_.lower_bound_.setZero();
+  euler_.upper_bound_.setOnes();
+  euler_.mass_.resize(1, math::pow<3>(n_grid_));
+  euler_.velocity_.resize(3, math::pow<3>(n_grid_));
+  using APIC = physics::mpm::ApicRegular<Float64, 3>;
+  apic_ = std::make_unique<APIC>(lag_, euler_);
 }
 
 void MpmExplictApp::P2G() {
@@ -44,7 +57,8 @@ void MpmExplictApp::P2G() {
     Vec3d fx = xp - base_f;
     // F64 stress = -dt_ * 4 * E_ * particle_vol_ * (particle_J_(i) - 1);
     // Mat3x3d affine
-    //     = Mat3x3d::Identity() * stress + particle_mass_ * particle_C_.col(i).reshaped(3, 3);
+    //     = Mat3x3d::Identity() * stress + particle_mass_ *
+    //     particle_C_.col(i).reshaped(3, 3);
     for (Index di = 0; di <= 1; ++di) {
       for (Index dj = 0; dj <= 1; ++dj) {
         for (Index dk = 0; dk <= 1; ++dk) {
@@ -53,7 +67,6 @@ void MpmExplictApp::P2G() {
           // compute the weight.
           auto weight_d = (Vec3d(1 - di, 1 - dj, 1 - dk) - fx);
           Float64 weight = abs(weight_d.x() * weight_d.y() * weight_d.z());
-          // TODO: Affine Transform.
           grid_mass_(gid) += weight;
           grid_velocity_.col(gid) += weight * (particle_velocity_.col(i));
         }
@@ -122,7 +135,7 @@ void MpmExplictApp::G2P() {
   Field<Float64, 3> new_vel;
   new_vel.resizeLike(particle_velocity_);
   new_vel.setZero();
-  weight_sum = 0;
+  weight_sum_ = 0;
   for (Index i = 0; i < n_particles_; ++i) {
     Vec3d xp = (particle_position_.col(i) / dx_);
     Vec3d base_f = xp.array().floor().matrix();
@@ -144,11 +157,12 @@ void MpmExplictApp::G2P() {
         }
       }
     }
-    weight_sum += weight_sum_local;
+    weight_sum_ += weight_sum_local;
   }
-  weight_sum /= n_particles_;
+  weight_sum_ /= n_particles_;
 
-  auto new_position = (particle_position_ + (particle_velocity_ + new_vel) * dt_ * .5).eval();
+  auto new_position =
+      (particle_position_ + (particle_velocity_ + new_vel) * dt_ * .5).eval();
   for (auto blk : new_position.colwise()) {
     blk.x() = std::clamp(blk.x(), 0.01, 0.99);
     blk.y() = std::clamp(blk.y(), 0.01, .99);
@@ -162,4 +176,45 @@ void MpmExplictApp::Run() {
   P2G();
   Projection();
   G2P();
+}
+
+void MpmExplictApp::Step() {
+  auto new_pos = (lag_.position_ + lag_.velocity_ * dt_).eval();
+  for (auto [i, blk] : enumerate(view(new_pos))) {
+    blk.x() = std::clamp(blk.x(), 0.1, .9);
+    blk.y() = std::clamp(blk.y(), 0.1, .9);
+    blk.z() = std::clamp(blk.z(), 0.1, .9);
+  }
+  lag_.velocity_ = (new_pos - lag_.position_) / dt_;
+  lag_.position_ = new_pos;
+  apic_->Forward();
+
+  euler_.velocity_.array().row(2) -= 9.8 * dt_;
+  auto vel = view(euler_.velocity_, apic_->grid_idxer_);
+  auto density = view(euler_.mass_, apic_->grid_idxer_);
+  for (auto [i, j, k] : acg::NdRange(n_grid_, n_grid_, n_grid_)) {
+    // compute diff
+    if (i != n_grid_ - 1) {
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitX() * (density(i + 1, j, k) - density(i, j, k));
+    } else {
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitX() * (density(i, j, k) - density(i - 1, j, k));
+    }
+    if (j != n_grid_ - 1) {
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitY() * (density(i, j + 1, k) - density(i, j, k));
+    } else {
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitY() * (density(i, j, k) - density(i, j - 1, k));
+    }
+    if (k != n_grid_ - 1) {
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitZ() * (density(i, j, k + 1) - density(i, j, k));
+    } else {
+      vel(i, j, k) -=
+          E_ * Vec3d::UnitZ() * (density(i, j, k) - density(i, j, k - 1));
+    }
+  }
+  apic_->Backward();
 }

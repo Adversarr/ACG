@@ -8,6 +8,7 @@ public:
   ShapeMatching() = default;
   ShapeMatching(const Field<Scalar, dim>& rest_pose, const Field<Scalar, 1>& mass);
   explicit ShapeMatching(const Field<Scalar, dim>& rest_pose);
+
   Field<Scalar, dim> ComputeGoalPositions(const Field<Scalar, dim>& current_pose) const noexcept;
 
   void Fit(const Field<Scalar, dim>& rest_pose, const Field<Scalar, 1>& mass);
@@ -25,4 +26,4 @@ private:
   Scalar mass_sum_;
 };
 }  // namespace acg::physics::elastic
-#include "./details/shape_matching-inl.hpp"
+#include "./details/shape_matching-inl.hpp" // IWYU pragma: export

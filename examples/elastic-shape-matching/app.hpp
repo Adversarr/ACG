@@ -1,5 +1,5 @@
 #pragma once
-#include <acore/geometry/common.hpp>
+#include <acore/math/common.hpp>
 #include <aphysics/elastic/shape_matching.hpp>
 
 using namespace acg;
@@ -9,13 +9,15 @@ public:
 
   void Step();
 
+  void StepPerElem();
+
   void Init();
 
   physics::elastic::ShapeMatching<Float, 3> shape_matching_;
   Field<Float, 3> position_;
   Field<Float, 3> velocity_;
-  geometry::topology::TetraList tetra_;
-  geometry::topology::TriangleList faces_;
+  types::topology::TetraList tetra_;
+  types::topology::TriangleList faces_;
 
   Float dt_{0.01};
 

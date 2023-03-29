@@ -83,5 +83,13 @@ inline constexpr PlatformType get_platform_type() {
 // @brief do_nothing function avoid compiler warns 'unused-variable'
 template <typename... Args> inline void do_nothing(Args&&... ) {}
 
+
+template <typename T>
+const T& as_const_arg(T& ref) { return ref; }
+
+template <typename T>
+const T& as_const_arg(const T& ref) { return ref; }
+
+
 }  // namespace utils
 }  // namespace acg

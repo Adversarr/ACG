@@ -2,7 +2,7 @@
 
 #include <acore/geometry/common_models.hpp>
 #include <acore/init.hpp>
-#include <acore/math/access.hpp>
+#include <acore/math/view.hpp>
 #include <acore/math/constants.hpp>
 #include <agui/backend/context.hpp>
 #include <agui/backend/graphics_context.hpp>
@@ -19,7 +19,7 @@ std::vector<acg::gui::details::MeshVertex> ball_vert() {
   auto result = acg::geometry::sphere_20(acg::Vec3f{0, 0, 0}, 1);
   auto vertices = result.GetVertices();
   std::vector<acg::gui::details::MeshVertex> ret;
-  for (auto vert : acg::access(vertices)) {
+  for (auto vert : acg::view(vertices)) {
     acg::gui::details::MeshVertex vr;
     vr.position_ = acg::gui::to_glm(acg::Vec3f(vert));
     vr.normal_ = vr.position_;
@@ -33,7 +33,7 @@ std::vector<uint32_t> ball_index() {
   auto result = acg::geometry::sphere_20(acg::Vec3f{0, 0, 0}, 1);
   auto indices = result.GetFaces();
   std::vector<uint32_t> ret;
-  for (auto vert : acg::access(indices)) {
+  for (auto vert : acg::view(indices)) {
     ret.push_back(vert.x());
     ret.push_back(vert.y());
     ret.push_back(vert.z());

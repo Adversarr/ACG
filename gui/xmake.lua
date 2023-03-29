@@ -1,5 +1,4 @@
 local spv_home = '/shader/outputs/'
-add_requires("glslang", {configs = {binaryonly = true}})
 add_requires('glm', {system=false})
 add_requires('glfw')
 add_requires('vulkansdk', {system=true})
@@ -12,7 +11,7 @@ target('acg_gui')
   set_group('library')
   add_includedirs('include', { public = true })
   add_files('source/**.cpp')
-  add_packages('glslang', 'vulkansdk', 'glm', 'glfw', 'imgui', {public=true})
+  add_packages('vulkansdk', 'glm', 'glfw', 'imgui', {public=true})
   add_deps('acg_core')
   -- set_pcxxheader("include/acg_vis/avk.hpp")
 

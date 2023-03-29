@@ -2,7 +2,7 @@
 #include <acore/geometry/common.hpp>
 #include <acore/geometry/mesh.hpp>
 #include <acore/geometry/particle.hpp>
-#include <acore/math/access.hpp>
+#include <acore/math/view.hpp>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -81,10 +81,10 @@ private:
   std::optional<Camera> camera_;
 
   // Internal data:
-  std::vector<Mesh> meshes_;
-  std::vector<Particles> mesh_particles_;
-  std::vector<Particles> particles_;
-  std::vector<Wireframe> wireframe_;
+  std::vector<std::unique_ptr<Mesh>> meshes_;
+  std::vector<std::unique_ptr<Particles>> mesh_particles_;
+  std::vector<std::unique_ptr<Particles>> particles_;
+  std::vector<std::unique_ptr<Wireframe>> wireframe_;
 
 public:
   // MESH API:
@@ -95,55 +95,55 @@ public:
    *
    * @return Reference to the internal object
    */
-  Mesh& AddMesh(const geometry::topology::TriangleList& indices,
+  Mesh* AddMesh(const types::topology::TriangleList& indices,
                 const types::PositionField<float, 3>& positions,
                 std::optional<Field<float, 3>> opt_normals = std::nullopt);
 
-  Mesh& AddMesh();
+  Mesh* AddMesh();
 
-  Mesh& GetMesh(size_t id);
+  Mesh* GetMesh(size_t id);
 
   size_t GetMeshCount() const;
 
   /**
    * @brief Add a mesh-based particle using instancing rendering.
    */
-  Particles& AddMeshParticles();
-  Particles& AddMeshParticles(const types::PositionField<float, 3>& positions,
+  Particles* AddMeshParticles();
+  Particles* AddMeshParticles(const types::PositionField<float, 3>& positions,
                               Float32 radius = 1.0f);
 
-  std::vector<Particles>& GetMeshParticles();
+  std::vector<std::unique_ptr<Particles>>& GetMeshParticles();
 
-  Particles& GetMeshParticle(size_t i);
+  Particles* GetMeshParticle(size_t i);
 
   size_t GetMeshParticleCount() const;
 
-  std::vector<Mesh>& GetMesh();
+  std::vector<std::unique_ptr<Mesh>>& GetMesh();
 
   // PARTICLE API
 
   /**
    * @brief add a group of particles into scene.
    */
-  Particles& AddParticles(const types::PositionField<float, 3>& positions, Float32 radius = 1.0f);
+  Particles* AddParticles(const types::PositionField<float, 3>& positions, Float32 radius = 1.0f);
 
-  Particles& AddParticles();
+  Particles* AddParticles();
 
-  Particles& GetParticles(size_t id);
+  Particles* GetParticles(size_t id);
 
   size_t GetParticlesCount() const;
 
-  std::vector<Particles>& GetParticles();
+  std::vector<std::unique_ptr<Particles>>& GetParticles();
 
   // WIREFRAME API
-  Wireframe& AddWireframe();
+  Wireframe* AddWireframe();
 
-  Wireframe& AddWireframe(const geometry::topology::LineList& indices,
+  Wireframe* AddWireframe(const types::topology::LineList& indices,
                           types::PositionField<float, 3> positions, const types::RgbField& colors);
 
-  Wireframe& GetWireframe(size_t id);
+  Wireframe* GetWireframe(size_t id);
 
-  std::vector<Wireframe>& GetWireframe();
+  std::vector<std::unique_ptr<Wireframe>>& GetWireframe();
 
   size_t GetWireframeCount() const;
 
@@ -161,7 +161,7 @@ struct Scene2::Mesh {
   bool update_flag;
   size_t id;
   // mesh data.
-  geometry::topology::TriangleList faces;
+  types::topology::TriangleList faces;
   types::PositionField<float, 3> vertices;
   types::RgbaField color;
   Field<float, 3> normals;
@@ -182,11 +182,13 @@ struct Scene2::Mesh {
 
   explicit Mesh(size_t id) : id(id) {}
 
-  Mesh& operator=(const Mesh&) = default;
+  Mesh& operator=(const Mesh&) = delete;
 
-  Mesh(const Mesh&) = default;
+  Mesh(const Mesh&) = delete;
 
-  Mesh& SetIndices(const geometry::topology::TriangleList& val);
+  Mesh(Mesh&& ) = default;
+
+  Mesh& SetIndices(const types::topology::TriangleList& val);
 
   Mesh& SetVertices(const types::PositionField<float, 3>& val);
 
@@ -219,7 +221,7 @@ struct Scene2::Mesh {
 
 struct Scene2::Wireframe {
   size_t id;
-  geometry::topology::LineList indices;
+  types::topology::LineList indices;
   types::PositionField<float, 3> positions;
   types::RgbField colors;
   bool update_flag{true};
@@ -230,7 +232,7 @@ struct Scene2::Wireframe {
 
   explicit Wireframe(size_t id) : id(id) {}
 
-  Wireframe& SetIndices(const geometry::topology::LineList& ind);
+  Wireframe& SetIndices(const types::topology::LineList& ind);
 
   Wireframe& SetPositions(const types::PositionField<float, 3>& pos);
 

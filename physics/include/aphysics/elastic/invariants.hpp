@@ -6,6 +6,10 @@
 
 namespace acg::physics::elastic {
 
+template<typename Scalar, int dim = 3> struct InvariantResult {
+  Scalar i1_, i2_, i3_;
+};
+
 template <typename F, Index dim = 3> struct InvariantGradientResult {
   F i1_, i2_, i3_;
   Vec<F, dim * dim> i1_grad_;
@@ -20,16 +24,15 @@ template <typename F, Index dim = 3> struct InvariantHessianResult {
   Mat<F, dim * dim, dim * dim> i3_hessian_;
 };
 
-template <typename Derived> struct CauchyGreenInvariants {
-  using Scalar = typename Trait<Derived>::Scalar;
-  static constexpr Index dim_ = Trait<Derived>::cols;
-  static_assert(dim_ == Trait<Derived>::rows, "Rows != cols.");
-  explicit CauchyGreenInvariants(const Eigen::MatrixBase<Derived>& dg) noexcept;
+template <typename Scalar, int dim> struct CauchyGreenInvariants {
+  explicit CauchyGreenInvariants(Mat<Scalar, dim, dim> dg) noexcept;
 
-  InvariantGradientResult<Scalar, dim_> ComputeGrad() const;
+  InvariantResult<Scalar, dim> ComputeValue();
 
-  InvariantHessianResult<Scalar, dim_> ComputeHessian() const;
-  Mat<Scalar, 3, 3> f_;
+  InvariantGradientResult<Scalar, dim> ComputeGrad() const;
+
+  InvariantHessianResult<Scalar, dim> ComputeHessian() const;
+  Mat<Scalar, dim, dim> f_;
 
   /**
    * 1. F's Frob Norm 2
@@ -61,19 +64,16 @@ template <typename Derived> struct CauchyGreenInvariants {
  * @param dg
  * @return
  */
-template <typename Derived> struct SmithInvariants {
-  using Scalar = typename Trait<Derived>::Scalar;
-  static constexpr Index dim_ = Trait<Derived>::cols;
-  static_assert(dim_ == Trait<Derived>::rows, "Rows != cols.");
-  explicit SmithInvariants(const Eigen::MatrixBase<Derived>& dg) noexcept;
+template <typename Scalar, int dim> struct SmithInvariants {
+  explicit SmithInvariants(Mat<Scalar, dim, dim> dg) noexcept;
 
   Mat<Scalar, 3, 3> f_;
 
-  math::PolarDecompositionRv<Derived> polar_result_;
+  math::PolarDecompositionRv<Mat<Scalar, dim, dim>> polar_result_;
 
-  InvariantGradientResult<Scalar, dim_> ComputeGrad() const;
-
-  InvariantHessianResult<Scalar, dim_> ComputeHessian() const;
+  InvariantResult<Scalar, dim> ComputeValue() const;
+  InvariantGradientResult<Scalar, dim> ComputeGrad() const;
+  InvariantHessianResult<Scalar, dim> ComputeHessian() const;
 };
 }  // namespace acg::physics::elastic
-#include "details/invarients-inl.hpp"
+#include "details/invarients-inl.hpp" // IWYU pragma: export

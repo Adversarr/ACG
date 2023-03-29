@@ -4,7 +4,6 @@
 
 #include "../common.hpp"
 #include "../math/common.hpp"
-#include "common.hpp"
 
 namespace acg::geometry {
 
@@ -21,7 +20,7 @@ public:
 
   using FaceType = Vec3Index;
 
-  using FacesType = geometry::topology::TriangleList;
+  using FacesType = types::topology::TriangleList;
 
 private:
   // Mesh should be column major, AoS layout.

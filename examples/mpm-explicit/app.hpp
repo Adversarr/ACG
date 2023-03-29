@@ -1,6 +1,8 @@
 #include <acore/math/common.hpp>
 #include <memory>
 
+#include <aphysics/mpm/transfer.hpp>
+
 /* Mpm3d in taichi
 import numpy as np
 
@@ -144,6 +146,8 @@ public:
 
   void Init();
 
+  void Step();
+
   void P2G();
 
   void Advection();
@@ -159,7 +163,7 @@ public:
     return k + (n_grid_ + 1) * (j + (n_grid_ + 1) * i);
   }
 
-  Index n_grid_{32};
+  Index n_grid_{24};
   Index grid_size_;
 
   Vec3f grav_ = {0, 0, -9.8};
@@ -174,7 +178,7 @@ public:
   Float64 particle_mass_;
   Float64 particle_vol_;
   Float64 E_ = 4;
-  Float64 weight_sum;
+  Float64 weight_sum_;
 
   Index n_particles_;
   Field<Float64, 3> grid_velocity_;
@@ -184,4 +188,10 @@ public:
   Field<Float64, 1> particle_J_;
   Field<Float64, 3> particle_position_;
   Field<Float64, 3> particle_velocity_;
+
+  physics::LagrangeFluid<Float64, 3> lag_;
+  physics::EulerFluidRegular<Float64, 3> euler_;
+
+  std::unique_ptr<physics::mpm::ApicRegular<Float64, 3>>
+    apic_;
 };

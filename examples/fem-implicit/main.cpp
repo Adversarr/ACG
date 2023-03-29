@@ -9,9 +9,9 @@
 #include <fstream>
 
 #include "app.hpp"
-acg::geometry::topology::TetraList make_tetra() {
-  acg::geometry::topology::TetraList tetra(4, 5);
-  auto acc = acg::access(tetra);
+acg::types::topology::TetraList make_tetra() {
+  acg::types::topology::TetraList tetra(4, 5);
+  auto acc = acg::view(tetra);
   acc(0) = acg::Vec4Index{0, 4, 1, 3};
   acc(1) = acg::Vec4Index{2, 1, 6, 3};
   acc(2) = acg::Vec4Index{7, 6, 4, 3};
@@ -22,7 +22,7 @@ acg::geometry::topology::TetraList make_tetra() {
 
 acg::types::PositionField<acg::Float32, 3> make_pos() {
   auto pos = acg::FieldBuilder<acg::Float32, 3>(8).Placeholder();
-  auto acc = acg::access(pos);
+  auto acc = acg::view(pos);
   acc(0) = acg::Vec3f(0, 0, 0);
   acc(1) = acg::Vec3f(0, 1, 0);
   acc(2) = acg::Vec3f(1, 1, 0);
@@ -34,9 +34,9 @@ acg::types::PositionField<acg::Float32, 3> make_pos() {
   return pos;
 }
 
-acg::geometry::topology::TriangleList make_face() {
+acg::types::topology::TriangleList make_face() {
   auto tri = acg::FieldBuilder<acg::Index, 3>(12).Placeholder();
-  auto acc = acg::access(tri);
+  auto acc = acg::view(tri);
   acc(0) = acg::Vec3Index(0, 1, 3);
   acc(1) = acg::Vec3Index(1, 2, 3);
   acc(2) = acg::Vec3Index(4, 0, 3);
@@ -53,15 +53,15 @@ acg::geometry::topology::TriangleList make_face() {
 }
 
 auto make_tet_simple() {
-  acg::geometry::topology::TetraList tetra(4, 1);
-  auto acc = acg::access(tetra);
+  acg::types::topology::TetraList tetra(4, 1);
+  auto acc = acg::view(tetra);
   acc(0) = acg::Vec4Index{0, 1, 2, 3};
   return tetra;
 }
 
 auto make_face_simple() {
-  acg::geometry::topology::TriangleList faces(3, 4);
-  auto acc = acg::access(faces);
+  acg::types::topology::TriangleList faces(3, 4);
+  auto acc = acg::view(faces);
 
   acc(0) = acg::Vec3Index(0, 2, 1);
   acc(1) = acg::Vec3Index(0, 1, 3);
@@ -72,7 +72,7 @@ auto make_face_simple() {
 
 auto make_position_simple() {
   acg::types::PositionField<float, 3> pos(3, 4);
-  auto acc = acg::access(pos);
+  auto acc = acg::view(pos);
   acc(0) = acg::Vec3f{0, 0, 0};
   acc(1) = acg::Vec3f{1, 0, 0};
   acc(2) = acg::Vec3f{0, 1, 0};
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
   acg::init(argc, argv);
   auto& gui = acg::gui::Gui::Instance();
   auto& window = acg::gui::Window::Instance();
-  auto& mesh_render = gui.GetScene().AddMesh();
+  auto* mesh_render = gui.GetScene().AddMesh();
   auto data_path = acg::data::get_data_dir();
   std::ifstream ele_file(data_path + "/house-ele-node/house.ele");
   std::ifstream node_file(data_path + "/house-ele-node/house.node");
@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
   auto reset_f = [&]() {
     // app.position_ = make_pos();
     // app.tetras_ = make_tetra();
-    app.position_ = house_node.GetData().cast<float>();
+    app.position_ = house_node.GetData().cast<app::FemImplicitApp::Scalar>();
     app.tetras_ = house_ele.GetData().cast<acg::Index>();
     app.tetras_.array() -= house_node.GetOffset();
     app.position_ *= 0.1;
@@ -112,10 +112,19 @@ int main(int argc, char** argv) {
   reset_f();
   bool reset = false;
   auto update_scene = [&]() {
-    auto face = acg::geometry::Tet2Face<float>{app.position_, app.tetras_};
+    auto face = acg::geometry::Tet2Face<app::FemImplicitApp::Scalar>{app.position_, app.tetras_};
     face();
-    mesh_render.SetVertices(app.position_)
-        .SetIndices(face.faces_)
+    using namespace acg;
+    auto position = Field<Float32, 3>(3, face.faces_.cols() * 3);
+    auto faces = Field<Index, 3>(3, face.faces_.cols());
+    for (auto [i, f]: enumerate(view(face.faces_))) {
+      faces.col(i) = Vec3Index{3 * i, 3 * i + 1, 3 * i + 2};
+      position.col(3 * i) = view(app.position_)(f.x()).cast<Float32>();
+      position.col(3 * i + 1) = view(app.position_)(f.y()).cast<Float32>();
+      position.col(3 * i + 2) = view(app.position_)(f.z()).cast<Float32>();
+    }
+    mesh_render->SetVertices(position)
+        .SetIndices(faces)
         .SetUniformColor(acg::types::Rgba{.7, .3, .3, 1})
         .ComputeDefaultNormal()
         .SetEnableWireframe(true)
@@ -129,12 +138,12 @@ int main(int argc, char** argv) {
     ImGui::Checkbox("Run", &run);
 
     reset = false;
-    reset |= ImGui::InputFloat3("x0", app.position_.col(0).data());
-    reset |= ImGui::InputFloat3("x1", app.position_.col(1).data());
-    reset |= ImGui::InputFloat3("x2", app.position_.col(2).data());
-    reset |= ImGui::InputFloat3("x3", app.position_.col(3).data());
-    reset |= ImGui::InputFloat("Lambda", &app.lambda_);
-    reset |= ImGui::InputFloat("mu", &app.mu_);
+    // reset |= ImGui::InputFloat3("x0", app.position_.col(0).data());
+    // reset |= ImGui::InputFloat3("x1", app.position_.col(1).data());
+    // reset |= ImGui::InputFloat3("x2", app.position_.col(2).data());
+    // reset |= ImGui::InputFloat3("x3", app.position_.col(3).data());
+    reset |= ImGui::InputDouble("Lambda", &app.lambda_);
+    reset |= ImGui::InputDouble("mu", &app.mu_);
     reset |= ImGui::Checkbox("Explicit solver", &app.explicit_);
     reset |= ImGui::InputInt("Maximum Iterate Steps", &app.steps_);
     if (ImGui::Button("Reset Rest Pose.")) {
@@ -148,7 +157,7 @@ int main(int argc, char** argv) {
     gui.Tick(true);
     gui.RenderOnce();
     if ((run_once | run) && (!reset)) {
-      app.Step();
+      app.StepQuasi();
       update_scene();
     }
 

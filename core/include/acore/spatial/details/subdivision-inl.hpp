@@ -12,14 +12,14 @@ namespace acg::spatial {
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Insert(
-    const AABB<D, F, dim> &aabb) {
-  auto ind = PutAABBData(aabb);
-  size_t parent = EnsureEntry(aabb);
+    const std::pair<AABB<F, dim>, D> &data) {
+  auto ind = PutAABBData(data);
+  size_t parent = EnsureEntry(data.first);
   if (parent == InvalidSubscript) {
     large_leafs_.push_back(ind);
     return parent;
   }
-  auto generate_sequence = FindVisitSequence(aabb);
+  auto generate_sequence = FindVisitSequence(data.first);
   auto it = generate_sequence.begin();
   auto child = *(++it);
 
@@ -42,7 +42,7 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureSubDivisi
   auto &cid = pnode.sub_nodes_[child];
   if (cid == InvalidSubscript) {
     auto position = pnode.GetChildAABB(indexer_[child]);
-    auto child_id = PutNode(pnode.unit_ / subdivision_count, position, pnode.depth_ + 1);
+    auto child_id = PutNode(pnode.unit_ / subdivision_count, position);
     cid = child_id;
   }
   return cid;
@@ -58,7 +58,7 @@ void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Clear() {
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureEntry(
-    const AABB<D, F, dim> &aabb) {
+    const AABB<F, dim> &aabb) {
   auto ub_ceil = aabb.upper_bound.array().ceil().eval();
   auto lb_floor = aabb.lower_bound.array().floor().eval();
   if ((ub_ceil - unit_ != lb_floor).any()) {
@@ -73,21 +73,21 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureEntry(
 
   // Otherwise, create a new entry.
   auto entry_id = PutNode(unit_ / static_cast<F>(subdivision_count),
-                          {lb_floor.matrix(), ub_ceil.matrix()}, 0);
+                          {lb_floor.matrix(), ub_ceil.matrix()});
   entry_nodes_.push_back(entry_id);
   return entry_id;
 };
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
-size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::PutNode(
-    F local_unit, const AABB<void, F, dim> &range, size_t depth) {
-  nodes_.emplace_back(local_unit, range, depth);
+size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::PutNode(F local_unit,
+                                                                         const AABB<F, dim> &range) {
+  nodes_.emplace_back(local_unit, range);
   return nodes_.size() - 1;
 }
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindEntry(
-    const AABB<D, F, dim> &aabb) const {
+    const AABB<F, dim> &aabb) const {
   // Foreach entry, test if the entry can hold the AABB
   for (const auto &i : entry_nodes_) {
     if (nodes_[i].box_.Contain(aabb)) {
@@ -99,26 +99,26 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindEntry(
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::PutAABBData(
-    const AABB<D, F, dim> &aabb) {
+    const std::pair<AABB<F, dim>, D> &aabb) {
   auto id = data_.size();
   data_.push_back(aabb);
   return id;
 }
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
-AABB<void, F, dim> SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Node::GetChildAABB(
+AABB<F, dim> SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Node::GetChildAABB(
     utils::god::IndexTuple<dim> index) const {
   auto local_index_nd = std::make_from_tuple<Vec<Index, dim>>(index);
   auto units = Vec<F, dim>::Constant(unit_);
   auto lb = (box_.lower_bound + units.cwiseProduct(local_index_nd.template cast<F>())).eval();
   auto ub = lb + units;
-  return AABB<void, F, dim>(lb, ub);
+  return AABB<F, dim>(lb, ub);
 }
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 std::array<size_t, max_depth>
 SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindVisitSequence(
-    const AABB<D, F, dim> &aabb) {
+    const AABB<F, dim> &aabb) {
   // First, find parent.
   std::array<size_t, max_depth> seq;
   seq.fill(InvalidSubscript);
@@ -152,12 +152,12 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindVisitSequence(
 }
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
-std::pair<Field<F, dim>, geometry::topology::LineList>
+std::pair<Field<F, dim>, types::topology::LineList>
 SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Visualize() const {
   Field<F, dim> position = FieldBuilder<F, dim>(nodes_.size() * 8).Placeholder();
-  geometry::topology::LineList lines = FieldBuilder<Index, 2>(nodes_.size() * 12).Placeholder();
-  auto pacc = access(position);
-  auto iacc = access(lines);
+  types::topology::LineList lines = FieldBuilder<Index, 2>(nodes_.size() * 12).Placeholder();
+  auto pacc = view(position);
+  auto iacc = view(lines);
   Index np = 0, nl = 0;
   for (const auto &node : nodes_) {
     auto l = node.box_.lower_bound;
@@ -187,24 +187,25 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Visualize() const {
 }
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
-AABB<D, F, dim> &SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Get(size_t id) {
+std::pair<AABB<F, dim>, D> &SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Get(
+    size_t id) {
   return data_[id];
 }
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
-const AABB<D, F, dim> &SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Get(
+const std::pair<AABB<F, dim>, D> &SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Get(
     size_t id) const {
   return data_[id];
 }
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 std::vector<size_t> SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Query(
-    const AABB<void, F, dim> &aabb) const {
+    const AABB<F, dim> &aabb) const {
   std::vector<size_t> retval;
   // 1. Large leafs.
   for (auto id : large_leafs_) {
     const auto &entity = Get(id);
 
-    if (entity.Intersect(aabb)) {
+    if (entity.first.Intersect(aabb)) {
       retval.push_back(id);
     }
   }
@@ -217,7 +218,7 @@ std::vector<size_t> SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Qu
 }
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryVisit(
-    std::vector<size_t> &retval, size_t node, const AABB<void, F, dim> &aabb) const {
+    std::vector<size_t> &retval, size_t node, const AABB<F, dim> &aabb) const {
   const auto &n = nodes_[node];
   if (n.box_.Intersect(aabb)) {
     std::copy(n.leafs_.begin(), n.leafs_.end(), std::back_inserter(retval));
@@ -237,7 +238,7 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryInternal() const 
   // 1. Large leafs.
   for (auto id : large_leafs_) {
     const auto &entity = Get(id);
-    auto leaf_intersect = Query(entity.GetVoidAABB());
+    auto leaf_intersect = Query(entity.first);
     for (auto another : leaf_intersect) {
       retval.push_back({id, another});
     }
@@ -255,7 +256,7 @@ void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryVisitInterna
   const auto &n = nodes_[node];
   for (auto l : n.leafs_) {
     std::vector<size_t> intersect;
-    QueryVisit(intersect, node, data_[l].GetVoidAABB());
+    QueryVisit(intersect, node, data_[l].first);
     for (auto r : intersect) {
       retval.push_back({l, r});
     }

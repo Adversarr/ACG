@@ -1,5 +1,7 @@
 # Adversarr's Computer Graphics toolbox
 
+[![CodeFactor](https://www.codefactor.io/repository/github/adversarr/acg/badge)](https://www.codefactor.io/repository/github/adversarr/acg)
+
 NOTE: This project is highly expremental.
 
 ACG is a toolbox designed for study use mainly about Physical Simulation, but not Rendering.
@@ -56,8 +58,23 @@ Now, mass spring will also show the dynamic computed grid (SubdivisonAABB) for f
 
 ![image-20230302185942678](./media//image-20230302185942678.png)
 
+### fem-implicit
+
+Quasi Newton solver, the algorithm is same as example "hybred" below.
+
+### hybred
+
+Quasi newton based solver for both `cloth` and `softbody` solve. (Implicit Euler)
+
+- Left: Mass Spring
+- Right: Ogden Neo-Hookean
+
+![image-20230329134931068](./media//image-20230329134931068.png)
+
+
+
 ### Other Stuffs
 
 1. `fem-implicit`: first-order explicit integrator. NeoHookean or StVK FEM Soft Body Simulation.
-2. `mpm-explicit`: PIC-Fluid simulation, toy P2G and G2P process, weakly-compressible.
+2. `mpm-explicit`: APIC-Fluid simulation, toy P2G and G2P process, weakly-compressible.
 

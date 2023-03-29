@@ -14,7 +14,7 @@ TEST_CASE("Elastic Common") {
   Eigen::Matrix3f dg;
   dg.setZero();
   dg.diagonal().setConstant(0.9);
-  acg::physics::elastic::SmithInvariants invariants(Eigen::Matrix3f::Identity());
+  acg::physics::elastic::SmithInvariants<float, 3> invariants(Eigen::Matrix3f::Identity());
   auto result = invariants.ComputeHessian();
   std::cout << result.inv_grad_result_.i1_ << std::endl;
   std::cout << result.inv_grad_result_.i2_ << std::endl;
@@ -35,8 +35,8 @@ TEST_CASE("Stvk") {
   dg.diagonal().setConstant(0.9);
   physics::elastic::StVK<double, 3> stvk(dg, lambda, mu);
   auto grad = stvk.ComputeGradient();
-  std::cout << grad.energy << std::endl;
-  std::cout << grad.grad.reshaped(3, 3) << std::endl;
+  std::cout << grad.energy_ << std::endl;
+  std::cout << grad.grad_.reshaped(3, 3) << std::endl;
   {
     Mat3x3d dm_inv = Mat3x3d::Identity();
     Mat3x3d f = dg;
@@ -80,5 +80,5 @@ TEST_CASE("Neohookean") {
 
   fmt::print("H = {}\n", h.hessian);
   fmt::print("g = {}\n", h.grad);
-  fmt::print("Phi = {}\n", h.energy);
+  fmt::print("Phi = {}\n", h.energy_);
 }
