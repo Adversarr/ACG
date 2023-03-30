@@ -2,10 +2,11 @@ function(acg_add_example name deps)
   file(GLOB_RECURSE sources "${name}/*.cpp")
   add_executable(${name} ${sources})
   target_link_libraries(${name} PRIVATE ${deps})
+  acg_set_warn_levels(${name})
 endfunction(acg_add_example)
 find_package(benchmark CONFIG REQUIRED)
 
-acg_add_example(ggui2 "acg_core;acg_gui")
+acg_add_example(gui "acg_core;acg_gui")
 acg_add_example(bench_eigen_call "acg_core;benchmark::benchmark;benchmark::benchmark_main;")
 acg_add_example(bench_math_utils "acg_core;acg_gui;benchmark::benchmark;benchmark::benchmark_main;")
 # TODO: submodule auto diff
@@ -13,7 +14,6 @@ acg_add_example(bench_math_utils "acg_core;acg_gui;benchmark::benchmark;benchmar
 
 acg_add_example(fem-implicit "acg_core;acg_gui;acg_physics;acg_data")
 acg_add_example(mass-spring "acg_core;acg_gui")
-acg_add_example(ggui "acg_gui;acg_core")
 acg_add_example(mpm-explicit "acg_gui;acg_physics")
 acg_add_example(spatial-subdivision "acg_gui")
 acg_add_example(elastic-shape-matching "acg_gui;acg_physics")

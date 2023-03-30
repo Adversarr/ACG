@@ -66,3 +66,5 @@ target_include_directories(acg_gui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 compile_shader_dir(guishader "${CMAKE_CURRENT_SOURCE_DIR}/shader" ${SPIRV_HOME})
 
 add_dependencies(acg_gui guishader)
+
+acg_set_warn_levels(acg_gui)

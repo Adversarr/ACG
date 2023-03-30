@@ -1,7 +1,6 @@
 #include <doctest/doctest.h>
 
 #include <acore/spatial/subdivision.hpp>
-#include <autils/log.hpp>
 #include <iostream>
 
 using namespace acg;

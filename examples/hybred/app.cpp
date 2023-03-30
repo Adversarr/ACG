@@ -1,44 +1,86 @@
 #include "app.hpp"
 
-#include <acore/geometry/common_models.hpp>
 #include <acore/math/func.hpp>
 #include <acore/parallel/common.hpp>
+#include <aphysics/ccd/barrier.hpp>
+#include <aphysics/ccd/detect.hpp>
 #include <aphysics/elastic/neohookean.hpp>
-#include <aphysics/elastic/stvk.hpp>
 #include <set>
 
 namespace acg::app {
 
-void HybredApp::Step(bool verbose) {
+void HybridApp::Step(bool verbose) {
   ComputeExtForces();
   // Linesearch:
   for (auto [i] : NdRange(steps_)) {
     ACG_INFO("Iteration {}", i);
     ComputeStepDirection();
-    linesearch_alpha_ = 0;
-    ComputeEnergy();
     ComputeLinesearchTerminalThreshold();
-    linesearch_alpha_ = 2.0;
+
+    // determine largest step size.
+    collisions_.clear();
+    auto n_colls = collisions_.size();
+    linesearch_alpha_ = 1;
+    global_minimal_toi_ = 1;
+    ComputeLinesearchPosition(linesearch_alpha_);
+    if (DetectLinesearchCollision(true)) {
+      while (n_colls != collisions_.size()) {
+        ACG_INFO("Found new collision in step ({} / {}), alpha = {}. "
+                 "Recomputing direction...",
+                 n_colls, collisions_.size(), global_minimal_toi_);
+        n_colls = collisions_.size();
+        ComputeStepDirection();
+        ComputeLinesearchPosition(1);
+        DetectLinesearchCollision(true);
+      }
+      ACG_INFO("Determined. toi = {}", global_minimal_toi_);
+    }
+
+    // Compute goal at x_k.
+    ComputeLinesearchTerminalThreshold();
+    linesearch_alpha_ = 0;
+    ComputeLinesearchPosition(0);
+    ComputeLinesearchEnergy();
     auto initial_energy = linesearch_energy_;
-    ACG_INFO("Initial Energy = {}, Thre = {}", linesearch_energy_,
-             linesearch_terminal_thre_);
-    Scalar least_energy_alpha = 0;
-    Scalar least_energy = initial_energy;
+
+    linesearch_alpha_ = global_minimal_toi_ * .99;
+    ACG_INFO("Initial Energy = {}, Thre = {}, Alpha = {}, Step Size = {}",
+             linesearch_energy_, linesearch_terminal_thre_, linesearch_alpha_,
+             global_solve_direction_.norm());
+
+    Scalar least_energy_alpha = std::numeric_limits<Scalar>::max();
+    Scalar least_energy = std::numeric_limits<Scalar>::max();
     for (auto [ls_count] : NdRange(15)) {
       linesearch_alpha_ /= 2;
-      ComputeEnergy();
+      ComputeLinesearchPosition(linesearch_alpha_);
+      if (DetectLinesearchCollision()) {
+        ACG_ERROR("Found Intersection in linesearch, does everything works?");
+        DetectLinesearchCollision(true);
+        throw std::runtime_error("IntersectionError");
+      }
+      ComputeLinesearchEnergy();
+      if (isinf(linesearch_energy_) || isnan(linesearch_energy_)) {
+        // not a valid step, smaller alpha required.
+        continue;
+      }
+
       if (linesearch_energy_ < least_energy) {
+        ACG_DEBUG("Linesearch: Found a smaller energy alpha = {}",
+                  linesearch_alpha_);
         least_energy_alpha = linesearch_alpha_;
         least_energy = linesearch_energy_;
       }
-      ls_count += 1;
+
       if (verbose) {
-        ACG_INFO("Linesearch {}: Energy = {}, IE = {}, alpha = {}", ls_count,
-                 linesearch_energy_, initial_energy, linesearch_alpha_);
+        ACG_INFO("Linesearch {}: Energy = {}, alpha = {}", ls_count,
+                 linesearch_energy_, linesearch_alpha_);
       }
-      if (isinf(linesearch_energy_)) {
-        continue;
+      ls_count += 1;
+
+      if (least_energy < initial_energy || ls_count > 6) {
+        break;
       }
+
       if (linesearch_energy_ - initial_energy <
           linesearch_gamma_ * linesearch_alpha_ * linesearch_terminal_thre_) {
         // less than threshold, break
@@ -46,57 +88,111 @@ void HybredApp::Step(bool verbose) {
       }
     }
     linesearch_alpha_ = least_energy_alpha;
-    ACG_INFO("Alpha = {}", linesearch_alpha_);
-    for (auto &o : cloth_) {
-      o.update_position_ += linesearch_alpha_ * o.update_direction_;
-    }
-    for (auto &o : softbody_) {
-      o.update_position_ += linesearch_alpha_ * o.update_direction_;
-    }
-    EnforceConstraints();
+    ACG_INFO("Linesearch done, with alpha = {}", linesearch_alpha_);
+    CommitLinesearch();
   }
 
   CopyIterateResult();
 }
 
-void HybredApp::EnforceConstraints() {
-  for (const auto &c : constraints_) {
-    if (c.object_.type_ == physics::PhysicsObjectType::kHyperElasticSoftbody) {
-      auto &o = softbody_[c.object_.object_];
-      view(o.update_position_)(c.object_.id_) = c.value_;
-      view(o.update_direction_)(c.object_.id_).setZero();
-    } else if (c.object_.type_ == physics::PhysicsObjectType::kCloth) {
-      auto &o = cloth_[c.object_.object_];
-      view(o.update_position_)(c.object_.id_) = c.value_;
-      view(o.update_direction_)(c.object_.id_).setZero();
-    }
+bool HybridApp::CommitLinesearch() {
+  ComputeLinesearchPosition(linesearch_alpha_);
+  auto result = DetectLinesearchCollision();
+  if (result) {
+    ACG_ERROR("Collision detected.");
   }
-
-  for (auto &o : softbody_) {
-    for (auto [i, c] : enumerate(view(o.update_position_))) {
-      if (c.z() < 0) {
-        c.z() = 0;
+  for (auto [i, p] : enumerate(view(fluid_.substep_position_))) {
+    Vec3<Scalar> p_dest = fluid_.linesearch_position_.col(i);
+    for (size_t cid = 0; cid < cloth_.size(); ++cid) {
+      auto &cl = cloth_[cid];
+      auto c = view(cl.substep_position_);
+      auto d = view(cl.linesearch_position_);
+      for (auto [j, face] : enumerate(view(cl.data_.face_))) {
+        physics::ccd::VertexTriangle<Scalar> vf;
+        if (vf(p, c(face.x()), c(face.y()), c(face.z()), p_dest, d(face.x()),
+               d(face.y()), d(face.z()))) {
+          ACG_ERROR("Found the collision after update line search!");
+          ACG_ERROR("For fluid particle {}, cloth {}, id {}, toi = {}", i, cid,
+                    j, vf.toi_);
+          ACG_ERROR("Particle path = {} -> {}", p.transpose(),
+                    p_dest.transpose());
+          ACG_ERROR("Vert 1 path = {} -> {}", c(face.x()).transpose(),
+                    d(face.x()).transpose());
+          ACG_ERROR("Vert 2 path = {} -> {}", c(face.y()).transpose(),
+                    d(face.y()).transpose());
+          ACG_ERROR("Vert 3 path = {} -> {}", c(face.z()).transpose(),
+                    d(face.z()).transpose());
+          for (auto c : collisions_) {
+            ACG_ERROR("Cached collisions: Fluid {}, Object {}, ID {}",
+                      c.obj0_.id_, c.obj1_.object_, c.obj1_.id_);
+          }
+          throw std::runtime_error("IntersectionError.");
+        }
       }
     }
+    // TODO: Detect the collision between fluid and softbody.
   }
-}
 
-void HybredApp::ComputeLinesearchTerminalThreshold() {
-  // tr[ Grad  Dire]
-  linesearch_terminal_thre_ = 0;
   for (auto &o : cloth_) {
-    linesearch_terminal_thre_ +=
-        (o.grad_.array() * o.update_direction_.array()).sum();
+    o.substep_position_ = o.linesearch_position_;
   }
   for (auto &o : softbody_) {
-    linesearch_terminal_thre_ +=
-        (o.grad_.array() * o.update_direction_.array()).sum();
+    o.substep_position_ = o.linesearch_position_;
+  }
+  fluid_.substep_position_ = fluid_.linesearch_position_;
+  return true;
+}
+
+void HybridApp::EnforceConstraints() {
+  // Apply Position Constraints.
+  for (const auto &c : constraints_) {
+    auto enforce_position = [&c](auto &o) {
+      view(o.linesearch_position_)(c.object_.id_) = c.value_;
+    };
+    if (c.object_.type_ == physics::PhysicsObjectType::kHyperElasticSoftbody) {
+      auto &o = softbody_[c.object_.object_];
+      enforce_position(o);
+    } else if (c.object_.type_ == physics::PhysicsObjectType::kCloth) {
+      auto &o = cloth_[c.object_.object_];
+      enforce_position(o);
+    }
+  }
+
+  // Apply Ground Constraints
+  auto enforce_ground = [this](auto &v) {
+    for (auto c : view(v)) {
+      if (c.z() < ground_.z_value_) {
+        c.z() = ground_.z_value_;
+      }
+    }
+  };
+  for (auto &o : softbody_) {
+    enforce_ground(o.linesearch_position_);
+  }
+
+  for (auto &o : cloth_) {
+    enforce_ground(o.linesearch_position_);
   }
 }
 
-void HybredApp::Init() {}
+void HybridApp::ComputeLinesearchTerminalThreshold() {
+  linesearch_terminal_thre_ =
+      (global_solve_grad_.array() * global_solve_direction_.array()).sum();
+}
 
-void HybredApp::AddCloth(Field<Scalar, 3> vert, Field<Index, 3> face,
+void HybridApp::Init() {
+  ACG_DEBUG("Initialize Hybred App. global solve element count = {}, nnz = {}",
+            global_solve_element_count_, global_hessian_data_.size());
+  global_solve_grad_.resize(global_solve_element_count_);
+  global_solve_direction_.resize(global_solve_element_count_);
+  global_hessian_.resize(global_solve_element_count_,
+                         global_solve_element_count_);
+  global_hessian_.setFromTriplets(global_hessian_data_.begin(),
+                                  global_hessian_data_.end());
+  global_solver_.compute(global_hessian_);
+}
+
+void HybridApp::AddCloth(Field<Scalar, 3> vert, Field<Index, 3> face,
                          Field<Scalar> mass, Scalar stiffness) {
   physics::Cloth<Scalar, 3> cl;
   cl.position_ = vert;
@@ -128,16 +224,13 @@ void HybredApp::AddCloth(Field<Scalar, 3> vert, Field<Index, 3> face,
   AddCloth(cl);
 }
 
-void HybredApp::AddCloth(physics::Cloth<Scalar, 3> cloth) {
+void HybridApp::AddCloth(physics::Cloth<Scalar, 3> cloth) {
   Cloth cl;
   cl.data_ = std::move(cloth);
-  cl.update_position_.resizeLike(cl.data_.position_);
-  cl.inertia_position_.resizeLike(cl.update_position_);
-  cl.update_direction_.resizeLike(cl.update_position_);
+  cl.substep_position_.resizeLike(cl.data_.position_);
+  cl.inertia_position_.resizeLike(cl.substep_position_);
+  cl.substep_direction_.resizeLike(cl.substep_position_);
   cl.grad_.resizeLike(cl.data_.position_);
-  // Fill hessian
-  cl.hessian_.resize(cl.update_position_.size(), cl.update_position_.size());
-  using T = Eigen::Triplet<Scalar>;
   std::vector<T> hdata;
   for (auto [i, c] : enumerate(view(cl.data_.constraints_))) {
     //[[I, -I]
@@ -161,15 +254,16 @@ void HybredApp::AddCloth(physics::Cloth<Scalar, 3> cloth) {
     hdata.push_back(T(3 * i + 2, 3 * i + 2, c / dt_ / dt_));
   }
 
-  cl.hessian_.setFromTriplets(hdata.begin(), hdata.end());
-  cl.hessian_.makeCompressed();
-  cl.solver_ =
-      std::make_unique<Eigen::SimplicialCholesky<acg::SpMat<Scalar>>>();
-  cl.solver_->compute(cl.hessian_);
+  // Set index start point and increase global.
+  cl.global_solve_index_start_ = global_solve_element_count_;
+  global_solve_element_count_ += cl.grad_.size();
+  AddHessian(cl.global_solve_index_start_, hdata);
+
+  // Final, move into vector.
   cloth_.push_back(std::move(cl));
 }
 
-void HybredApp::AddSoftbody(Field<Scalar, 3> position, Field<Index, 4> tetras,
+void HybridApp::AddSoftbody(Field<Scalar, 3> position, Field<Index, 4> tetras,
                             Field<Scalar> mass, Scalar lambda, Scalar mu) {
   physics::HyperElasticSoftbody<Scalar, 3> sb{position, tetras, mass, lambda,
                                               mu};
@@ -177,14 +271,13 @@ void HybredApp::AddSoftbody(Field<Scalar, 3> position, Field<Index, 4> tetras,
   AddSoftbody(sb);
 }
 
-void HybredApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody) {
+void HybridApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody) {
   Softbody s;
   s.data_ = std::move(softbody);
-  s.update_position_.resizeLike(s.data_.position_);
-  s.inertia_position_.resizeLike(s.update_position_);
-  s.update_direction_.resizeLike(s.update_position_);
-  s.grad_.resizeLike(s.update_position_);
-  s.hessian_.resize(s.data_.position_.size(), s.data_.position_.size());
+  s.substep_position_.resizeLike(s.data_.position_);
+  s.inertia_position_.resizeLike(s.substep_position_);
+  s.substep_direction_.resizeLike(s.substep_position_);
+  s.grad_.resizeLike(s.substep_position_);
   using T = Eigen::Triplet<Scalar>;
   std::vector<T> hdata;
 
@@ -206,26 +299,29 @@ void HybredApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody) {
     hdata.push_back(T{3 * i + 1, 3 * i + 1, v / math::square(dt_)});
     hdata.push_back(T{3 * i + 2, 3 * i + 2, v / math::square(dt_)});
   }
-  s.hessian_.setFromTriplets(hdata.begin(), hdata.end());
-  s.hessian_.makeCompressed();
-  s.solver_ = std::make_unique<Eigen::SimplicialCholesky<acg::SpMat<Scalar>>>();
-  s.solver_->compute(s.hessian_);
+
+  s.global_solve_index_start_ = global_solve_element_count_;
+  global_solve_element_count_ += s.grad_.size();
+  AddHessian(s.global_solve_index_start_, hdata);
   softbody_.push_back(std::move(s));
 }
 
-void HybredApp::ComputeExtForces() {
+void HybridApp::ComputeExtForces() {
   for (auto &o : cloth_) {
     // Dt * force = Delta Delta X.
     o.inertia_position_ = o.data_.position_ + dt_ * o.data_.velocity_;
-    o.inertia_position_.colwise() += .5 * dt_ * dt_ * gravity_;
+    o.inertia_position_.colwise() += dt_ * dt_ * gravity_;
   }
 
   for (auto &o : softbody_) {
     o.inertia_position_ = o.data_.position_ + dt_ * o.data_.velocity_;
-    o.inertia_position_.colwise() += .5 * dt_ * dt_ * gravity_;
+    o.inertia_position_.colwise() += dt_ * dt_ * gravity_;
   }
-
   // TODO: Compute force for fluids.
+  fluid_.inertia_position_ =
+      fluid_.data_.position_ + dt_ * fluid_.data_.velocity_;
+  fluid_.inertia_position_.colwise() += math::square(dt_) * gravity_;
+
   for (auto &e : external_forces_) {
     if (e.object_.type_ == physics::PhysicsObjectType::kCloth) {
       cloth_[e.object_.object_].inertia_position_.col(e.object_.id_) +=
@@ -240,32 +336,29 @@ void HybredApp::ComputeExtForces() {
   }
 
   for (auto &o : cloth_) {
-    o.update_position_ = o.inertia_position_;
+    o.substep_position_ = o.data_.position_;
   }
   for (auto &o : softbody_) {
-    o.update_position_ = o.inertia_position_;
+    o.substep_position_ = o.data_.position_;
   }
-  EnforceConstraints();
-  for (auto &o : cloth_) {
-    o.inertia_position_ = o.update_position_;
-  }
-  for (auto &o : softbody_) {
-    o.inertia_position_ = o.update_position_;
-  }
+  fluid_.substep_position_ = fluid_.data_.position_;
 }
 
-void HybredApp::ComputeStepDirection() {
+void HybridApp::ComputeStepDirection() {
   // 1. compute gradient.
   // 2. compute step direction.
+  global_solve_grad_.resize(global_solve_element_count_);
+
+  // Cloth
   for (auto &o : cloth_) {
     // Compute for cloth.
     auto &grad = o.grad_;
     grad.setZero();
-    auto pacc = view(o.update_position_);
+    auto pacc = view(o.substep_position_);
     auto gacc = view(grad);
     for (auto [i, c] : enumerate(view(o.inertia_position_))) {
       // Target position Gradient = M / dt2 (x - \hat x)
-      gacc(i) += o.data_.mass_(i) / dt_ / dt_ * (pacc(i) - c);
+      gacc(i) += (o.data_.mass_(i) / dt_ / dt_ * (pacc(i) - c));
     }
 
     for (auto [i, c] : enumerate(view(o.data_.constraints_))) {
@@ -278,13 +371,14 @@ void HybredApp::ComputeStepDirection() {
       gacc(c.y()) -= force;
     }
 
-    auto result = o.solver_->solve(grad.reshaped()).eval();
-    o.update_direction_ = -result.reshaped(3, o.update_position_.cols());
+    global_solve_grad_.block(o.global_solve_index_start_, 0, grad.size(), 1) =
+        grad.reshaped();
   }
 
+  // Softbody
   for (auto &o : softbody_) {
     o.grad_.setZero();
-    auto pacc = view(o.update_position_);
+    auto pacc = view(o.substep_position_);
     auto gacc = view(o.grad_);
 
     for (auto [i, c] : enumerate(view(o.inertia_position_))) {
@@ -310,31 +404,138 @@ void HybredApp::ComputeStepDirection() {
       }
     }
 
-    auto result = o.solver_->solve(o.grad_.reshaped()).eval();
-    o.update_direction_ = -result.reshaped(3, o.update_position_.cols());
+    global_solve_grad_.block(o.global_solve_index_start_, 0, o.grad_.size(),
+                             1) = o.grad_.reshaped();
+  }
+
+  // Fluid
+  fluid_.grad_.setZero();
+  auto v = view(fluid_.grad_);
+  auto iv = view(fluid_.inertia_position_);
+  for (auto [i, p] : enumerate(view(fluid_.substep_position_))) {
+    v(i) = (p - iv(i)) * fluid_.data_.mass_(i) / math::square(dt_);
+  }
+  global_solve_grad_.block(fluid_.global_solve_index_start_, 0,
+                           fluid_.grad_.size(), 1) = fluid_.grad_.reshaped();
+
+  // Collision Gradient
+  collision_hessian_data_.clear();
+  Mat<Scalar, 9, 12> gi;
+  auto i = Mat3x3<Scalar>::Identity();
+  auto o = Mat3x3<Scalar>::Zero();
+  gi << -i, i, o, o, -i, o, i, o, -i, o, o, i;
+  auto li = (gi.transpose() * gi).eval();
+  // li.setIdentity();
+  for (auto c : collisions_) {
+    // TODO: Here, assume that:
+    //       c.obj1_.type_ == Cloth
+    physics::ccd::VertexTriangleBarrier<Scalar> b(dhat_);
+    const auto &cl = cloth_[c.obj1_.object_];
+    auto p = view(cloth_[c.obj1_.object_].substep_position_);
+    auto t = view(cloth_[c.obj1_.object_].data_.face_)(c.obj1_.id_);
+    auto f = view(fluid_.substep_position_)(c.obj0_.id_);
+    auto t0 = p(t.x());
+    auto t1 = p(t.y());
+    auto t2 = p(t.z());
+    auto t10 = t1 - t0;
+    auto t20 = t2 - t0;
+    auto normal = t10.cross(t20).stableNormalized().eval();
+    auto dot_product = normal.dot(f - t0);
+    if (dot_product < 0) {
+      normal = -normal;
+    }
+    Vec<Scalar, 12> g;
+    g << -3 * normal, normal, normal, normal;
+    g *= collision_stiffness_;
+    // auto g = collision_stiffness_ * b.Grad(f, p(t.x()), p(t.y()), p(t.z()));
+    ACG_INFO("Value = {}, normal = {}", dot_product, normal.transpose());
+    auto clstart = cloth_[c.obj1_.object_].global_solve_index_start_;
+    global_solve_grad_.middleRows<3>(fluid_.global_solve_index_start_ +
+                                     c.obj0_.id_) += g.middleRows<3>(0);
+    global_solve_grad_.middleRows<3>(clstart + t.x() * 3) += g.middleRows<3>(3);
+    global_solve_grad_.middleRows<3>(clstart + t.y() * 3) += g.middleRows<3>(6);
+    global_solve_grad_.middleRows<3>(clstart + t.z() * 3) += g.middleRows<3>(9);
+    Vec4<Index> v(c.obj0_.id_, t.x(), t.y(), t.z());
+    for (auto [i, j, di, dj] : NdRange<4>{{4, 4, 3, 3}}) {
+      auto row = 3 * v(i) + di;
+      if (i == 0) {
+        row += fluid_.global_solve_index_start_;
+      } else {
+        row += cl.global_solve_index_start_;
+      }
+      auto col = 3 * v(j) + dj;
+      if (j == 0) {
+        col += fluid_.global_solve_index_start_;
+      } else {
+        col += cl.global_solve_index_start_;
+      }
+      auto t = T{row, col, li(3 * i + di, 3 * j + dj) * collision_stiffness_};
+      collision_hessian_data_.push_back(t);
+    }
+  }
+
+  Eigen::SimplicialCholesky<acg::SpMat<Scalar>> sc;
+  if (collision_hessian_data_.empty()) {
+    sc.compute(global_hessian_);
+  } else {
+    SpMat<Scalar> coll;
+    coll.resize(global_solve_grad_.size(), global_solve_grad_.size());
+    coll.setFromTriplets(collision_hessian_data_.begin(),
+                         collision_hessian_data_.end());
+    sc.compute(coll + global_hessian_);
+  }
+  global_solve_direction_ = (-sc.solve(global_solve_grad_));
+  ACG_CHECK(sc.info() == Eigen::Success, "Hessian does not solve.");
+  for (auto &o : cloth_) {
+    o.substep_direction_.reshaped() = global_solve_direction_.middleRows(
+        o.global_solve_index_start_, o.substep_direction_.size());
+  }
+
+  for (auto &o : softbody_) {
+    o.substep_direction_.reshaped() = global_solve_direction_.middleRows(
+        o.global_solve_index_start_, o.substep_direction_.size());
+  }
+
+  fluid_.update_direction_.reshaped() = global_solve_direction_.block(
+      fluid_.global_solve_index_start_, 0, fluid_.grad_.size(), 1);
+}
+
+void HybridApp::AddHessian(Index offset, const std::vector<T> &hessian) {
+  for (const auto &v : hessian) {
+    global_hessian_data_.push_back(
+        T{v.row() + offset, v.col() + offset, v.value()});
   }
 }
 
-void HybredApp::ComputeEnergy() {
+void HybridApp::ComputeLinesearchEnergy() {
   linesearch_energy_ = 0;
-  for (auto &o : cloth_) {
-    o.linesearch_position_ =
-        o.update_position_ + o.update_direction_ * linesearch_alpha_;
-  }
-  for (auto &o : softbody_) {
-    o.linesearch_position_ =
-        o.update_position_ + o.update_direction_ * linesearch_alpha_;
+  if (!ComputeConstraintEnergy()) {
+    return;
   }
 
   if (!ComputeInertiaEnergy()) {
     return;
   }
-  if (!ComputeConstraintEnergy()) {
-    return;
+  // Scalar inertia_energy = linesearch_energy_ - constraint_energy;
+  // 3. collisions
+  Scalar coll_energy = 0;
+  for (const auto &c : collisions_) {
+    // HACK: assert that obj1 is cloth.
+    physics::ccd::VertexTriangleBarrier<Scalar> b(dhat_);
+    auto p = view(cloth_[c.obj1_.object_].linesearch_position_);
+    auto t = view(cloth_[c.obj1_.object_].data_.face_)(c.obj1_.id_);
+    auto f = view(fluid_.linesearch_position_)(c.obj0_.id_);
+    auto v = collision_stiffness_ * b.Value(f, p(t.x()), p(t.y()), p(t.z()));
+    coll_energy += v;
   }
+  linesearch_energy_ += coll_energy;
+  // ACG_INFO("Linesearch Energy = {}, Collision Energy = {}, Inertia Energy = "
+  //          "{}, Constraint Energy = {}",
+  //          linesearch_energy_, coll_energy, inertia_energy,
+  //          constraint_energy);
 }
 
-bool HybredApp::ComputeInertiaEnergy() {
+bool HybridApp::ComputeInertiaEnergy() {
   // 1. Cloth Energies
   for (auto &o : cloth_) {
     auto pacc = view(o.linesearch_position_);
@@ -355,24 +556,35 @@ bool HybredApp::ComputeInertiaEnergy() {
     }
     linesearch_energy_ += inertia_energy / dt_ / dt_;
   }
+
+  auto d = fluid_.linesearch_position_ - fluid_.inertia_position_;
+  Scalar fluid_inertia =
+      (d.array().square().rowwise() * fluid_.data_.mass_.array()).sum() /
+      math::square(dt_);
+  // ACG_INFO("Fluid inertia={}", fluid_inertia);
+  linesearch_energy_ += fluid_inertia;
   return true;
 }
 
-void HybredApp::CopyIterateResult() {
+void HybridApp::CopyIterateResult() {
   for (auto &o : cloth_) {
-    auto d_pos = o.update_position_ - o.data_.position_;
+    auto d_pos = o.substep_position_ - o.data_.position_;
     o.data_.velocity_ = d_pos / dt_;
-    o.data_.position_ = o.update_position_;
+    o.data_.position_ = o.substep_position_;
   }
 
   for (auto &o : softbody_) {
-    auto d_pos = o.update_position_ - o.data_.position_;
+    auto d_pos = o.substep_position_ - o.data_.position_;
     o.data_.velocity_ = d_pos / dt_;
-    o.data_.position_ = o.update_position_;
+    o.data_.position_ = o.substep_position_;
   }
+
+  fluid_.data_.velocity_ =
+      (fluid_.substep_position_ - fluid_.data_.position_) / dt_;
+  fluid_.data_.position_ = fluid_.substep_position_;
 }
 
-bool HybredApp::ComputeConstraintEnergy() {
+bool HybridApp::ComputeConstraintEnergy() {
   // 1. Cloth Energies
   for (auto &o : cloth_) {
     auto pacc = view(o.linesearch_position_);
@@ -383,24 +595,11 @@ bool HybredApp::ComputeConstraintEnergy() {
       auto l = d.norm();
       linesearch_energy_ += .5 * k * math::square(l - ol);
     }
-    Scalar inertia_energy = 0;
-    for (auto [i, c] : enumerate(view(o.inertia_position_))) {
-      inertia_energy += .5 * o.data_.mass_(i) * (c - pacc(i)).squaredNorm();
-    }
-    linesearch_energy_ += inertia_energy / dt_ / dt_;
   }
 
   // 2. Softbody Energies.
   for (auto &o : softbody_) {
     auto pacc = view(o.linesearch_position_);
-    Scalar inertia_energy = 0;
-    for (auto [i, c] : enumerate(view(o.inertia_position_))) {
-      inertia_energy += o.data_.mass_(i) * (pacc(i) - c).squaredNorm();
-    }
-    linesearch_energy_ += inertia_energy / dt_ / dt_;
-
-    Scalar elastic_energy = 0;
-
     for (auto [i, tet] : enumerate(view(o.data_.tetras_))) {
       Mat3x3<Scalar> cur;
       cur.col(0) = pacc(tet.y()) - pacc(tet.x());
@@ -412,14 +611,106 @@ bool HybredApp::ComputeConstraintEnergy() {
                         deform_grad, o.data_.lambda_, o.data_.mu_)
                         .ComputeEnergy();
       if (isnan(result)) {
+        // The step is too large, and energy -> invalid.
         linesearch_energy_ = std::numeric_limits<Scalar>().infinity();
         return false;
       }
-      elastic_energy += result;
+      linesearch_energy_ += result;
     }
-
-    linesearch_energy_ += elastic_energy;
   }
+
+  return true;
+}
+
+void HybridApp::SetFluid(physics::LagrangeFluid<Scalar, 3> fluid) {
+  fluid_.data_ = std::move(fluid);
+  fluid_.substep_position_.resizeLike(fluid_.data_.position_);
+  fluid_.update_direction_.resizeLike(fluid_.data_.position_);
+  fluid_.grad_.resizeLike(fluid_.data_.position_);
+  fluid_.global_solve_index_start_ = global_solve_element_count_;
+  global_solve_element_count_ += fluid_.substep_position_.size();
+  std::vector<T> hdata;
+  for (auto [i, c] : enumerate(view(fluid_.data_.position_))) {
+    hdata.push_back(T{3 * i, 3 * i, fluid_.data_.mass_(i) / math::square(dt_)});
+    hdata.push_back(
+        T{3 * i + 1, 3 * i + 1, fluid_.data_.mass_(i) / math::square(dt_)});
+    hdata.push_back(
+        T{3 * i + 2, 3 * i + 2, fluid_.data_.mass_(i) / math::square(dt_)});
+  }
+  AddHessian(fluid_.global_solve_index_start_, hdata);
+}
+
+void HybridApp::ComputeLinesearchPosition(Scalar alpha) {
+  for (auto &o : cloth_) {
+    o.linesearch_position_ = o.substep_position_ + o.substep_direction_ * alpha;
+  }
+  for (auto &o : softbody_) {
+    o.linesearch_position_ = o.substep_position_ + o.substep_direction_ * alpha;
+  }
+
+  fluid_.linesearch_position_ =
+      fluid_.substep_position_ + fluid_.update_direction_ * alpha;
+  EnforceConstraints();
+}
+
+bool HybridApp::DetectLinesearchCollision(bool verbose) {
+  Scalar scale = 1;
+  bool has_collision = false;
+  for (auto [i, p] : enumerate(view(fluid_.substep_position_))) {
+    Vec3<Scalar> p_dest = fluid_.linesearch_position_.col(i);
+    for (int cid = 0; cid < cloth_.size(); ++cid) {
+      const auto &cl = cloth_[cid];
+      auto c = view(cl.substep_position_);
+      auto d = view(cl.linesearch_position_);
+      for (auto [j, face] : enumerate(view(cl.data_.face_))) {
+        physics::ccd::VertexTriangle<Scalar> vf;
+        if (vf(p, c(face.x()), c(face.y()), c(face.z()), p_dest, d(face.x()),
+               d(face.y()), d(face.z()))) {
+          // Found the collision.
+          scale = std::min(vf.toi_, scale);
+          physics::CollisionConstraint cc;
+          cc.type_ = physics::CollisionType::kVertexFace;
+          cc.obj0_.type_ = physics::PhysicsObjectType::kLaglangianFluid;
+          cc.obj0_.id_ = i;
+          cc.obj1_.type_ = physics::PhysicsObjectType::kCloth;
+          cc.obj1_.object_ = cid;
+          cc.obj1_.id_ = j;
+          if (verbose) {
+            ACG_DEBUG("TOI = {}, Fluid {}, Face {}", vf.toi_, i, cid);
+            ACG_DEBUG("Particle path = {} -> {}", p.transpose(),
+                      p_dest.transpose());
+            ACG_DEBUG("Vert 1 path = {} -> {}", c(face.x()).transpose(),
+                      d(face.x()).transpose());
+            ACG_DEBUG("Vert 2 path = {} -> {}", c(face.y()).transpose(),
+                      d(face.y()).transpose());
+            ACG_DEBUG("Vert 3 path = {} -> {}", c(face.z()).transpose(),
+                      d(face.z()).transpose());
+          }
+          AddCollision(cc);
+          has_collision = true;
+        }
+      }
+    }
+    // TODO: Detect the collision between fluid and softbody.
+  }
+
+  if (has_collision) {
+    ACG_WARN("Found {} collisions, minimal toi = {}", collisions_.size(),
+             scale);
+  }
+
+  global_minimal_toi_ = scale;
+  return has_collision;
+}
+
+bool HybridApp::AddCollision(physics::CollisionConstraint cc) {
+  if (collisions_.find(cc) != collisions_.end()) {
+    return false;
+  }
+  ACG_INFO("Found the collision! fluid {}, object {}, id {}", cc.obj0_.id_,
+           cc.obj1_.object_, cc.obj1_.id_);
+  collisions_.insert(cc);
+  return true;
 }
 
 } // namespace acg::app

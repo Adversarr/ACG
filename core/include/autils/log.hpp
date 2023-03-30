@@ -56,7 +56,7 @@ inline void set_default_log_level(LogLevel lvl) {
 #    define ACG_DEBUG_LOG(...)                                            \
       ACG_LOG(spdlog::source_loc(__FILE__, __LINE__,                      \
                                  static_cast<const char*>(__FUNCTION__)), \
-              spdlog::level::level_enum::debug, __VA_ARGS__)
+              spdlog::level::level_enum::trace, __VA_ARGS__)
 #  else
 #    define ACG_DEBUG_LOG(...) acg::utils::do_nothing(__VA_ARGS__);
 #  endif

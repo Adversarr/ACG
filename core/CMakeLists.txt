@@ -32,3 +32,4 @@ target_link_libraries(acg_core_test PRIVATE doctest::doctest acg_core)
 doctest_discover_tests(
   acg_core_test
 )
+acg_set_warn_levels(acg_core)

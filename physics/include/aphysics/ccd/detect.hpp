@@ -3,8 +3,8 @@
  * @brief Here is a small story of this algorithm:
  *  NOTE: The story of Fast CCD
  *   Originally, this algorithm is proposed on my Gitee, and is an exprimental
- *  one. After join GCL at USTC, we have a seminar for every to propose their own
- *  ideas, and I proposed this algorithm. However, we found that the paper
+ *  one. After join GCL at USTC, we have a seminar for every to propose their
+ * own ideas, and I proposed this algorithm. However, we found that the paper
  *  "Penetration-free Projective Dynamics on the GPU" stared the algorithm as a
  *  small contribution. I'm surprised that, the mathematics behind the algorithm
  *  is SOO SIMPLE, and the algorithm is SOO EASY to implement, but people just
@@ -87,7 +87,7 @@ inline bool test_2d(Vec3<Scalar> v00, Vec3<Scalar> v01, Vec3<Scalar> v10,
 
   if (abs(a) + abs(b) < epslion) {
     // Constant.
-    toi = abs(c);
+    toi = 1 - abs(c);
     return abs(c) < epslion;
   }
   double x = 0;
@@ -108,7 +108,7 @@ inline bool test_2d(Vec3<Scalar> v00, Vec3<Scalar> v01, Vec3<Scalar> v10,
     auto v1 = interpolate(x, v10, v11);
     auto v2 = interpolate(x, v20, v21);
     if ((v0 - v1).dot(v0 - v2) < 0) {
-      toi = x;
+      toi = 1 - x;
       return true;
     }
   }
@@ -117,7 +117,7 @@ inline bool test_2d(Vec3<Scalar> v00, Vec3<Scalar> v01, Vec3<Scalar> v10,
     auto v1 = interpolate(y, v10, v11);
     auto v2 = interpolate(y, v20, v21);
     if ((v0 - v1).dot(v0 - v2) < 0) {
-      toi = y;
+      toi = 1 - y;
       return true;
     }
   }
@@ -176,9 +176,10 @@ inline bool crossing_test(const Vec3<Scalar> &e01, const Vec3<Scalar> &e10,
 }
 } // namespace details
 template <typename Scalar> struct VertexTriangle {
-  int max_iter;
-  Scalar toi;
-  bool valid;
+  int max_iter_{7};
+  Scalar toi_;
+  Scalar tolerance_{1e-5};
+  bool valid_{false};
 
   bool operator()(const Vec3<Scalar> &vertex_start,
                   const Vec3<Scalar> &face_vertex0_start,
@@ -187,14 +188,13 @@ template <typename Scalar> struct VertexTriangle {
                   const Vec3<Scalar> &vertex_end,
                   const Vec3<Scalar> &face_vertex0_end,
                   const Vec3<Scalar> &face_vertex1_end,
-                  const Vec3<Scalar> &face_vertex2_end,
-                  const Scalar tolerance) noexcept {
+                  const Vec3<Scalar> &face_vertex2_end) noexcept {
     Vec3<Scalar> x10 = face_vertex1_start - face_vertex0_start;
     Vec3<Scalar> x20 = face_vertex2_start - face_vertex0_start;
     Vec3<Scalar> v_relative_start = vertex_start - face_vertex0_start;
-    Vec3<Scalar> v_relative_end = vertex_end - face_vertex0_end;
     Vec3<Scalar> y10 = face_vertex1_end - face_vertex0_end;
     Vec3<Scalar> y20 = face_vertex2_end - face_vertex0_end;
+    Vec3<Scalar> v_relative_end = vertex_end - face_vertex0_end;
 
     auto a11 = x10.x();
     auto a12 = x10.y();
@@ -257,31 +257,36 @@ template <typename Scalar> struct VertexTriangle {
     Scalar t3 = -k2 / (3 * k3);
     Scalar value, grad;
 
-    if (abs(k2) + abs(k3) + abs(k4) < tolerance) {
-      if (abs(k1) > tolerance) {
-        valid = false;
+    if (abs(k2) + abs(k3) + abs(k4) < tolerance_) {
+      if (abs(k1) > tolerance_) {
+        valid_ = false;
         return false;
       }
       bool collid = false;
-      double t;
-      collid |=
-          test_2d(vertex_start, vertex_end, face_vertex0_start,
-                  face_vertex0_end, face_vertex1_start, face_vertex1_end, t);
-      collid |=
-          test_2d(vertex_start, vertex_end, face_vertex0_start,
-                  face_vertex0_end, face_vertex2_start, face_vertex2_end, t);
-      collid |=
-          test_2d(vertex_start, vertex_end, face_vertex2_start,
-                  face_vertex2_end, face_vertex1_start, face_vertex1_end, t);
+      Scalar minimal_toi = std::numeric_limits<Scalar>::max();
+      toi_ = minimal_toi;
+      collid |= details::test_2d<Scalar>(
+          vertex_start, vertex_end, face_vertex0_start, face_vertex0_end,
+          face_vertex1_start, face_vertex1_end, tolerance_, minimal_toi);
+      toi_ = std::min(toi_, minimal_toi);
+      collid |= details::test_2d<Scalar>(
+          vertex_start, vertex_end, face_vertex0_start, face_vertex0_end,
+          face_vertex2_start, face_vertex2_end, tolerance_, minimal_toi);
+      toi_ = std::min(toi_, minimal_toi);
+
+      collid |= details::test_2d<Scalar>(
+          vertex_start, vertex_end, face_vertex2_start, face_vertex2_end,
+          face_vertex1_start, face_vertex1_end, tolerance_, minimal_toi);
+      toi_ = std::min(toi_, minimal_toi);
       if (collid) {
-        valid = true;
+        valid_ = true;
         return true;
       } else {
-        valid = false;
+        valid_ = false;
         return false;
       }
     }
-    for (int i = 0; i < max_iter; ++i) {
+    for (int i = 0; i < max_iter_; ++i) {
       details::compute_value(k1, k2, k3, k4, t1, value, grad);
       t1 = t1 - value / grad;
       details::compute_value(k1, k2, k3, k4, t2, value, grad);
@@ -292,41 +297,40 @@ template <typename Scalar> struct VertexTriangle {
     }
 
     if (t1 >= 0 && t1 <= 1 &&
-        details::inside_test(
+        details::inside_test<Scalar>(
             x10 * t1 + (1 - t1) * y10, x20 * t1 + y20 * (1 - t1),
-            v_relative_start * t1 + v_relative_end * (1 - t1), tolerance)) {
-      toi = t1;
-      valid = true;
+            v_relative_start * t1 + v_relative_end * (1 - t1), tolerance_)) {
+      toi_ = 1 - t1;
+      valid_ = true;
       return true;
     }
 
     if (0 <= t2 && t2 <= 1 &&
-        details::inside_test(
+        details::inside_test<Scalar>(
             x10 * t2 + (1 - t2) * y10, x20 * t2 + y20 * (1 - t2),
-            v_relative_start * t2 + v_relative_end * (1 - t2), tolerance)) {
-      toi = t2;
-      valid = true;
+            v_relative_start * t2 + v_relative_end * (1 - t2), tolerance_)) {
+      toi_ = 1 - t2;
+      valid_ = true;
       return true;
     }
 
     if (0 <= t3 && t3 <= 1 &&
-        details::inside_test(
+        details::inside_test<Scalar>(
             x10 * t3 + (1 - t3) * y10, x20 * t3 + y20 * (1 - t3),
-            v_relative_start * t3 + v_relative_end * (1 - t3), tolerance)) {
-      toi = t3;
-      valid = true;
+            v_relative_start * t3 + v_relative_end * (1 - t3), tolerance_)) {
+      toi_ = 1 - t3;
+      valid_ = true;
       return true;
     }
 
-    valid = false;
+    valid_ = false;
     return false;
   }
 };
 template <typename Scalar> struct EdgeEdge {
-  int max_iter;
-
-  Scalar toi;
-  bool valid;
+  int max_iter_{7};
+  Scalar toi_;
+  bool valid_{false};
   bool operator()(const Vec3<Scalar> &edge0_vertex0_start,
                   const Vec3<Scalar> &edge0_vertex1_start,
                   const Vec3<Scalar> &edge1_vertex0_start,
@@ -405,32 +409,36 @@ template <typename Scalar> struct EdgeEdge {
 
     if (abs(k2) + abs(k3) + abs(k4) < tolerance) {
       if (abs(k1) > tolerance) {
-        valid = false;
+        valid_ = false;
         return false;
       }
       bool collid = false;
-      collid |= test_2d(edge0_vertex0_start, edge0_vertex0_end,
-                        edge1_vertex0_start, edge1_vertex1_end,
-                        edge1_vertex1_start, edge1_vertex1_end, toi);
-      collid |= test_2d(edge0_vertex1_start, edge0_vertex1_end,
-                        edge1_vertex0_start, edge1_vertex1_end,
-                        edge1_vertex1_start, edge1_vertex1_end, toi);
-      collid |= test_2d(edge1_vertex0_start, edge1_vertex0_end,
-                        edge0_vertex0_start, edge0_vertex1_end,
-                        edge0_vertex1_start, edge0_vertex1_end, toi);
-      collid |= test_2d(edge1_vertex1_start, edge1_vertex1_end,
-                        edge0_vertex0_start, edge0_vertex1_end,
-                        edge0_vertex1_start, edge0_vertex1_end, toi);
+      collid |=
+          test_2d(edge0_vertex0_start, edge0_vertex0_end, edge1_vertex0_start,
+                  edge1_vertex1_end, edge1_vertex1_start, edge1_vertex1_end,
+                  tolerance, toi_);
+      collid |=
+          test_2d(edge0_vertex1_start, edge0_vertex1_end, edge1_vertex0_start,
+                  edge1_vertex1_end, edge1_vertex1_start, edge1_vertex1_end,
+                  tolerance, toi_);
+      collid |=
+          test_2d(edge1_vertex0_start, edge1_vertex0_end, edge0_vertex0_start,
+                  edge0_vertex1_end, edge0_vertex1_start, edge0_vertex1_end,
+                  tolerance, toi_);
+      collid |=
+          test_2d(edge1_vertex1_start, edge1_vertex1_end, edge0_vertex0_start,
+                  edge0_vertex1_end, edge0_vertex1_start, edge0_vertex1_end,
+                  tolerance, toi_);
       if (collid) {
-        valid = true;
+        valid_ = true;
         return true;
       } else {
-        valid = false;
+        valid_ = false;
         return false;
       }
     }
 
-    for (int i = 0; i < max_iter; ++i) {
+    for (int i = 0; i < max_iter_; ++i) {
       details::compute_value(k1, k2, k3, k4, t1, value, grad);
       t1 = t1 - value / grad;
       details::compute_value(k1, k2, k3, k4, t2, value, grad);
@@ -440,32 +448,35 @@ template <typename Scalar> struct EdgeEdge {
       acg::utils::god::sort3(t1, t2, t3);
     }
     if (t1 >= 0.0 && t1 <= 1.0 &&
-        details::crossing_test(e0_v1rs * t1 + e0_v1re * (1 - t1),
-                               e1_v0rs * t1 + e1_v0re * (1 - t1),
-                               e1_v1rs * t1 + e1_v1re * (1 - t1), tolerance)) {
-      toi = t1;
-      valid = true;
+        details::crossing_test<Scalar>(e0_v1rs * t1 + e0_v1re * (1 - t1),
+                                       e1_v0rs * t1 + e1_v0re * (1 - t1),
+                                       e1_v1rs * t1 + e1_v1re * (1 - t1),
+                                       tolerance)) {
+      toi_ = 1 - t1;
+      valid_ = true;
       return true;
     }
 
     if (0.0 <= t2 && t2 <= 1.0 &&
-        details::crossing_test(e0_v1rs * t2 + e0_v1re * (1 - t2),
-                               e1_v0rs * t2 + e1_v0re * (1 - t2),
-                               e1_v1rs * t2 + e1_v1re * (1 - t2), tolerance)) {
-      toi = t2;
-      valid = true;
+        details::crossing_test<Scalar>(e0_v1rs * t2 + e0_v1re * (1 - t2),
+                                       e1_v0rs * t2 + e1_v0re * (1 - t2),
+                                       e1_v1rs * t2 + e1_v1re * (1 - t2),
+                                       tolerance)) {
+      toi_ = 1 - t2;
+      valid_ = true;
       return true;
     }
     if (0.0 <= t3 && t3 <= 1.0 &&
-        details::crossing_test(e0_v1rs * t3 + e0_v1re * (1 - t3),
-                               e1_v0rs * t3 + e1_v0re * (1 - t3),
-                               e1_v1rs * t3 + e1_v1re * (1 - t3), tolerance)) {
-      toi = t3;
-      valid = true;
+        details::crossing_test<Scalar>(e0_v1rs * t3 + e0_v1re * (1 - t3),
+                                       e1_v0rs * t3 + e1_v0re * (1 - t3),
+                                       e1_v1rs * t3 + e1_v1re * (1 - t3),
+                                       tolerance)) {
+      toi_ = 1 - t3;
+      valid_ = true;
       return true;
     }
 
-    valid = false;
+    valid_ = false;
     return false;
   }
 };
