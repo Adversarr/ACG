@@ -5,7 +5,7 @@
  *                                                                            *
  *                       This file is part of 'acgipc'                        *
  ******************************************************************************/
-#include "aphysics/ccd/distances/vertex_vertex_value.hpp"
+#include "aphysics/collision/distances/vertex_vertex_value.hpp"
 
 #include <math.h>
 double vertex_vertex_value(double a_0, double a_1, double a_2, double b_0, double b_1, double b_2, double d_h) {

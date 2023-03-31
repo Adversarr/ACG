@@ -5,7 +5,7 @@
  *                                                                            *
  *                       This file is part of 'acgipc'                        *
  ******************************************************************************/
-#include "aphysics/ccd/distances/vertex_face_value.hpp"
+#include "aphysics/collision/distances/vertex_face_value.hpp"
 
 #include <math.h>
 

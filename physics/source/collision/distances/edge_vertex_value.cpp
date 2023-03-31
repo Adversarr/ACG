@@ -5,7 +5,7 @@
  *                                                                            *
  *                       This file is part of 'acgipc'                        *
  ******************************************************************************/
-#include "aphysics/ccd/distances/edge_vertex_value.hpp"
+#include "aphysics/collision/distances/edge_vertex_value.hpp"
 
 #include <math.h>
 
