@@ -1,4 +1,5 @@
 name: cpp-build
+on: [push]
 
 jobs:
   ubuntu-job:
