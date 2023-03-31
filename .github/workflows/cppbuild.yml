@@ -20,7 +20,7 @@ jobs:
       - name: configure
         run: |
           source $HOME/tools/1.3.236.0/setup-env.sh
-          cmake -DCMAKE_TOOLCHAIN_FILE:STRING="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" -S. -Bbuild
+          cmake -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake -S. -Bbuild
       - name: build
         run: | 
           source $HOME/tools/1.3.236.0/setup-env.sh
