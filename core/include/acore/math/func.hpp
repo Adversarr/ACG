@@ -5,8 +5,13 @@
 
 namespace acg::math {
 
+/**
+ * Return a constant value of type `T`, replacement for `static_cast<...>( SOME_LITERAL );
+ * @tparam T
+ * @param val
+ * @return
+ */
 template <typename T> constexpr T constant(T val) {
-  // TODO: add other types.
   return val;
 }
 
@@ -27,15 +32,11 @@ template <int times, typename T> constexpr auto pow(T value) noexcept {
 template <typename T,
           typename = std::enable_if_t<std::is_arithmetic_v<std::decay_t<T>>>>
 constexpr auto square(T &&value) noexcept {
-  return value * value;
+  return (value * value);
 }
 
 template <typename T> constexpr auto sqrt(T &&value) {
-  if constexpr (std::is_arithmetic_v<std::decay_t<T>>) {
-    return std::sqrt(value);
-  } else {
-    return value.sqrt();
-  }
+  return Func<std::decay<T>>{}.Sqrt(value);
 }
 
 template <typename... Args> constexpr auto sum(Args &&...args) {

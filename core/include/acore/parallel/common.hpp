@@ -7,3 +7,7 @@
 
 #pragma once
 #include <taskflow/taskflow.hpp>
+
+namespace acg {
+
+}

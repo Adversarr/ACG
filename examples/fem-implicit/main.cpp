@@ -8,6 +8,7 @@
 #include <autils/init.hpp>
 #include <fstream>
 
+#include "agui/perfacenormal.hpp"
 #include "app.hpp"
 acg::types::topology::TetraList make_tetra() {
   acg::types::topology::TetraList tetra(4, 5);
@@ -80,13 +81,13 @@ auto make_position_simple() {
   return pos;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   acg::utils::hook_default_utils_environment();
   acg::gui::hook_default_gui_environment("Fem-Implicit");
   acg::init(argc, argv);
-  auto& gui = acg::gui::Gui::Instance();
-  auto& window = acg::gui::Window::Instance();
-  auto* mesh_render = gui.GetScene().AddMesh();
+  auto &gui = acg::gui::Gui::Instance();
+  auto &window = acg::gui::Window::Instance();
+  auto *mesh_render = gui.GetScene().AddMesh();
   auto data_path = acg::data::get_data_dir();
   std::ifstream ele_file(data_path + "/house-ele-node/house.ele");
   std::ifstream node_file(data_path + "/house-ele-node/house.node");
@@ -94,8 +95,10 @@ int main(int argc, char** argv) {
   auto house_node = acg::data::triangle::NodeLoader(node_file);
   house_ele.Load();
   house_node.Load();
-  ACG_INFO("Ele load {} x {}, ", house_ele.GetData().rows(), house_ele.GetData().cols());
-  ACG_INFO("Node load {} x {}, ", house_node.GetData().rows(), house_node.GetData().cols());
+  ACG_INFO("Ele load {} x {}, ", house_ele.GetData().rows(),
+           house_ele.GetData().cols());
+  ACG_INFO("Node load {} x {}, ", house_node.GetData().rows(),
+           house_node.GetData().cols());
   app::FemImplicitApp app;
 
   auto reset_f = [&]() {
@@ -112,19 +115,13 @@ int main(int argc, char** argv) {
   reset_f();
   bool reset = false;
   auto update_scene = [&]() {
-    auto face = acg::geometry::Tet2Face<app::FemImplicitApp::Scalar>{app.position_, app.tetras_};
+    auto face = acg::geometry::Tet2Face<app::FemImplicitApp::Scalar>{
+        app.position_, app.tetras_};
     face();
     using namespace acg;
-    auto position = Field<Float32, 3>(3, face.faces_.cols() * 3);
-    auto faces = Field<Index, 3>(3, face.faces_.cols());
-    for (auto [i, f]: enumerate(view(face.faces_))) {
-      faces.col(i) = Vec3Index{3 * i, 3 * i + 1, 3 * i + 2};
-      position.col(3 * i) = view(app.position_)(f.x()).cast<Float32>();
-      position.col(3 * i + 1) = view(app.position_)(f.y()).cast<Float32>();
-      position.col(3 * i + 2) = view(app.position_)(f.z()).cast<Float32>();
-    }
-    mesh_render->SetVertices(position)
-        .SetIndices(faces)
+    auto pnt = gui::PerfaceNormalTransform(app.position_.cast<Float32>(), face.faces_);
+    mesh_render->SetVertices(pnt.out_position_)
+        .SetIndices(pnt.out_triangle_list_)
         .SetUniformColor(acg::types::Rgba{.7, .3, .3, 1})
         .ComputeDefaultNormal()
         .SetEnableWireframe(true)

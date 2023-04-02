@@ -3,8 +3,6 @@
 #include <acore/geometry/common.hpp>
 #include <acore/math/common.hpp>
 
-#include "common.hpp"
-
 namespace acg::physics {
 template <typename Scalar = Float, int dim = 3> struct HyperElasticSoftbody {
   /**
@@ -13,6 +11,10 @@ template <typename Scalar = Float, int dim = 3> struct HyperElasticSoftbody {
    */
   Field<Scalar, dim> position_;
 
+  /**
+   * @brief mass for each **vertex**
+   * 
+   */
   Field<Scalar> mass_;
 
   /**
@@ -51,8 +53,8 @@ template <typename Scalar = Float, int dim = 3> struct HyperElasticSoftbody {
                        Field<Index, dim + 1> tetras, 
                        Field<Scalar> mass, Scalar lambda, Scalar mu)
       : position_(std::move(position)),
-        tetras_(std::move(tetras)),
         mass_(std::move(mass)),
+        tetras_(std::move(tetras)),
         lambda_(lambda),
         mu_(mu) {
   }

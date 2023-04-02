@@ -97,7 +97,7 @@ inline void set_default_log_level(LogLevel lvl) {
 #  if ACG_IS_DEBUG
 #    define ACG_DEBUG_CHECK(condition, ...) ACG_CHECK(condition, __VA_ARGS__)
 #  else
-#    define ACG_DEBUG_CHECK(condition, message, ...) acg::utils::do_nothing();
+#    define ACG_DEBUG_CHECK(condition, ...) acg::utils::do_nothing(__VA_ARGS__);
 #  endif
 #endif
 #ifndef NDEBUG

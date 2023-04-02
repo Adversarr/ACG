@@ -21,8 +21,8 @@ void FemImplicitApp::Step() {
   acceleration.setZero(3, position_.cols());
   if (explicit_) {
     // Vec<Scalar> rhs
-    //     = ((position_ + dt_ * velocity_).colwise() - 9.8 * Vec3f::UnitZ() * dt_ *
-    //     dt_).reshaped();
+    //     = ((position_ + dt_ * velocity_).colwise() - 9.8 * Vec3f::UnitZ() *
+    //     dt_ * dt_).reshaped();
 
     for (auto [i, tet] : enumerate(view(tetras_))) {
       // rest:
@@ -41,14 +41,16 @@ void FemImplicitApp::Step() {
 
       auto pfpx = physics::elastic::compose_pfpx(rinv);
       if (use_stvk_) {
-        auto hes = physics::elastic::OgdenNeoHookean<Scalar, 3>(deform_grad, lambda_, mu_)
+        auto hes = physics::elastic::OgdenNeoHookean<Scalar, 3>(deform_grad,
+                                                                lambda_, mu_)
                        .ComputeHessian();
         auto grad = pfpx.transpose() * hes.grad;
         for (Index i = 0; i < 4; ++i) {
           aacc(tet(i)) -= grad.block<3, 1>(3 * i, 0);
         }
       } else {
-        auto hes = physics::elastic::StVK<Scalar, 3>(deform_grad, lambda_, mu_).ComputeGradient();
+        auto hes = physics::elastic::StVK<Scalar, 3>(deform_grad, lambda_, mu_)
+                       .ComputeGradient();
         auto grad = pfpx.transpose() * hes.grad_;
         for (Index i = 0; i < 4; ++i) {
           aacc(tet(i)) -= grad.block<3, 1>(3 * i, 0);
@@ -96,7 +98,8 @@ void FemImplicitApp::Step() {
         Mat3x3<Scalar> deform_grad = cur * rinv;
 
         auto pfpx = physics::elastic::compose_pfpx(rinv);
-        auto hes = physics::elastic::OgdenNeoHookean<Scalar, 3>(deform_grad, lambda_, mu_)
+        auto hes = physics::elastic::OgdenNeoHookean<Scalar, 3>(deform_grad,
+                                                                lambda_, mu_)
                        .ComputeHessian();
         Mat<Scalar, 12, 12> hessian = pfpx.transpose() * hes.hessian * pfpx;
         auto grad = pfpx.transpose() * hes.grad;
@@ -106,8 +109,8 @@ void FemImplicitApp::Step() {
           for (Index di = 0; di < 3; ++di) {
             for (Index j = 0; j < 4; ++j) {
               for (Index dj = 0; dj < 3; ++dj) {
-                hessian_data.push_back(
-                    Tri{3 * tet(i) + di, 3 * tet(j) + dj, hessian(3 * i + di, 3 * j + dj)});
+                hessian_data.push_back(Tri{3 * tet(i) + di, 3 * tet(j) + dj,
+                                           hessian(3 * i + di, 3 * j + dj)});
               }
             }
             rhs(3 * tet(i) + di) += grad(3 * i + di);
@@ -150,7 +153,8 @@ void FemImplicitApp::Init() {
   auto li = (gi.transpose() * gi).eval();
   for (auto v : view(tetras_)) {
     for (auto [i, j, di, dj] : NdRange<4>{{4, 4, 3, 3}}) {
-      auto t = Trip{3 * v(i) + di, 3 * v(j) + dj, li(3 * i + di, 3 * j + dj) * coeff};
+      auto t = Trip{3 * v(i) + di, 3 * v(j) + dj,
+                    li(3 * i + di, 3 * j + dj) * coeff};
       laplacian_data.push_back(t);
     }
   }
@@ -174,7 +178,8 @@ void FemImplicitApp::StepMF() {
 
   auto mdd = mass_ / dt_ / dt_;
   for (auto [iter] : NdRange(steps_)) {
-    Field<Scalar, 9> weights = FieldBuilder<Scalar, 9>(position_.cols()).Zeros();
+    Field<Scalar, 9> weights =
+        FieldBuilder<Scalar, 9>(position_.cols()).Zeros();
     // Inertia:
     auto wacc = view<DefaultIndexer, ReshapeTransform<3, 3>>(weights);
     auto rhs = (mdd * (x_tilde - current_solution)).eval();
@@ -200,9 +205,9 @@ void FemImplicitApp::StepMF() {
       Mat3x3<Scalar> deform_grad = cur * rinv;
 
       auto pfpx = physics::elastic::compose_pfpx(rinv);
-      auto hes = physics::elastic::OgdenNeoHookean<Scalar, 3>(deform_grad, lambda_, mu_)
+      auto hes = physics::elastic::OgdenNeoHookean<Scalar, 3>(deform_grad,
+                                                              lambda_, mu_)
                      .ComputeHessian();
-      Mat<Scalar, 12, 12> hessian = pfpx.transpose() * hes.hessian * pfpx;
       auto grad = pfpx.transpose() * hes.grad;
 
       wacc(tet.x()) += Mat3x3<Scalar>::Identity();
@@ -256,10 +261,12 @@ void FemImplicitApp::StepQuasi() {
 
       Mat3x3<Scalar> rinv = rest.inverse();
       Mat3x3<Scalar> deform_grad = cur * rinv;
-      o += physics::elastic::OgdenNeoHookean<Scalar, 3>(deform_grad, lambda_, mu_).ComputeEnergy();
+      o += physics::elastic::OgdenNeoHookean<Scalar, 3>(deform_grad, lambda_,
+                                                        mu_)
+               .ComputeEnergy();
     }
 
-    for (auto [i, c]: enumerate(view(x_tilde))) {
+    for (auto [i, c] : enumerate(view(x_tilde))) {
       o += 1 / math::square(dt_) * (pacc(i) - c).squaredNorm();
     }
     return o;
@@ -283,7 +290,8 @@ void FemImplicitApp::StepQuasi() {
       Mat3x3<Scalar> deform_grad = cur * rinv;
 
       auto pfpx = physics::elastic::compose_pfpx(rinv);
-      auto hes = physics::elastic::OgdenNeoHookean<Scalar, 3>(deform_grad, lambda_, mu_)
+      auto hes = physics::elastic::OgdenNeoHookean<Scalar, 3>(deform_grad,
+                                                              lambda_, mu_)
                      .ComputeGradient();
       auto grad = pfpx.transpose() * hes.grad_;
 

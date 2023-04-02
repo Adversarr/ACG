@@ -105,7 +105,6 @@ template <typename T, int r, int c> struct DiracImpl<T, r, c>
   inline auto operator()() const noexcept {
     constexpr int64_t rows = T::RowsAtCompileTime;
     constexpr int64_t cols = T::ColsAtCompileTime;
-    using rt = Eigen::Vector<typename T::Scalar, rows * cols>;
     auto rv = Eigen::Vector<typename T::Scalar, rows * cols>::Unit(
         rows * cols, c * rows + r);
 

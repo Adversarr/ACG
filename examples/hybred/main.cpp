@@ -26,17 +26,16 @@ int main(int argc, char **argv) {
   auto &gui = Gui::Instance();
 
   auto *cloth = gui.GetScene().AddMesh();
-  int plane_density = 7;
+  int plane_density = 10;
   auto plane =
       geometry::make_plane_xy(plane_density).Cast<app::HybridApp::Scalar>();
   auto position = plane.GetVertices();
   position.array().row(2) += .5;
-
   app.AddCloth(
       position, plane.GetFaces(),
-      1.0 / (plane_density) *
+      1e-2 *
           Field<app::HybridApp::Scalar>::Ones(plane.GetVertices().cols()),
-      10 * plane_density * plane_density);
+      10 * plane_density);
 
   for (auto [i] : NdRange(plane_density)) {
     physics::PositionStaticConstraint<app::HybridApp::Scalar, 3> constraint(
@@ -55,8 +54,8 @@ int main(int argc, char **argv) {
 
   physics::LagrangeFluid<app::HybridApp::Scalar, 3> fluid;
   // 1 kg.
-  Index fluid_particle_num = 10;
-  fluid.mass_.setConstant(fluid_particle_num, 1);
+  Index fluid_particle_num = 2;
+  fluid.mass_.setConstant(fluid_particle_num, 1e-3);
   // 1 dm3
   fluid.volumn_.setConstant(fluid_particle_num, 0.03);
   fluid.position_.setRandom(Eigen::NoChange, fluid_particle_num);
@@ -67,9 +66,9 @@ int main(int argc, char **argv) {
   // Rho for water = 1e3
   fluid.rho_ = 1e3;
   app.SetFluid(fluid);
+  app.ground_.z_value_ = -0.02;
 
   auto* particles = gui.GetScene().AddMeshParticles();
-
 
   // auto data_path = acg::data::get_data_dir();
   // std::ifstream ele_file(data_path + "/house-ele-node/house.ele");
@@ -86,9 +85,9 @@ int main(int argc, char **argv) {
   // tet.array() -= house_node.GetOffset();
   // auto *mesh = gui.GetScene().AddMesh();
   // app.AddSoftbody(
-  //     house_node.GetData().cast<app::HybredApp::Scalar>() * 0.1, tet,
-  //     0.1 * Field<app::HybredApp::Scalar>::Ones(house_node.GetData().cols()),
-  //     1, 1);
+  //     house_node.GetData().cast<app::HybridApp::Scalar>() * 0.1, tet,
+  //     Field<app::HybridApp::Scalar>::Ones(house_node.GetData().cols()),
+  //     0, 1);
 
   auto update_scene = [&]() {
     cloth->SetVertices(app.cloth_.front().data_.position_.cast<float>())
@@ -125,7 +124,7 @@ int main(int argc, char **argv) {
     gui.UpdateScene();
   };
 
-  bool running = true;
+  bool running = false;
   bool run_once = false;
   gui.SetUIDrawCallback([&]() -> void {
     ImGui::Checkbox("Run", &running);

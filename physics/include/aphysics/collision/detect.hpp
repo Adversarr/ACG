@@ -1,5 +1,5 @@
 /**
- * @file
+ * @file detect.hpp
  * @brief Here is a small story of this algorithm:
  *  NOTE: The story of Fast CCD
  *   Originally, this algorithm is proposed on my Gitee, and is an exprimental
@@ -13,6 +13,7 @@
  */
 
 #pragma once
+
 #include <acore/math/common.hpp>
 #include <autils/god/utilities.hpp>
 
@@ -77,7 +78,7 @@ inline bool test_2d(Vec3<Scalar> v00, Vec3<Scalar> v01, Vec3<Scalar> v10,
        x11 * (-y00 + y01 + y20 - y21 + z00 - z01 - z20 + z21));
 
   // Want to solve a t2 + b t + c = 0 in [0, 1]
-  auto eval_grad = [a, b, c](double value) { return 2 * a * value + b; };
+  auto eval_grad = [a, b](double value) { return 2 * a * value + b; };
 
   auto eval_value = [a, b, c](double value) {
     return a * value * value + b * value + c;

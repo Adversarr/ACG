@@ -1,7 +1,7 @@
 #pragma once
+#include <functional>
 #include <imgui.h>
 #include <optional>
-#include <functional>
 
 #include <vulkan/vulkan.hpp>
 
@@ -14,7 +14,7 @@ public:
   struct Config {
     bool is_ui_only;
 
-    std::optional<std::function<void()> > call_on_init{std::nullopt};
+    std::optional<std::function<void()>> call_on_init{std::nullopt};
 
     void Hook();
   };
@@ -25,8 +25,7 @@ public:
 
   void RecreateSwapchain();
 
-  [[nodiscard("The recorded command buffer should not be discarded.")]] vk::CommandBuffer& Render(
-      ImDrawData* data);
+  vk::CommandBuffer &Render(ImDrawData *data);
 
 private:
   void CreateFramebuffers();
@@ -44,6 +43,6 @@ private:
   std::vector<vk::Framebuffer> framebuffers_;
 };
 
-}  // namespace details
-}  // namespace gui
-}  // namespace acg
+} // namespace details
+} // namespace gui
+} // namespace acg

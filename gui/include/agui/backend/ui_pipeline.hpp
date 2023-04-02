@@ -4,22 +4,21 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
-#include <vulkan/vulkan.hpp>
 #include "vkcontext.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace acg::gui::details {
 
 class UiPipeline {
 public:
   class Builder;
-  UiPipeline(const UiPipeline&) = delete;
-  UiPipeline(UiPipeline&&) = delete;
+  UiPipeline(const UiPipeline &) = delete;
+  UiPipeline(UiPipeline &&) = delete;
   ~UiPipeline();
 
   void RecreateSwapchain();
 
-  [[nodiscard("The recorded command buffer should not be discarded.")]]
-  vk::CommandBuffer& Render(ImDrawData* data);
+  vk::CommandBuffer &Render(ImDrawData *data);
 
 private:
   void Init();
@@ -32,7 +31,7 @@ private:
   bool is_ui_only_{false};
   bool is_inited_{false};
 
-  VkContext& renderer_;
+  VkContext &renderer_;
   vk::CommandPool command_pool_;
   std::vector<vk::CommandBuffer> command_buffers_;
   vk::RenderPass render_pass_;
@@ -41,12 +40,12 @@ private:
 };
 
 class UiPipeline::Builder {
-  bool is_ui_only_ = false; 
+  bool is_ui_only_ = false;
 
 public:
   Builder() = default;
 
-  inline Builder& SetIsUIOnly(bool is_ui_only) {
+  inline Builder &SetIsUIOnly(bool is_ui_only) {
     is_ui_only_ = is_ui_only;
     return *this;
   }
@@ -59,4 +58,4 @@ public:
   }
 };
 
-}  // namespace acg::gui::details
+} // namespace acg::gui::details

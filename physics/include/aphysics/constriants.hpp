@@ -14,7 +14,7 @@ namespace acg::physics {
 template <typename Scalar, int dim> struct PositionStaticConstraint {
   Vec<Scalar, dim> value_;
   PhysicsObject object_;
-  PositionStaticConstraint(PhysicsObject type, Vec<Scalar, dim> v) : object_(type), value_(v) {}
+  PositionStaticConstraint(PhysicsObject type, Vec<Scalar, dim> v) :  value_(v), object_(type) {}
 };
 
 template <typename Scalar, int dim> struct ExternForceConstraint {

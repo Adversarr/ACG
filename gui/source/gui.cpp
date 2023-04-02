@@ -9,7 +9,7 @@
 static std::unique_ptr<acg::gui::details::Gui> gui_instance;
 namespace acg::gui::details {
 
-Gui& Gui::Instance() {
+Gui &Gui::Instance() {
   ACG_CHECK(gui_instance.get() != nullptr, "Access to uninitialized gui");
   return *gui_instance;
 }
@@ -32,10 +32,11 @@ static auto get_default_ball() {
   return std::make_pair(mesh.GetFaces(), mesh.GetVertices());
 }
 
-Gui::Gui(const Gui::Config& config)
+Gui::Gui(const Gui::Config &config)
     : staging_buffer_(VkContext2::Instance().CreateBufferWithMemory(
-        config.staging_buffer_size, vk::BufferUsageFlagBits::eTransferSrc,
-        vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible)) {
+          config.staging_buffer_size, vk::BufferUsageFlagBits::eTransferSrc,
+          vk::MemoryPropertyFlagBits::eHostCoherent |
+              vk::MemoryPropertyFlagBits::eHostVisible)) {
   last_time = std::chrono::steady_clock::now();
   ACG_DEBUG_LOG("Init ggui");
   // Render pass:
@@ -45,7 +46,8 @@ Gui::Gui(const Gui::Config& config)
   GraphicsRenderPass::Config gr_config;
   gr_config.is_present = false;
   gr_config.max_descriptor_set_count = 24;
-  gr_config.required_descriptor_sizes.push_back({vk::DescriptorType::eUniformBuffer, 48});
+  gr_config.required_descriptor_sizes.push_back(
+      {vk::DescriptorType::eUniformBuffer, 48});
   graphics_pass_ = std::make_unique<GraphicsRenderPass>(gr_config);
   // Pipeline:
   MeshPipeline::Config mp_config;
@@ -56,7 +58,8 @@ Gui::Gui(const Gui::Config& config)
   pp_config.enable_color_blending = config.enable_blending;
   point_pipeline_ = std::make_unique<PointPipeline>(*graphics_pass_, pp_config);
   WireframePipeline::Config wf_config;
-  wireframe_pipeline_ = std::make_unique<WireframePipeline>(*graphics_pass_, wf_config);
+  wireframe_pipeline_ =
+      std::make_unique<WireframePipeline>(*graphics_pass_, wf_config);
 
   // Staging buffer init
   InitStagingBuffer();
@@ -113,7 +116,7 @@ void Gui::InitDefaultScene(bool init_default_scene) {
 Gui::~Gui() {
   VkContext2::Instance().device_.waitIdle();
 
-  for (auto& buffer : allocated_buffers_) {
+  for (auto &buffer : allocated_buffers_) {
     VkContext2::Instance().DestroyBufferWithMemory(buffer);
   }
   allocated_buffers_.clear();
@@ -127,8 +130,8 @@ Gui::~Gui() {
 }
 
 void Gui::InitStagingBuffer() {
-  auto* p_data = VkContext2::Instance().device_.mapMemory(staging_buffer_.GetMemory(), 0,
-                                                          staging_buffer_.GetSize());
+  auto *p_data = VkContext2::Instance().device_.mapMemory(
+      staging_buffer_.GetMemory(), 0, staging_buffer_.GetSize());
   staging_buffer_.SetMappedMemory(p_data);
 }
 
@@ -138,18 +141,21 @@ void Gui::DestroyStagingBuffer() {
 }
 
 void Gui::ReserveBuffer(vk::DeviceSize size, BufferID id) {
-  auto& buffer = GetAllocatedBuffer(id);
+  auto &buffer = GetAllocatedBuffer(id);
   if (buffer.GetSize() >= size) {
     return;
   }
   VkContext2::Instance().DestroyBufferWithMemory(buffer);
-  buffer = VkContext2::Instance().CreateBufferWithMemory(size, buffer.usage_, buffer.properties_);
+  buffer = VkContext2::Instance().CreateBufferWithMemory(size, buffer.usage_,
+                                                         buffer.properties_);
 }
 
 BufferID Gui::CreateVertexBuffer(vk::DeviceSize size) {
   auto id = allocated_buffers_.size();
   auto buffer = VkContext2::Instance().CreateBufferWithMemory(
-      size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
+      size,
+      vk::BufferUsageFlagBits::eTransferDst |
+          vk::BufferUsageFlagBits::eVertexBuffer,
       vk::MemoryPropertyFlagBits::eDeviceLocal);
   ACG_DEBUG_LOG("Created Vertex Buffer: id={}, size={}", id, size);
   allocated_buffers_.push_back(buffer);
@@ -159,14 +165,18 @@ BufferID Gui::CreateVertexBuffer(vk::DeviceSize size) {
 BufferID Gui::CreateIndexBuffer(vk::DeviceSize size) {
   auto id = allocated_buffers_.size();
   auto buffer = VkContext2::Instance().CreateBufferWithMemory(
-      size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
+      size,
+      vk::BufferUsageFlagBits::eTransferDst |
+          vk::BufferUsageFlagBits::eIndexBuffer,
       vk::MemoryPropertyFlagBits::eDeviceLocal);
   ACG_DEBUG_LOG("Created Index Buffer: id={}, size={}", id, size);
   allocated_buffers_.push_back(buffer);
   return id;
 }
 
-BufferID Gui::CreateInstanceBuffer(vk::DeviceSize size) { return CreateVertexBuffer(size); }
+BufferID Gui::CreateInstanceBuffer(vk::DeviceSize size) {
+  return CreateVertexBuffer(size);
+}
 
 void Gui::UpdateScene(bool force) {
   VkContext2::Instance().device_.waitIdle();
@@ -175,14 +185,15 @@ void Gui::UpdateScene(bool force) {
 }
 
 void Gui::PrepareBuffers() {
-  for (const auto& pmesh : scene_.GetMesh()) {
-    auto& mesh = *pmesh;
+  for (const auto &pmesh : scene_.GetMesh()) {
+    auto &mesh = *pmesh;
     // collect info
     if (mesh.id >= mesh_render_info_.size()) {
       mesh_render_info_.emplace_back();
     }
-    ACG_CHECK(mesh.id < mesh_render_info_.size(), "object should be added sequentially.");
-    auto& info = mesh_render_info_[mesh.id];
+    ACG_CHECK(mesh.id < mesh_render_info_.size(),
+              "object should be added sequentially.");
+    auto &info = mesh_render_info_[mesh.id];
     info.vertex_count = mesh.vertices.cols();
     info.index_count = mesh.faces.cols() * 3;
     info.instance_count = mesh.instance_count;
@@ -194,14 +205,15 @@ void Gui::PrepareBuffers() {
     PrepareMeshBuffer(info);
   }
 
-  for (const auto& ppart : scene_.GetMeshParticles()) {
-    auto& part = *ppart;
+  for (const auto &ppart : scene_.GetMeshParticles()) {
+    auto &part = *ppart;
     if (part.id >= mesh_particle_render_info_.size()) {
       mesh_particle_render_info_.emplace_back();
     }
-    ACG_CHECK(part.id < mesh_particle_render_info_.size(), "objects should be added sequentially.");
+    ACG_CHECK(part.id < mesh_particle_render_info_.size(),
+              "objects should be added sequentially.");
 
-    auto& info = mesh_particle_render_info_[part.id];
+    auto &info = mesh_particle_render_info_[part.id];
     info.vertex_count = 20;
     info.index_count = 60;
     info.instance_count = part.positions.cols();
@@ -213,13 +225,14 @@ void Gui::PrepareBuffers() {
     PrepareMeshBuffer(info);
   }
 
-  for (const auto& ppart : scene_.GetParticles()) {
-    auto& part = *ppart;
+  for (const auto &ppart : scene_.GetParticles()) {
+    auto &part = *ppart;
     if (part.id >= particle_render_info_.size()) {
       particle_render_info_.emplace_back();
     }
-    auto& info = particle_render_info_[part.id];
-    ACG_CHECK(part.id < particle_render_info_.size(), "objects should be added sequentially.");
+    auto &info = particle_render_info_[part.id];
+    ACG_CHECK(part.id < particle_render_info_.size(),
+              "objects should be added sequentially.");
     if (part.colors.cols() > 0) {
       Vec4f color = part.colors.col(0);
       info.pc.color = glm::make_vec4<float>(color.data());
@@ -232,13 +245,14 @@ void Gui::PrepareBuffers() {
     PrepareParticleBuffer(info);
   }
 
-  for (const auto& pwf : scene_.GetWireframe()) {
-    auto& wf = *pwf;
+  for (const auto &pwf : scene_.GetWireframe()) {
+    auto &wf = *pwf;
     if (wf.id >= wireframe_render_info_.size()) {
       wireframe_render_info_.emplace_back();
     }
-    ACG_CHECK(wf.id < wireframe_render_info_.size(), "objects should be added sequentially.");
-    auto& info = wireframe_render_info_[wf.id];
+    ACG_CHECK(wf.id < wireframe_render_info_.size(),
+              "objects should be added sequentially.");
+    auto &info = wireframe_render_info_[wf.id];
     info.index_count = wf.indices.cols() * 2;
     info.vertex_count = wf.positions.cols();
     PrepareWireframeBuffer(info);
@@ -260,8 +274,10 @@ void Gui::PrepareXyPlaneBuffer() {
   int vert_count = (2 * rows + 1) * (2 * cols + 1);
   xy_plane_render_info_.index_count = seg_count * 2;
   xy_plane_render_info_.vertex_count = vert_count;
-  PrepareIndexBufferHelper(sizeof(uint32_t) * 2 * seg_count, xy_plane_render_info_.index);
-  PrepareVertexBufferHelper(sizeof(WireframePoint) * vert_count, xy_plane_render_info_.vertex);
+  PrepareIndexBufferHelper(sizeof(uint32_t) * 2 * seg_count,
+                           xy_plane_render_info_.index);
+  PrepareVertexBufferHelper(sizeof(WireframePoint) * vert_count,
+                            xy_plane_render_info_.vertex);
 }
 
 Status Gui::FlushStagingBuffer() {
@@ -271,10 +287,11 @@ Status Gui::FlushStagingBuffer() {
   }
 
   auto command = VkGraphicsContext::Instance().BeginSingleTimeCommand();
-  ACG_DEBUG_LOG("Flush staging buffer, dst buffer count = {}", staging_upd_info_.size());
-  for (const auto& info : staging_upd_info_) {
-    ACG_DEBUG_LOG("Flush dst_buffer_id={}, copy_region=[{}, {})", info.dst_buffer_id, info.offset,
-                  info.offset + info.size);
+  ACG_DEBUG_LOG("Flush staging buffer, dst buffer count = {}",
+                staging_upd_info_.size());
+  for (const auto &info : staging_upd_info_) {
+    ACG_DEBUG_LOG("Flush dst_buffer_id={}, copy_region=[{}, {})",
+                  info.dst_buffer_id, info.offset, info.offset + info.size);
     vk::BufferCopy copy_region;
     copy_region.setSrcOffset(info.offset);
     copy_region.setSize(info.size);
@@ -288,7 +305,7 @@ Status Gui::FlushStagingBuffer() {
   return Status::kOk;
 }
 
-Status Gui::TryCommitDeferred(StagingUpdateInfo info, void* data) {
+Status Gui::TryCommitDeferred(StagingUpdateInfo info, void *data) {
   auto status = CommitStagingBuffer(info, data, false);
   if (status == Status::kOk) {
     return status;
@@ -304,10 +321,12 @@ Status Gui::TryCommitDeferred(StagingUpdateInfo info, void* data) {
   return Status::kCancelled;
 }
 
-Status Gui::CommitStagingBuffer(StagingUpdateInfo info, void* data, bool flush_immediately) {
+Status Gui::CommitStagingBuffer(StagingUpdateInfo info, void *data,
+                                bool flush_immediately) {
   // Recompute info.
   if (!staging_upd_info_.empty()) {
-    info.offset = staging_upd_info_.back().offset + staging_upd_info_.back().size;
+    info.offset =
+        staging_upd_info_.back().offset + staging_upd_info_.back().size;
   }
 
   info.dst_buf = GetAllocatedBuffer(info.dst_buffer_id).GetBuffer();
@@ -323,7 +342,8 @@ Status Gui::CommitStagingBuffer(StagingUpdateInfo info, void* data, bool flush_i
 
   // Ok, do commit:
   staging_upd_info_.push_back(info);
-  char* staging_buffer_mapped_begin = static_cast<char*>(staging_buffer_.GetMappedMemory());
+  char *staging_buffer_mapped_begin =
+      static_cast<char *>(staging_buffer_.GetMappedMemory());
   staging_buffer_mapped_begin += info.offset;
   memcpy(staging_buffer_mapped_begin, data, info.size);
   if (flush_immediately) {
@@ -335,7 +355,7 @@ Status Gui::CommitStagingBuffer(StagingUpdateInfo info, void* data, bool flush_i
 
 void Gui::FillBuffers(bool force) {
   for (size_t i = 0; i < scene_.GetMeshCount(); ++i) {
-    auto& mesh = *scene_.GetMesh(i);
+    auto &mesh = *scene_.GetMesh(i);
     if (mesh.update_flag | force) {
       mesh.update_flag = false;
       ACG_DEBUG_LOG("Update mesh #{}", mesh.id);
@@ -343,7 +363,7 @@ void Gui::FillBuffers(bool force) {
     }
   }
   for (size_t i = 0; i < scene_.GetParticlesCount(); ++i) {
-    auto& part = *scene_.GetParticles(i);
+    auto &part = *scene_.GetParticles(i);
     if (part.update_flag | force) {
       part.update_flag = false;
       ACG_DEBUG_LOG("Update particle #{}", part.id);
@@ -351,7 +371,7 @@ void Gui::FillBuffers(bool force) {
     }
   }
   for (size_t i = 0; i < scene_.GetMeshParticleCount(); ++i) {
-    auto& part = *scene_.GetMeshParticle(i);
+    auto &part = *scene_.GetMeshParticle(i);
     if (part.update_flag | force) {
       part.update_flag = false;
       ACG_DEBUG_LOG("Update mesh particle #{}", part.id);
@@ -360,7 +380,7 @@ void Gui::FillBuffers(bool force) {
   }
 
   for (size_t i = 0; i < scene_.GetWireframeCount(); ++i) {
-    auto& wf = *scene_.GetWireframe(i);
+    auto &wf = *scene_.GetWireframe(i);
     if (wf.update_flag | force) {
       wf.update_flag = false;
       FillWireframeBuffer(wf, wireframe_render_info_[i]);
@@ -384,10 +404,12 @@ void Gui::FillXyPlaneBuffers() {
   Index id = 0;
   for (Index i = 0; i < 2 * rows + 1; ++i) {
     for (Index j = 0; j < 2 * cols + 1; ++j) {
-      auto&& ref = vert[id];
+      auto &&ref = vert[id];
       ref.color = glm::make_vec3(xy_plane_info_.color.data());
-      float off_x = xy_plane_info_.range.x() * static_cast<float>(i - rows) / rows;
-      float off_y = xy_plane_info_.range.y() * static_cast<float>(j - cols) / cols;
+      float off_x =
+          xy_plane_info_.range.x() * static_cast<float>(i - rows) / rows;
+      float off_y =
+          xy_plane_info_.range.y() * static_cast<float>(j - cols) / cols;
       ref.position = glm::vec3(off_x, off_y, xy_plane_info_.height);
       id += 1;
     }
@@ -410,10 +432,13 @@ void Gui::FillXyPlaneBuffers() {
     }
   }
 
-  TryCommitDeferred({xy_plane_render_info_.vertex, vert.size() * sizeof(WireframePoint)},
-                    vert.data());
+  TryCommitDeferred(
+      {xy_plane_render_info_.vertex, vert.size() * sizeof(WireframePoint)},
+      vert.data());
 
-  TryCommitDeferred({xy_plane_render_info_.index, inde.size() * sizeof(uint32_t)}, inde.data());
+  TryCommitDeferred(
+      {xy_plane_render_info_.index, inde.size() * sizeof(uint32_t)},
+      inde.data());
 }
 
 void Gui::RenderOnce(bool verbose) {
@@ -425,10 +450,12 @@ void Gui::RenderOnce(bool verbose) {
   auto cbuf = graphics_pass_->BeginRender();
   // 1. Mesh
   mesh_pipeline_->BeginPipeline(cbuf);
-  for (const auto& info : mesh_render_info_) {
+  for (const auto &info : mesh_render_info_) {
     if (verbose) {
-      ACG_DEBUG_LOG("Rendering mesh: buffers = [{} {} {}], #index={}, #instance={}", info.vertex,
-                    info.index, info.instance, info.index_count, info.instance_count);
+      ACG_DEBUG_LOG(
+          "Rendering mesh: buffers = [{} {} {}], #index={}, #instance={}",
+          info.vertex, info.index, info.instance, info.index_count,
+          info.instance_count);
     }
     auto v = GetAllocatedBuffer(info.vertex).GetBuffer();
     auto id = GetAllocatedBuffer(info.index).GetBuffer();
@@ -437,15 +464,18 @@ void Gui::RenderOnce(bool verbose) {
     cbuf.bindVertexBuffers(1, it, static_cast<vk::DeviceSize>(0));
     cbuf.bindIndexBuffer(id, 0, vk::IndexType::eUint32);
     cbuf.pushConstants(mesh_pipeline_->GetPipelineLayout(),
-                       vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
-                       sizeof(MeshPushConstants), &info.pc);
+                       vk::ShaderStageFlagBits::eVertex |
+                           vk::ShaderStageFlagBits::eFragment,
+                       0, sizeof(MeshPushConstants), &info.pc);
     cbuf.drawIndexed(info.index_count, info.instance_count, 0, 0, 0);
   }
 
-  for (const auto& info : mesh_particle_render_info_) {
+  for (const auto &info : mesh_particle_render_info_) {
     if (verbose) {
-      ACG_DEBUG_LOG("Rendering mesh particle: buffers = [{} {} {}], #index={}, #instance={}",
-                    info.vertex, info.index, info.instance, info.index_count, info.instance_count);
+      ACG_DEBUG_LOG("Rendering mesh particle: buffers = [{} {} {}], #index={}, "
+                    "#instance={}",
+                    info.vertex, info.index, info.instance, info.index_count,
+                    info.instance_count);
     }
     auto v = GetAllocatedBuffer(info.vertex).GetBuffer();
     auto id = GetAllocatedBuffer(info.index).GetBuffer();
@@ -454,54 +484,62 @@ void Gui::RenderOnce(bool verbose) {
     cbuf.bindVertexBuffers(1, it, static_cast<vk::DeviceSize>(0));
     cbuf.bindIndexBuffer(id, 0, vk::IndexType::eUint32);
     cbuf.pushConstants(mesh_pipeline_->GetPipelineLayout(),
-                       vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
-                       sizeof(MeshPushConstants), &info.pc);
+                       vk::ShaderStageFlagBits::eVertex |
+                           vk::ShaderStageFlagBits::eFragment,
+                       0, sizeof(MeshPushConstants), &info.pc);
     cbuf.drawIndexed(info.index_count, info.instance_count, 0, 0, 0);
   }
   mesh_pipeline_->EndPipeline(cbuf);
 
   point_pipeline_->BeginPipeline(cbuf);
-  for (const auto& info : particle_render_info_) {
+  for (const auto &info : particle_render_info_) {
     if (verbose) {
       ACG_DEBUG_LOG("Rendering particle: buffers=[{}]", info.vertex);
     }
     auto v = info.vertex;
     cbuf.pushConstants(point_pipeline_->GetPipelineLayout(),
-                       vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
-                       sizeof(info.pc), &(info.pc));
-    cbuf.bindVertexBuffers(0, GetAllocatedBuffer(v).GetBuffer(), static_cast<vk::DeviceSize>(0));
+                       vk::ShaderStageFlagBits::eVertex |
+                           vk::ShaderStageFlagBits::eFragment,
+                       0, sizeof(info.pc), &(info.pc));
+    cbuf.bindVertexBuffers(0, GetAllocatedBuffer(v).GetBuffer(),
+                           static_cast<vk::DeviceSize>(0));
     cbuf.draw(info.vertex_count, 1, 0, 0);
   }
 
   wireframe_pipeline_->BeginPipeline(cbuf);
   cbuf.setLineWidth(linewidth_);
   if (xy_plane_info_.enable) {
-    cbuf.bindVertexBuffers(0, GetAllocatedBuffer(xy_plane_render_info_.vertex).GetBuffer(),
-                           static_cast<vk::DeviceSize>(0));
-    cbuf.bindIndexBuffer(GetAllocatedBuffer(xy_plane_render_info_.index).GetBuffer(), 0,
-                         vk::IndexType::eUint32);
+    cbuf.bindVertexBuffers(
+        0, GetAllocatedBuffer(xy_plane_render_info_.vertex).GetBuffer(),
+        static_cast<vk::DeviceSize>(0));
+    cbuf.bindIndexBuffer(
+        GetAllocatedBuffer(xy_plane_render_info_.index).GetBuffer(), 0,
+        vk::IndexType::eUint32);
     cbuf.drawIndexed(xy_plane_render_info_.index_count, 1, 0, 0, 0);
   }
-  for (const auto& info : wireframe_render_info_) {
+  for (const auto &info : wireframe_render_info_) {
     if (verbose) {
-      ACG_DEBUG_LOG("Rendering wireframe: buffers=[{} {}] #index={}", info.index, info.vertex,
-                    info.index_count);
+      ACG_DEBUG_LOG("Rendering wireframe: buffers=[{} {}] #index={}",
+                    info.index, info.vertex, info.index_count);
     }
     cbuf.bindVertexBuffers(0, GetAllocatedBuffer(info.vertex).GetBuffer(),
                            static_cast<vk::DeviceSize>(0));
-    cbuf.bindIndexBuffer(GetAllocatedBuffer(info.index).GetBuffer(), 0, vk::IndexType::eUint32);
+    cbuf.bindIndexBuffer(GetAllocatedBuffer(info.index).GetBuffer(), 0,
+                         vk::IndexType::eUint32);
     cbuf.drawIndexed(info.index_count, 1, 0, 0, 0);
   }
-  for (const auto& info : mesh_render_info_) {
+  for (const auto &info : mesh_render_info_) {
     if (info.enable_wireframe) {
       if (verbose) {
-        ACG_DEBUG_LOG("Rendering mesh-wireframe: buffers=[{} {}] #index={}", info.wireframe_vertex,
-                      info.wireframe_index, info.index_count * 2);
+        ACG_DEBUG_LOG("Rendering mesh-wireframe: buffers=[{} {}] #index={}",
+                      info.wireframe_vertex, info.wireframe_index,
+                      info.index_count * 2);
       }
-      cbuf.bindVertexBuffers(0, GetAllocatedBuffer(info.wireframe_vertex).GetBuffer(),
-                             static_cast<vk::DeviceSize>(0));
-      cbuf.bindIndexBuffer(GetAllocatedBuffer(info.wireframe_index).GetBuffer(), 0,
-                           vk::IndexType::eUint32);
+      cbuf.bindVertexBuffers(
+          0, GetAllocatedBuffer(info.wireframe_vertex).GetBuffer(),
+          static_cast<vk::DeviceSize>(0));
+      cbuf.bindIndexBuffer(GetAllocatedBuffer(info.wireframe_index).GetBuffer(),
+                           0, vk::IndexType::eUint32);
       cbuf.drawIndexed(info.index_count * 2, 1, 0, 0, 0);
     }
   }
@@ -517,9 +555,10 @@ void Gui::RenderOnce(bool verbose) {
   DrawDefaultUI();
   // ImGui::End();
   ImGui::Render();
-  auto* data = ImGui::GetDrawData();
+  auto *data = ImGui::GetDrawData();
   auto ui_cbuf = ui_pass_->Render(data);
-  auto result2 = acg::gui::VkGraphicsContext::Instance().EndDraw({cbuf, ui_cbuf});
+  auto result2 =
+      acg::gui::VkGraphicsContext::Instance().EndDraw({cbuf, ui_cbuf});
   if (result2) {
     RecreateSwapchain();
   }
@@ -544,12 +583,14 @@ void Gui::UpdateLightCamera() {
   point_pipeline_->UpdateUbo();
 }
 
-void Gui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) {
+void Gui::FillMeshBuffer(const Scene2::Mesh &mesh, const MeshRenderInfo &info) {
   auto vert_count = acg::view(mesh.vertices).Size();
   auto face_count = acg::view(mesh.faces).Size();
   auto instance_count = mesh.instance_count;
-  auto vert_buffer_size = static_cast<vk::DeviceSize>(vert_count * sizeof(details::MeshVertex));
-  auto index_buffer_size = static_cast<vk::DeviceSize>(face_count * 3 * sizeof(uint32_t));
+  auto vert_buffer_size =
+      static_cast<vk::DeviceSize>(vert_count * sizeof(details::MeshVertex));
+  auto index_buffer_size =
+      static_cast<vk::DeviceSize>(face_count * 3 * sizeof(uint32_t));
   auto instance_buffer_size = instance_count * sizeof(details::MeshInstance);
 
   // Vertex Buffer
@@ -564,7 +605,8 @@ void Gui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) {
     v.normal_ = glm::vec3(n.x(), n.y(), n.z());
     vert_buffer_content.push_back(v);
   }
-  TryCommitDeferred(StagingUpdateInfo(info.vertex, vert_buffer_size), vert_buffer_content.data());
+  TryCommitDeferred(StagingUpdateInfo(info.vertex, vert_buffer_size),
+                    vert_buffer_content.data());
 
   // Index buffer:
   std::vector<uint32_t> index_buffer_content;
@@ -573,7 +615,8 @@ void Gui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) {
     index_buffer_content.push_back(mesh.faces.col(i).y());
     index_buffer_content.push_back(mesh.faces.col(i).z());
   }
-  TryCommitDeferred(StagingUpdateInfo(info.index, index_buffer_size), index_buffer_content.data());
+  TryCommitDeferred(StagingUpdateInfo(info.index, index_buffer_size),
+                    index_buffer_content.data());
 
   // Instance Buffer
   std::vector<details::MeshInstance> instance_buffer_content;
@@ -601,13 +644,13 @@ void Gui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) {
     std::vector<WireframePoint> wf_vert(mesh.vertices.cols());
     std::vector<uint32_t> wf_index(info.index_count * 2);
 
-    for (const auto& [i, p] : acg::enumerate(acg::view((mesh.vertices)))) {
-      auto& vert = wf_vert[i];
+    for (const auto &[i, p] : acg::enumerate(acg::view((mesh.vertices)))) {
+      auto &vert = wf_vert[i];
       vert.position = glm::vec3(p.x(), p.y(), p.z());
       vert.color = glm::make_vec4(mesh_outline_color_.data());
     }
 
-    for (const auto& [i, v] : acg::enumerate(acg::view((mesh.faces)))) {
+    for (const auto &[i, v] : acg::enumerate(acg::view((mesh.faces)))) {
       wf_index[i * 6] = v.x();
       wf_index[i * 6 + 1] = v.y();
       wf_index[i * 6 + 2] = v.y();
@@ -617,36 +660,44 @@ void Gui::FillMeshBuffer(const Scene2::Mesh& mesh, const MeshRenderInfo& info) {
     }
 
     TryCommitDeferred(
-        StagingUpdateInfo(info.wireframe_vertex, sizeof(wf_vert.front()) * wf_vert.size()),
+        StagingUpdateInfo(info.wireframe_vertex,
+                          sizeof(wf_vert.front()) * wf_vert.size()),
         wf_vert.data());
 
     TryCommitDeferred(
-        StagingUpdateInfo(info.wireframe_index, sizeof(wf_index.front()) * wf_index.size()),
+        StagingUpdateInfo(info.wireframe_index,
+                          sizeof(wf_index.front()) * wf_index.size()),
         wf_index.data());
   }
 }
 
-void Gui::PrepareParticleBuffer(ParticleRenderInfo& info) {
-  PrepareVertexBufferHelper(sizeof(PointVertex) * info.vertex_count, info.vertex);
+void Gui::PrepareParticleBuffer(ParticleRenderInfo &info) {
+  PrepareVertexBufferHelper(sizeof(PointVertex) * info.vertex_count,
+                            info.vertex);
 }
 
-void Gui::PrepareWireframeBuffer(WireframeRenderInfo& info) {
-  PrepareVertexBufferHelper(sizeof(WireframePoint) * info.vertex_count, info.vertex);
+void Gui::PrepareWireframeBuffer(WireframeRenderInfo &info) {
+  PrepareVertexBufferHelper(sizeof(WireframePoint) * info.vertex_count,
+                            info.vertex);
   PrepareIndexBufferHelper(sizeof(uint32_t) * info.index_count, info.index);
 }
 
-void Gui::PrepareMeshBuffer(MeshRenderInfo& info) {
-  PrepareVertexBufferHelper(sizeof(MeshVertex) * info.vertex_count, info.vertex);
-  PrepareVertexBufferHelper(sizeof(MeshInstance) * info.instance_count, info.instance);
+void Gui::PrepareMeshBuffer(MeshRenderInfo &info) {
+  PrepareVertexBufferHelper(sizeof(MeshVertex) * info.vertex_count,
+                            info.vertex);
+  PrepareVertexBufferHelper(sizeof(MeshInstance) * info.instance_count,
+                            info.instance);
   PrepareIndexBufferHelper(sizeof(uint32_t) * info.index_count, info.index);
 
   if (info.enable_wireframe) {
-    PrepareVertexBufferHelper(sizeof(WireframePoint) * info.vertex_count, info.wireframe_vertex);
-    PrepareIndexBufferHelper(sizeof(uint32_t) * info.index_count * 2, info.wireframe_index);
+    PrepareVertexBufferHelper(sizeof(WireframePoint) * info.vertex_count,
+                              info.wireframe_vertex);
+    PrepareIndexBufferHelper(sizeof(uint32_t) * info.index_count * 2,
+                             info.wireframe_index);
   }
 }
 
-void Gui::PrepareVertexBufferHelper(vk::DeviceSize size, BufferID& id) {
+void Gui::PrepareVertexBufferHelper(vk::DeviceSize size, BufferID &id) {
   if (id == invalid_buffer) {
     id = CreateVertexBuffer(size);
   } else {
@@ -654,7 +705,7 @@ void Gui::PrepareVertexBufferHelper(vk::DeviceSize size, BufferID& id) {
   }
 }
 
-void Gui::PrepareIndexBufferHelper(vk::DeviceSize size, BufferID& id) {
+void Gui::PrepareIndexBufferHelper(vk::DeviceSize size, BufferID &id) {
   if (id == invalid_buffer) {
     id = CreateIndexBuffer(size);
   } else {
@@ -662,13 +713,17 @@ void Gui::PrepareIndexBufferHelper(vk::DeviceSize size, BufferID& id) {
   }
 }
 
-void Gui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshRenderInfo& info) {
+void Gui::FillMeshParticleBuffer(const Scene2::Particles &particle,
+                                 const MeshRenderInfo &info) {
   auto [ind, v] = get_default_ball();
   auto vert_count = view(v).Size();
   auto face_count = view(ind).Size();
-  auto vert_buffer_size = static_cast<vk::DeviceSize>(vert_count * sizeof(MeshVertex));
-  auto index_buffer_size = static_cast<vk::DeviceSize>(face_count * 3 * sizeof(uint32_t));
-  auto instance_buffer_size = info.instance_count * sizeof(details::MeshInstance);
+  auto vert_buffer_size =
+      static_cast<vk::DeviceSize>(vert_count * sizeof(MeshVertex));
+  auto index_buffer_size =
+      static_cast<vk::DeviceSize>(face_count * 3 * sizeof(uint32_t));
+  auto instance_buffer_size =
+      info.instance_count * sizeof(details::MeshInstance);
 
   std::vector<details::MeshVertex> vert_buffer_content;
   for (Index i = 0; i < vert_count; ++i) {
@@ -680,7 +735,8 @@ void Gui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshRe
     v.normal_ = glm::vec3(n.x(), n.y(), n.z());
     vert_buffer_content.push_back(v);
   }
-  CommitStagingBuffer(StagingUpdateInfo(info.vertex, vert_buffer_size), vert_buffer_content.data());
+  CommitStagingBuffer(StagingUpdateInfo(info.vertex, vert_buffer_size),
+                      vert_buffer_content.data());
 
   // Index buffer:
   std::vector<uint32_t> index_buffer_content;
@@ -707,37 +763,42 @@ void Gui::FillMeshParticleBuffer(const Scene2::Particles& particle, const MeshRe
                       instance_buffer_content.data());
 }
 
-void Gui::FillParticleBuffer(const Scene2::Particles& particle, const ParticleRenderInfo& info) {
+void Gui::FillParticleBuffer(const Scene2::Particles &particle,
+                             const ParticleRenderInfo &info) {
   std::vector<PointVertex> vert(particle.positions.cols());
-  for (const auto& [i, p] : acg::enumerate(acg::view(particle.positions))) {
-    auto& v = vert[i];
+  for (const auto &[i, p] : acg::enumerate(acg::view(particle.positions))) {
+    auto &v = vert[i];
     v.position = glm::vec3(p.x(), p.y(), p.z());
     Vec4f c = particle.colors.col(particle.use_uniform_color ? 0 : i);
     v.color = glm::make_vec4(c.data());
   }
   ACG_CHECK_STATUS_OK(TryCommitDeferred(
-      StagingUpdateInfo(info.vertex, sizeof(PointVertex) * vert.size()), vert.data()));
+      StagingUpdateInfo(info.vertex, sizeof(PointVertex) * vert.size()),
+      vert.data()));
 }
 
-void Gui::FillWireframeBuffer(const Scene2::Wireframe& wireframe, const WireframeRenderInfo& info) {
+void Gui::FillWireframeBuffer(const Scene2::Wireframe &wireframe,
+                              const WireframeRenderInfo &info) {
   std::vector<WireframePoint> vert(wireframe.positions.cols());
-  for (const auto& [i, p] : acg::enumerate(acg::view(wireframe.positions))) {
-    auto& v = vert[i];
+  for (const auto &[i, p] : acg::enumerate(acg::view(wireframe.positions))) {
+    auto &v = vert[i];
     Vec3f c = wireframe.colors.col(wireframe.colors.cols() > 1 ? i : 0);
     v.position = glm::vec3(p.x(), p.y(), p.z());
     v.color = glm::make_vec3(c.data());
   }
   ACG_CHECK_STATUS_OK(TryCommitDeferred(
-      StagingUpdateInfo(info.vertex, vert.size() * sizeof(vert.front())), vert.data()));
+      StagingUpdateInfo(info.vertex, vert.size() * sizeof(vert.front())),
+      vert.data()));
 
   std::vector<uint32_t> indi(wireframe.indices.cols() * 2);
-  for (const auto& [id, i] : acg::enumerate(acg::view((wireframe.indices)))) {
+  for (const auto &[id, i] : acg::enumerate(acg::view((wireframe.indices)))) {
     indi[id * 2] = i.x();
     indi[id * 2 + 1] = i.y();
   }
 
   ACG_CHECK_STATUS_OK(TryCommitDeferred(
-      StagingUpdateInfo(info.index, indi.size() * sizeof(indi.front())), indi.data()));
+      StagingUpdateInfo(info.index, indi.size() * sizeof(indi.front())),
+      indi.data()));
 }
 
 void Gui::DrawDefaultUI() {
@@ -749,11 +810,14 @@ void Gui::DrawDefaultUI() {
   ImGui::ColorEdit3("Clear Color", graphics_pass_->GetBackgroundColor().float32,
                     ImGuiColorEditFlags_Float);
   ImGui::Text("Mesh-outline Color");
-  ImGui::ColorEdit3("Outline Color", mesh_outline_color_.data(), ImGuiColorEditFlags_Float);
+  ImGui::ColorEdit3("Outline Color", mesh_outline_color_.data(),
+                    ImGuiColorEditFlags_Float);
 
   ImGui::Text("Xy plane info");
-  bool changed = ImGui::ColorEdit3("Color", xy_plane_info_.color.data(), ImGuiColorEditFlags_Float);
-  changed |= ImGui::DragFloat("Height", &xy_plane_info_.height, 0.1f, -5.0f, 5.0f);
+  bool changed = ImGui::ColorEdit3("Color", xy_plane_info_.color.data(),
+                                   ImGuiColorEditFlags_Float);
+  changed |=
+      ImGui::DragFloat("Height", &xy_plane_info_.height, 0.1f, -5.0f, 5.0f);
   changed |= ImGui::Checkbox("Enable?", &xy_plane_info_.enable);
   if (changed) {
     ACG_DEBUG_LOG("XyPlane Mark Update");
@@ -768,17 +832,24 @@ void Gui::DrawDefaultUI() {
   changed |= ImGui::Checkbox("Fix Up Dir?", &disable_camera_up_update_);
 
   ImGui::Text("Light Info");
-  changed |= ImGui::InputFloat3("Point-Light position", light_.light_position_.data());
+  changed |=
+      ImGui::InputFloat3("Point-Light position", light_.light_position_.data());
   changed |= ImGui::ColorEdit3("Point-Light color", light_.light_color_.data(),
                                ImGuiColorEditFlags_Float);
-  changed |= ImGui::DragFloat("Point-Light Density", &light_.light_density_, 0.03, 0, 1);
-  changed |= ImGui::ColorEdit3("Para-Light Color", light_.parallel_light_color_.data(),
-                               ImGuiColorEditFlags_Float);
-  changed |= ImGui::InputFloat3("Para-Light Direction", light_.parallel_light_dir_.data());
-  changed |= ImGui::DragFloat("Para-Light Density", &light_.parallel_light_density_, 0.03, 0, 1);
-  changed |= ImGui::ColorEdit3("Ambient Color", light_.ambient_light_color_.data(),
-                               ImGuiColorEditFlags_Float);
-  changed |= ImGui::DragFloat("Ambient Density", &light_.ambient_light_density_, 0.03, 0, 1);
+  changed |= ImGui::DragFloat("Point-Light Density", &light_.light_density_,
+                              0.03, 0, 1);
+  changed |=
+      ImGui::ColorEdit3("Para-Light Color", light_.parallel_light_color_.data(),
+                        ImGuiColorEditFlags_Float);
+  changed |= ImGui::InputFloat3("Para-Light Direction",
+                                light_.parallel_light_dir_.data());
+  changed |= ImGui::DragFloat("Para-Light Density",
+                              &light_.parallel_light_density_, 0.03, 0, 1);
+  changed |=
+      ImGui::ColorEdit3("Ambient Color", light_.ambient_light_color_.data(),
+                        ImGuiColorEditFlags_Float);
+  changed |= ImGui::DragFloat("Ambient Density", &light_.ambient_light_density_,
+                              0.03, 0, 1);
 
   if (changed) {
     UpdateLightCamera();
@@ -790,8 +861,9 @@ void Gui::DrawDefaultUI() {
     sum += value;
   }
   auto s = fmt::format("avg={:.3f}", sum / 32);
-  ImGui::PlotHistogram("Time(ms)", render_time_samples_.data(), render_time_samples_.size(), 0,
-                       s.c_str(), FLT_MAX, FLT_MAX, ImVec2(0, 80));
+  ImGui::PlotHistogram("Time(ms)", render_time_samples_.data(),
+                       render_time_samples_.size(), 0, s.c_str(), FLT_MAX,
+                       FLT_MAX, ImVec2(0, 80));
   ImGui::End();
 }
 
@@ -800,7 +872,8 @@ void Gui::Tick(bool glfw_poll) {
     glfwPollEvents();
   }
   auto cur_time = std::chrono::steady_clock::now();
-  dt = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(cur_time - last_time);
+  dt = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(
+      cur_time - last_time);
   last_time = cur_time;
   render_time_samples_[render_index_++] = dt.count();
   render_index_ = render_index_ % 32;
@@ -868,16 +941,18 @@ void Gui::ProcessCamera() {
 
   Vec3f front = camera_.GetFront().normalized();
   Vec3f up = camera_.GetUp().normalized();
-  camera_.GetFront()
-      += (rot_hori * right - rot_vert * up) * dt.count() * .001 * camera_moving_speed;
+  camera_.GetFront() += (rot_hori * right - rot_vert * up) * dt.count() * .001 *
+                        camera_moving_speed;
   camera_.GetFront().normalize();
   if (disable_camera_up_update_) {
     camera_.SetUp({0, 0, 1});
   } else {
-    camera_.GetUp() += (-rot_vert * front) * dt.count() * .001 * camera_moving_speed;
+    camera_.GetUp() +=
+        (-rot_vert * front) * dt.count() * .001 * camera_moving_speed;
     camera_.GetUp().normalize();
   }
-  camera_.GetPosition() += camera_velocity * dt.count() * 0.001 * camera_moving_speed;
+  camera_.GetPosition() +=
+      camera_velocity * dt.count() * 0.001 * camera_moving_speed;
   if (changed) {
     UpdateLightCamera();
   }
@@ -904,4 +979,4 @@ void Gui::ClearScene() {
   allocated_buffers_ = remapped;
 }
 
-}  // namespace acg::gui::details
+} // namespace acg::gui::details
