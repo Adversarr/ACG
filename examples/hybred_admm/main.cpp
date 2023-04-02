@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
   app.AddSoftbody(
       house_node.GetData().cast<app::HybridApp::Scalar>() * 0.1, tet,
       Field<app::HybridApp::Scalar>::Ones(house_node.GetData().cols()), 
-      0, 200);
+      0, 20);
 
   auto update_scene = [&]() {
     cloth->SetVertices(app.cloth_.front().data_.position_.cast<float>())

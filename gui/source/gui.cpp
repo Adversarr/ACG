@@ -16,9 +16,10 @@ Gui &Gui::Instance() {
 
 void Gui::Config::Hook() const {
   acg::InitHook hook;
-  hook.on_init = [*this]() {
+  auto hk = *this;
+  hook.on_init = [hk]() {
     ACG_CHECK(::gui_instance.get() == nullptr, "Double Init to Gui.");
-    gui_instance = std::make_unique<Gui>(*this);
+    gui_instance = std::make_unique<Gui>(hk);
   };
 
   hook.on_exit = []() { ::gui_instance.reset(); };

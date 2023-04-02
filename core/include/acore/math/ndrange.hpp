@@ -2,7 +2,7 @@
 
 #include <array>
 #include <autils/common.hpp>
-#include <autils/god/god.hpp>
+#include <autils/god/utilities.hpp>
 
 #include "../common.hpp"
 namespace acg {
@@ -70,9 +70,11 @@ template <int dim> struct NdRange {
       typename utils::god::Duplicate_t<acg::Index,
                                        dim>::template cast<std::tuple>;
   constexpr explicit NdRange(const container_type &dims) : dims_{dims} {}
-  template <typename... Args,
-            typename = std::enable_if_t<sizeof...(Args) == dim>>
-  constexpr explicit NdRange(Args &&...args) : NdRange({args...}) {}
+  template <typename ArgFront, typename... Args,
+            typename = std::enable_if_t<
+            sizeof...(Args) == dim - 1 && sizeof...(Args) != 0>>
+  constexpr explicit NdRange(ArgFront&& a, Args &&...args) : 
+      NdRange(utils::god::DuplicateTuple<Index, dim>(a, args...)) {}
   constexpr decltype(auto) begin() const { return NdRangeIterator<dim>(dims_); }
   constexpr decltype(auto) end() const {
     return NdRangeIterator<dim>(

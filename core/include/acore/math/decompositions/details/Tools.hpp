@@ -128,6 +128,7 @@ inline float approx_rsqrt(float a) {
 #ifdef JIXIE_RSQRT32
   return JIXIE_RSQRT32(a);
 #else
+  float x = a;
   float xhalf = 0.5f * x;
   int i = *reinterpret_cast<int *>(&x);  // View x as an int.
   i = 0x5f37599e - (i >> 1);             // Initial guess.

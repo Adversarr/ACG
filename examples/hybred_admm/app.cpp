@@ -34,15 +34,15 @@ void HybridApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody) {
   for (auto v : view(s.data_.tetras_)) {
     for (auto [i, j, di, dj] : NdRange<4>{{4, 4, 3, 3}}) {
       auto t =
-          T{3 * v(i) + di, 3 * v(j) + dj, li(3 * i + di, 3 * j + dj) * coeff};
+          T(3 * v(i) + di, 3 * v(j) + dj, li(3 * i + di, 3 * j + dj) * coeff);
       hdata.push_back(t);
     }
   }
 
   for (auto [i, v] : enumerate(view(s.data_.mass_))) {
-    hdata.push_back(T{3 * i, 3 * i, v / math::square(dt_)});
-    hdata.push_back(T{3 * i + 1, 3 * i + 1, v / math::square(dt_)});
-    hdata.push_back(T{3 * i + 2, 3 * i + 2, v / math::square(dt_)});
+    hdata.push_back(Trip(3 * i, 3 * i, v / math::square(dt_)));
+    hdata.push_back(Trip(3 * i + 1, 3 * i + 1, v / math::square(dt_)));
+    hdata.push_back(Trip(3 * i + 2, 3 * i + 2, v / math::square(dt_)));
   }
 
   s.global_solve_index_start_ =
@@ -145,7 +145,7 @@ void HybridApp::ComputeExtForce() {
 void HybridApp::Step() {
   ComputeExtForce();
 
-  for (auto [i] : NdRange(30)) {
+  for (auto [i] : NdRange(100)) {
     ACG_INFO("Iteration {}", i);
     ComputeLocal();
     ComputeGlobal();
@@ -345,9 +345,9 @@ void HybridApp::Init() {
 
 Index HybridApp::PutHessianDyn(Index count, const std::vector<Trip> &hessian) {
   for (const auto &h : hessian) {
-    global_hessian_dyn_data_.push_back({h.row() + global_variable_count_,
+    global_hessian_dyn_data_.push_back(Trip(h.row() + global_variable_count_,
                                         h.col() + global_variable_count_,
-                                        h.value()});
+                                        h.value()));
   }
 
   auto last_count = global_variable_count_;
