@@ -541,10 +541,8 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
     spatial::SubDivisionAABB<Scalar, Index, 3, 4, 8> sd;
     auto cpacc = view(fluid_->ccd_dst_position_);
     for (auto [i, p] : enumerate(view(fluid_->substep_position_))) {
-      AABB aabbl(p - Vec3<Scalar>::Constant(min_distance_),
-                 p + Vec3<Scalar>::Constant(min_distance_));
-      AABB aabbr(cpacc(i) - Vec3<Scalar>::Constant(min_distance_),
-                 cpacc(i) + Vec3<Scalar>::Constant(min_distance_));
+      AABB aabbl(p - epsi, p + epsi);
+      AABB aabbr(cpacc(i) - epsi, cpacc(i) + epsi);
       sd.Insert({aabbl.Merge(aabbr), i});
     }
 
@@ -626,8 +624,7 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
 
           if (vt.valid_) {
             if (verbose) {
-              ACG_INFO("Found Collision! Object {}, Id {}, Fluid {}, toi {}",
-              i,
+              ACG_INFO("Found Collision! Object {}, Id {}, Fluid {}, toi {}", i,
                        j, fi, vt.toi_);
             }
             Collision c;
@@ -647,8 +644,7 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
           vts2(dst(tri.x()), dst(tri.y()), dst(tri.z()), fdst);
           if (vts2.valid_) {
             if (verbose) {
-              ACG_INFO("Found Collision! Object {}, Id {}, Fluid {}, no toi",
-              i,
+              ACG_INFO("Found Collision! Object {}, Id {}, Fluid {}, no toi", i,
                        j, fi);
             }
             Collision c;

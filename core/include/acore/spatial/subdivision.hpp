@@ -117,4 +117,4 @@ private:
 };
 
 }  // namespace acg::spatial
-#include "details/subdivision-inl.hpp"
+#include "details/subdivision-inl.hpp" // IWYU pragma: export

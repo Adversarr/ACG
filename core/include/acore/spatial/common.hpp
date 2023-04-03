@@ -11,7 +11,9 @@ template <typename F, int dim> struct AABB {
   using bound_type = acg::Vec<F, dim>;
   bound_type lower_bound;
   bound_type upper_bound;
-  AABB(bound_type lb, bound_type ub) : lower_bound(lb), upper_bound(ub) {}
+  AABB(bound_type lb, bound_type ub) : lower_bound(lb), upper_bound(ub) {
+    ACG_DEBUG_CHECK((lb.array() <= ub.array()).all(), "LB > UB.");
+  }
 
   AABB(const AABB &) = default;
 
@@ -27,8 +29,8 @@ template <typename F, int dim> struct AABB {
   }
 
   inline AABB<F, dim> Merge(const AABB<F, dim>& another) const {
-    auto lb = lower_bound.array().cwiseMin(another.lower_bound.array());
-    auto ub = upper_bound.array().cwiseMax(another.upper_bound.array());
+    bound_type lb = lower_bound.array().min(another.lower_bound.array());
+    bound_type ub = upper_bound.array().max(another.upper_bound.array());
     return AABB<F, dim>(lb, ub);
   }
 };
