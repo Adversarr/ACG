@@ -74,6 +74,10 @@ void ApicRegular<Scalar, dim, KernT>::Foreach(
          NdRange<dim>(utils::god::tuple_duplicate<dim>(kern_size * 2 + 1))) {
       Vec<Index, dim> dijk{std::make_from_tuple<Vec<Index, dim>>(idx)};
       Vec<Index, dim> ijk = (most_close_grid + dijk).array() - kern_size;
+      if ((ijk.array() < 0).any() || (ijk.array() > euler_.div_count_.array()).any()) {
+        // invalid index.
+        continue;
+      }
       Vec<Scalar, dim> displacement =
           (ijk.template cast<Scalar>() - p_position_local).array() + 0.5;
       Scalar weight = interp_kernel_.Sample(displacement);

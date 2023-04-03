@@ -29,12 +29,14 @@ int main(int argc, char **argv) {
     Gui gui(config);
     bool clear = false;
     bool running = false;
+    bool run_once = false;
     MpmExplictApp app;
     app.Init();
-    gui.SetUIDrawCallback([&clear, &running, &app]() {
+    gui.SetUIDrawCallback([&]() {
       clear = ImGui::Button("Reset Scene.");
       // running = ImGui::Button("Run Once");
       ImGui::Checkbox("Run", &running);
+      run_once = ImGui::Button("Run once");
       acg::Float64 vel_eng = app.lag_.velocity_.array().square().sum();
       Vec3f pos = app.lag_.position_.rowwise().mean().cast<Float32>();
       ImGui::Text("Velocity Energy = %lf, Weight %lf", vel_eng,
@@ -59,7 +61,7 @@ int main(int argc, char **argv) {
         mp->SetPositions(app.lag_.position_.cast<Float32>()).MarkUpdate();
       }
 
-      if (running) {
+      if (running || run_once) {
         app.Step();
         mp->SetPositions(app.lag_.position_.cast<Float32>()).MarkUpdate();
         // running = false;

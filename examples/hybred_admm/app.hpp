@@ -2,6 +2,9 @@
 #include "aphysics/elastic/neohookean.hpp"
 #include "aphysics/solver/admm/hyperelastic.hpp"
 #include <Eigen/SparseCholesky>
+
+#include <acore/spatial/subdivision.hpp>
+#include <Eigen/IterativeLinearSolvers>
 #include <acore/math/sparse.hpp>
 #include <acore/spatial/subdivision.hpp>
 #include <aphysics/constriants.hpp>
@@ -15,10 +18,13 @@
 
 namespace acg::app {
 
-class HybridApp {
+class HybridAdmmApp {
 public:
   using Scalar = Float64;
   using PositionConstraint = physics::PositionStaticConstraint<Scalar, 3>;
+  using SolverType = Eigen::SimplicialLDLT<SpMat<Scalar>>;
+
+  using FluidSolver = Eigen::BiCGSTAB<SpMat<Scalar>>;
 
   /**
    * Definition for Cloth, Softbody, Fluid, and their auxiliary variables
@@ -27,13 +33,17 @@ public:
     physics::Cloth<Scalar, 3> data_;
     Field<Scalar, 3> inertia_position_;
     Field<Scalar, 3> substep_position_;
-    Field<Scalar, 3> substep_x_;
     Field<Scalar, 3> substep_solution_;
+    Field<Scalar, 3> ccd_dst_position_;
+    Field<Scalar, 3> substep_x_;
     Field<Scalar, 3> constraint_admm_multiplier_;
 
     physics::admm::SpringConstraint<Scalar> admm_compute_;
     Scalar admm_weight_{0.7};
     Index global_solve_index_start_;
+
+    // ADMM Solver
+    std::unique_ptr<Eigen::SimplicialLDLT<SpMat<Scalar>>> solver_;
   };
 
   struct Softbody {
@@ -41,6 +51,7 @@ public:
     Field<Scalar, 3> inertia_position_;
     Field<Scalar, 3> substep_position_;
     Field<Scalar, 3> substep_solution_;
+    Field<Scalar, 3> ccd_dst_position_;
     Field<Scalar, 3> substep_x_;
     Field<Scalar, 9> constraint_admm_multiplier_;
     physics::admm::HyperElasticConstraint<
@@ -49,6 +60,9 @@ public:
     Scalar admm_weight_{.5};
     Scalar hessian_coefficient_;
     Index global_solve_index_start_;
+
+    // ADMM Solver
+    std::unique_ptr<Eigen::SimplicialLDLT<SpMat<Scalar>>> solver_;
   };
 
   struct Fluid {
@@ -56,11 +70,12 @@ public:
     Field<Scalar, 3> substep_position_;
     Field<Scalar, 3> inertia_position_;
     Field<Scalar, 3> grad_;
-    Field<Scalar, 3> substep_direction_;
+    Field<Scalar, 3> ccd_dst_position_;
+    Field<Scalar, 3> substep_solution_;
+    Scalar pressure_scale_ = 10;
 
-    // Remain empty: No implicit in-compressibility is derived.
-    Field<Scalar, 3> constraint_admm_;
-    Index global_solve_index_start_;
+    Scalar sph_kern_size_{1e-1};
+    spatial::SubDivisionAABB<Scalar, Index, 3> sd_;
   };
 
   // Clothes
@@ -72,31 +87,49 @@ public:
   // Optionally one fluid.
   std::unique_ptr<Fluid> fluid_;
 
+
   // ADMM Helper.
   Index global_variable_count_{0};
-  Vec<Scalar> global_x_;
-  Vec<Scalar> global_solution_;
   using Trip = Eigen::Triplet<Scalar>;
   std::vector<Trip> global_hessian_dyn_data_;
-  SpMat<Scalar> hessian_dyn_;
-  Eigen::SimplicialLDLT<SpMat<Scalar>> global_solver_;
 
   using PConstraint = physics::PositionStaticConstraint<Scalar, 3>;
   using GConstraint = physics::GroundConstraint<Scalar>;
+  using WConstraint = physics::WallConstraint<Scalar>;
   using EConstraint = physics::ExternForceConstraint<Scalar, 3>;
 
   std::vector<PConstraint> position_constraints_;
   GConstraint ground_constraints_;
+  WConstraint wall_x_low_;
+  WConstraint wall_y_low_;
+  WConstraint wall_x_high_;
+  WConstraint wall_y_high_;
   std::vector<EConstraint> ext_force_constraints_;
 
-  Index PutHessianDyn(Index count, const std::vector<Trip> &hessian);
+  // Collisions:
+  using Collision = physics::CollisionConstraint;
+  std::vector<Collision> collisions_;
+  Scalar minimum_toi_{1};
+  Scalar min_distance_{1e-3};
+
+
+  bool enable_result_check_{true};
 
   void Step();
+
+  void SolveFluid();
 
   void AddCloth(physics::Cloth<Scalar, 3> cloth);
 
   void AddCloth(Field<Scalar, 3> vert, Field<Index, 3> face, Field<Scalar> mass,
                 Scalar stiffness);
+
+  void AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody);
+
+  void AddSoftbody(Field<Scalar, 3> position, Field<Index, 4> tetras,
+                   Field<Scalar> mass, Scalar lambda, Scalar mu);
+
+  void SetFluid(physics::LagrangeFluid<Scalar, 3> fluid);
 
   void ComputeExtForce();
 
@@ -110,12 +143,21 @@ public:
 
   void EnforceConstraints();
 
-  void AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody);
+  void DetectCollisions(bool verbose = false);
 
-  void AddSoftbody(Field<Scalar, 3> position, Field<Index, 4> tetras,
-                   Field<Scalar> mass, Scalar lambda, Scalar mu);
+  void SubStepCollisionFree();
 
-  Scalar dt_{.005};
+  void CcdEpilogue();
+
+  void CcdPrologue();
+
+  Scalar dt_{2e-3};
+
+  Scalar velocity_damping_{0.99999};
+
+  int max_iteration_{10};
+
+  bool enable_subd_{false};
 };
 
 } // namespace acg::app

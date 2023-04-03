@@ -23,6 +23,11 @@ template <typename Scalar, int dim> struct ExternForceConstraint {
 };
 
 template <typename Scalar> struct GroundConstraint { Scalar z_value_; };
+template <typename Scalar> struct WallConstraint { 
+  Scalar value_;
+  Index dim_;
+  bool is_greater_ = false;
+};
 
 /**
  * @brief Represents object_ should have the given velocity.

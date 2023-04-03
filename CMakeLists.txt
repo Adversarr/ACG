@@ -42,6 +42,8 @@ if (NOT MSVC)
   acg_add_cxx_compiler_flag("-march=native")
 endif()
 
+add_subdirectory(3rdparty/Tight-Inclusion)
+
 add_subdirectory(core)
 add_subdirectory(gui)
 add_subdirectory(physics)

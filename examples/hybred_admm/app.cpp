@@ -1,21 +1,25 @@
 #include "app.hpp"
+#include "aphysics/collision/distance.hpp"
 #include <Eigen/SparseCholesky>
+#include <acore/parallel/common.hpp>
+#include <aphysics/collision/detect.hpp>
+#include <aphysics/collision/tidetect.hpp>
 #include <aphysics/dynamics/inertia.hpp>
 #include <aphysics/solver/admm/spring.hpp>
 
-#include <acore/parallel/common.hpp>
-
 namespace acg::app {
 
-void HybridApp::AddSoftbody(Field<Scalar, 3> position, Field<Index, 4> tetras,
-                            Field<Scalar> mass, Scalar lambda, Scalar mu) {
+void HybridAdmmApp::AddSoftbody(Field<Scalar, 3> position,
+                                Field<Index, 4> tetras, Field<Scalar> mass,
+                                Scalar lambda, Scalar mu) {
   physics::HyperElasticSoftbody<Scalar, 3> sb{position, tetras, mass, lambda,
                                               mu};
   sb.InitAuxiliary();
   AddSoftbody(sb);
 }
 
-void HybridApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody) {
+void HybridAdmmApp::AddSoftbody(
+    physics::HyperElasticSoftbody<Scalar, 3> softbody) {
   Softbody s;
   s.data_ = std::move(softbody);
   s.substep_position_.resizeLike(s.data_.position_);
@@ -25,6 +29,7 @@ void HybridApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody) {
   std::vector<T> hdata;
 
   Mat<Scalar, 9, 12> gi;
+  s.admm_compute_.iteration_count_ = 3;
   auto i = Mat3x3<Scalar>::Identity();
   auto o = Mat3x3<Scalar>::Zero();
   gi << -i, i, o, o, -i, o, i, o, -i, o, o, i;
@@ -45,13 +50,19 @@ void HybridApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody) {
     hdata.push_back(Trip(3 * i + 2, 3 * i + 2, v / math::square(dt_)));
   }
 
-  s.global_solve_index_start_ =
-      PutHessianDyn(s.substep_position_.size(), hdata);
-  s.admm_compute_.iteration_count_ = 3;
+  // Prefer a local solver
+  SpMat<Scalar> hessian;
+  hessian.resize(s.substep_position_.size(), s.substep_position_.size());
+  hessian.setFromTriplets(hdata.begin(), hdata.end());
+  s.solver_ = std::make_unique<SolverType>(hessian);
+  ACG_CHECK(s.solver_->info() == Eigen::Success, "Failed to prefactor hessian");
+
+  // s.global_solve_index_start_ =
+  //     PutHessianDyn(s.substep_position_.size(), hdata);
   softbody_.push_back(std::move(s));
 }
 
-void HybridApp::AddCloth(physics::Cloth<Scalar, 3> cloth) {
+void HybridAdmmApp::AddCloth(physics::Cloth<Scalar, 3> cloth) {
   Cloth cl;
   cl.data_ = std::move(cloth);
   cl.inertia_position_.resizeLike(cl.substep_position_);
@@ -85,13 +96,21 @@ void HybridApp::AddCloth(physics::Cloth<Scalar, 3> cloth) {
     hess.push_back(Trip(3 * i + 2, 3 * i + 2, c / dt_ / dt_));
   }
 
-  cl.global_solve_index_start_ = PutHessianDyn(cl.data_.position_.size(), hess);
-  // Final, move into vector.
+  // Prefer a local solver
+  SpMat<Scalar> hessian;
+  hessian.resize(cl.substep_position_.size(), cl.substep_position_.size());
+  hessian.setFromTriplets(hess.begin(), hess.end());
+  cl.solver_ = std::make_unique<SolverType>(hessian);
+  ACG_CHECK(cl.solver_->info() == Eigen::Success,
+            "Failed to prefactor hessian");
+
+  // cl.global_solve_index_start_ = PutHessianDyn(cl.data_.position_.size(),
+  // hess); Final, move into vector.
   cloth_.push_back(std::move(cl));
 }
 
-void HybridApp::AddCloth(Field<Scalar, 3> vert, Field<Index, 3> face,
-                         Field<Scalar> mass, Scalar stiffness) {
+void HybridAdmmApp::AddCloth(Field<Scalar, 3> vert, Field<Index, 3> face,
+                             Field<Scalar> mass, Scalar stiffness) {
   physics::Cloth<Scalar, 3> cl;
   cl.position_ = vert;
   cl.face_ = face;
@@ -122,7 +141,7 @@ void HybridApp::AddCloth(Field<Scalar, 3> vert, Field<Index, 3> face,
   AddCloth(cl);
 }
 
-void HybridApp::ComputeExtForce() {
+void HybridAdmmApp::ComputeExtForce() {
   physics::dynamics::InertiaPosition<Scalar, 3> ip{dt_};
   for (auto &cl : cloth_) {
     cl.inertia_position_ = ip(cl.data_.position_, cl.data_.velocity_);
@@ -130,7 +149,6 @@ void HybridApp::ComputeExtForce() {
     cl.constraint_admm_multiplier_.setZero(Eigen::NoChange,
                                            cl.data_.stiffness_.cols());
   }
-
   for (auto &sf : softbody_) {
     sf.inertia_position_ = ip(sf.data_.position_, sf.data_.velocity_);
     sf.substep_position_ = sf.data_.position_;
@@ -138,65 +156,199 @@ void HybridApp::ComputeExtForce() {
                                            sf.data_.tetras_.cols());
   }
 
-  // TODO: Enforce constraints.
+  // if (fluid_) {
+  //   fluid_->inertia_position_ =
+  //       ip(fluid_->data_.position_, fluid_->data_.velocity_);
+  //   fluid_->substep_position_ = fluid_->data_.position_;
+  // }
   EnforceConstraints();
 }
 
-void HybridApp::Step() {
+void HybridAdmmApp::CcdPrologue() {
+  EnforceConstraints();
+  // TODO: Also force substep solution to satisfy these constraints.
+  size_t collision_count = 0;
+  bool force_break = false;
+  do {
+    // Setup ccd position buffer and run ccd.
+    for (auto &cl : cloth_) {
+      cl.ccd_dst_position_ = cl.substep_solution_;
+    }
+    if (fluid_) {
+      fluid_->ccd_dst_position_ = fluid_->substep_solution_;
+    }
+    DetectCollisions();
+    for (const auto &c : collisions_) {
+      auto tri = cloth_[c.obj0_.object_].data_.face_.col(c.obj0_.id_);
+      const auto p = view(cloth_[c.obj0_.object_].substep_position_);
+      auto fi = c.obj1_.id_;
+      auto pp = view(cloth_[c.obj0_.object_].substep_solution_);
+
+      // TODO: Compute L, and apply penalty.
+      Vec<Scalar, 12> x, xp;
+      x.middleRows<3>(0) = p(tri.x());
+      x.middleRows<3>(3) = p(tri.y());
+      x.middleRows<3>(6) = p(tri.z());
+      x.middleRows<3>(9) = fluid_->substep_position_.col(fi);
+      xp.middleRows<3>(0) = pp(tri.x());
+      xp.middleRows<3>(3) = pp(tri.y());
+      xp.middleRows<3>(6) = pp(tri.z());
+      xp.middleRows<3>(9) = fluid_->substep_solution_.col(fi);
+      Vec3<Scalar> v0 = p(tri.x()), v1 = p(tri.y()), v2 = p(tri.z()),
+                   v = fluid_->substep_position_.col(fi);
+
+      // auto normal_compute = [](Vec3<Scalar> e0, Vec3<Scalar> e1,
+      //                          Vec3<Scalar> ev) -> Vec3<Scalar> {
+      //   Vec3<Scalar> n = e0.cross(e1).normalized();
+      //   if (n.dot(ev) >= 0) {
+      //     return n;
+      //   } else {
+      //     return -n;
+      //   }
+      // };
+
+      Vec<Scalar, 12> g;
+      // g.middleRows<3>(0) = normal_compute(v1 - v, v2 - v, v0 - v);
+      // g.middleRows<3>(3) = normal_compute(v0 - v, v2 - v, v1 - v);
+      // g.middleRows<3>(6) = normal_compute(v1 - v, v0 - v, v2 - v);
+      // g.middleRows<3>(9) = normal_compute(v2 - v0, v1 - v0, v - v0);
+      g = physics::ccd::VertexTriangleNormalDistance<Scalar>(v0, v1, v2, v)
+              .Grad();
+      g.normalize();
+
+      Scalar len = (x - xp).dot(g);
+      if (len < min_distance_) {
+        len = min_distance_;
+      }
+      // ACG_INFO("Length = {}", len);
+      ACG_CHECK(!std::isnan(len), "Length is nan");
+      pp(tri.x()) += g.middleRows<3>(0) * len;
+      pp(tri.y()) += g.middleRows<3>(3) * len;
+      pp(tri.z()) += g.middleRows<3>(6) * len;
+      fluid_->substep_solution_.col(fi) += g.middleRows<3>(9) * len;
+    }
+
+    if (collision_count == collisions_.size() && collision_count != 0) {
+      ACG_WARN("Cannot solve.");
+      break;
+    }
+    collision_count = collisions_.size();
+  } while (!collisions_.empty() && !force_break);
+}
+
+void HybridAdmmApp::CcdEpilogue() {
+  do {
+    DetectCollisions(true);
+    if (collisions_.empty()) {
+      return;
+    }
+    Scalar dx = 0;
+    for (auto &o : cloth_) {
+      dx += (o.ccd_dst_position_ - o.substep_position_).squaredNorm();
+    }
+    if (fluid_) {
+      dx +=
+          (fluid_->ccd_dst_position_ - fluid_->substep_position_).squaredNorm();
+    }
+    // Avoid Extreme Error.
+    minimum_toi_ *= 0.99;
+    ACG_WARN("Collision set not empty after constraint process. set toi to {}, "
+             "dx = {}",
+             minimum_toi_, dx);
+    for (auto &o : cloth_) {
+      o.ccd_dst_position_ = minimum_toi_ * o.ccd_dst_position_ +
+                            (1 - minimum_toi_) * o.substep_position_;
+    }
+    for (auto &o : softbody_) {
+      o.ccd_dst_position_ = minimum_toi_ * o.ccd_dst_position_ +
+                            (1 - minimum_toi_) * o.substep_position_;
+    }
+    if (fluid_) {
+      fluid_->ccd_dst_position_ =
+          minimum_toi_ * fluid_->ccd_dst_position_ +
+          (1 - minimum_toi_) * fluid_->substep_position_;
+    }
+    if (dx < 1e-10) {
+      break;
+    }
+  } while (!collisions_.empty());
+}
+
+void HybridAdmmApp::SubStepCollisionFree() {
+  CcdPrologue();
+
+  for (auto &cl : cloth_) {
+    cl.ccd_dst_position_ = cl.substep_solution_;
+  }
+  if (fluid_) {
+    fluid_->ccd_dst_position_ = fluid_->substep_solution_;
+  }
+  DetectCollisions();
+  if (!collisions_.empty()) {
+    CcdEpilogue();
+  }
+  if (enable_result_check_) {
+    DetectCollisions(true);
+    ACG_CHECK(minimum_toi_ > 0.99,
+              "Collisions found from substep to next step. TOI = {} count = {}",
+              minimum_toi_, collisions_.size());
+  }
+  // after check:
+  for (auto &o : cloth_) {
+    o.substep_position_ = o.ccd_dst_position_;
+  }
+  if (fluid_) {
+    fluid_->substep_position_ = fluid_->ccd_dst_position_;
+  }
+}
+
+void HybridAdmmApp::Step() {
   ComputeExtForce();
 
-  for (auto [i] : NdRange(100)) {
-    ACG_INFO("Iteration {}", i);
+  SolveFluid();
+  for (auto i = 0; i < max_iteration_; ++i) {
+    // ACG_INFO("Iteration {}", i);
     ComputeLocal();
     ComputeGlobal();
-    for (auto &cl : cloth_) {
-      cl.substep_position_ = cl.substep_solution_;
-    }
-
-    for (auto &o : softbody_) {
-      o.substep_position_ = o.substep_solution_;
-    }
-    EnforceConstraints();
-    Scalar error = 0;
-    for (auto &cl : cloth_) {
-      auto lacc = view(cl.data_.constraints_);
-      auto pacc = view(cl.substep_position_);
-      for (auto [i, z] : enumerate(view(cl.admm_compute_.slack_))) {
-        auto l = lacc(i).x();
-        auto r = lacc(i).y();
-        error += (pacc(l) - pacc(r) - z).norm() * cl.data_.stiffness_(i) * cl.admm_weight_;
-      }
-    }
-
-    for (auto &o : softbody_) {
-      auto tacc = view(o.data_.tetras_);
-      auto pacc = view(o.substep_position_);
-      auto aacc = view<DefaultIndexer, ReshapeTransform<3, 3>>(
-          o.constraint_admm_multiplier_);
-      auto racc = view(o.data_.rest_position_);
-      auto sacc =
-          view<DefaultIndexer, ReshapeTransform<3, 3>>(o.admm_compute_.slack_);
-      for (auto [i, tet] : enumerate(tacc)) {
-        Mat3x3<Scalar> rest;
-        rest.col(0) = racc(tet.y()) - racc(tet.x());
-        rest.col(1) = racc(tet.z()) - racc(tet.x());
-        rest.col(2) = racc(tet.w()) - racc(tet.x());
-        Mat3x3<Scalar> cur;
-        cur.col(0) = pacc(tet.y()) - pacc(tet.x());
-        cur.col(1) = pacc(tet.z()) - pacc(tet.x());
-        cur.col(2) = pacc(tet.w()) - pacc(tet.x());
-        error += (cur - rest * sacc(i)).norm() * o.hessian_coefficient_;
-      }
-      ACG_INFO("Error Estimate = {}", error);
+    SubStepCollisionFree();
+  }
+  Scalar error = 0;
+  for (auto &cl : cloth_) {
+    auto lacc = view(cl.data_.constraints_);
+    auto pacc = view(cl.substep_position_);
+    for (auto [i, z] : enumerate(view(cl.admm_compute_.slack_))) {
+      auto l = lacc(i).x();
+      auto r = lacc(i).y();
+      error += (pacc(l) - pacc(r) - z).norm() * cl.data_.stiffness_(i) *
+               cl.admm_weight_;
     }
   }
+
+  for (auto &o : softbody_) {
+    auto tacc = view(o.data_.tetras_);
+    auto pacc = view(o.substep_position_);
+    auto racc = view(o.data_.rest_position_);
+    auto sacc =
+        view<DefaultIndexer, ReshapeTransform<3, 3>>(o.admm_compute_.slack_);
+    for (auto [i, tet] : enumerate(tacc)) {
+      Mat3x3<Scalar> rest;
+      rest.col(0) = racc(tet.y()) - racc(tet.x());
+      rest.col(1) = racc(tet.z()) - racc(tet.x());
+      rest.col(2) = racc(tet.w()) - racc(tet.x());
+      Mat3x3<Scalar> cur;
+      cur.col(0) = pacc(tet.y()) - pacc(tet.x());
+      cur.col(1) = pacc(tet.z()) - pacc(tet.x());
+      cur.col(2) = pacc(tet.w()) - pacc(tet.x());
+      error += (cur - rest * sacc(i)).norm() * o.hessian_coefficient_;
+    }
+  }
+  ACG_INFO("Error Estimate = {}", error);
   CommitStepResult();
 }
 
-void HybridApp::ComputeGlobal() {
-  global_x_.setZero();
+void HybridAdmmApp::ComputeGlobal() {
   for (auto &cl : cloth_) {
-    Field<Scalar, 3> &rhs = cl.substep_solution_;
+    auto &rhs = cl.substep_x_;
     rhs.setZero();
     for (auto [i, c] : enumerate(view(rhs))) {
       c += cl.inertia_position_.col(i) * cl.data_.mass_(i) / dt_ / dt_;
@@ -209,8 +361,8 @@ void HybridApp::ComputeGlobal() {
       rhs.col(c.y()) -= z_u * cl.data_.stiffness_(i) * cl.admm_weight_;
     }
 
-    global_x_.middleRows(cl.global_solve_index_start_, rhs.size()) =
-        rhs.reshaped();
+    cl.substep_solution_.reshaped() =
+        cl.solver_->solve(cl.substep_x_.reshaped());
   }
 
   for (auto &o : softbody_) {
@@ -252,27 +404,22 @@ void HybridApp::ComputeGlobal() {
       xacc(tet.w()) += x_local.middleRows<3>(9);
     }
 
-    global_x_.middleRows(o.global_solve_index_start_, o.substep_x_.size()) =
-        o.substep_x_.reshaped();
+    o.substep_solution_.reshaped() = o.solver_->solve(o.substep_x_.reshaped());
   }
-
-  // Solve the Linear System
-  auto result = global_solver_.solve(global_x_);
-  global_solution_ = result;
 
   // Put back.
-  for (auto &cl : cloth_) {
-    cl.substep_solution_.reshaped() = global_solution_.middleRows(
-        cl.global_solve_index_start_, cl.substep_solution_.size());
-  }
+  // for (auto &cl : cloth_) {
+  //   cl.substep_solution_.reshaped() = global_solution_.middleRows(
+  //       cl.global_solve_index_start_, cl.substep_solution_.size());
+  // }
 
-  for (auto &o : softbody_) {
-    o.substep_solution_.reshaped() = global_solution_.middleRows(
-        o.global_solve_index_start_, o.substep_solution_.size());
-  }
+  // for (auto &o : softbody_) {
+  //   o.substep_solution_.reshaped() = global_solution_.middleRows(
+  //       o.global_solve_index_start_, o.substep_solution_.size());
+  // }
 }
 
-void HybridApp::ComputeLocal() {
+void HybridAdmmApp::ComputeLocal() {
   for (auto &cl : cloth_) {
     cl.admm_compute_.Compute(
         cl.substep_position_, cl.constraint_admm_multiplier_,
@@ -294,10 +441,10 @@ void HybridApp::ComputeLocal() {
   }
 
   for (auto &o : softbody_) {
-    o.admm_compute_.ComputeParallel(o.substep_position_, o.data_.rest_position_,
-                            o.data_.tetra_rinvs_, o.data_.tetras_,
-                            o.constraint_admm_multiplier_, o.data_.lambda_,
-                            o.data_.mu_, o.hessian_coefficient_);
+    o.admm_compute_.ComputeParallel(
+        o.substep_position_, o.data_.rest_position_, o.data_.tetra_rinvs_,
+        o.data_.tetras_, o.constraint_admm_multiplier_, o.data_.lambda_,
+        o.data_.mu_, o.hessian_coefficient_);
 
     auto tacc = view(o.data_.tetras_);
     auto pacc = view(o.substep_position_);
@@ -320,55 +467,42 @@ void HybridApp::ComputeLocal() {
   }
 }
 
-void HybridApp::CommitStepResult() {
+void HybridAdmmApp::CommitStepResult() {
   for (auto &cl : cloth_) {
-    cl.data_.velocity_ = (cl.substep_position_ - cl.data_.position_) / dt_;
+    cl.data_.velocity_ +=
+        (cl.substep_position_ - cl.data_.position_) / dt_ * velocity_damping_;
+    cl.data_.velocity_ /= 2;
     cl.data_.position_ = cl.substep_position_;
   }
 
   for (auto &sb : softbody_) {
-    sb.data_.velocity_ = (sb.substep_position_ - sb.data_.position_) / dt_;
+    sb.data_.velocity_ +=
+        (sb.substep_position_ - sb.data_.position_) / dt_ * velocity_damping_;
+    sb.data_.velocity_ /= 2;
     sb.data_.position_ = sb.substep_position_;
   }
-}
 
-void HybridApp::Init() {
-  hessian_dyn_.resize(global_variable_count_, global_variable_count_);
-  hessian_dyn_.setFromTriplets(global_hessian_dyn_data_.begin(),
-                               global_hessian_dyn_data_.end());
-  hessian_dyn_.makeCompressed();
-  global_solver_.compute(hessian_dyn_);
-  global_x_.resize(global_variable_count_);
-  ACG_CHECK(global_solver_.info() == Eigen::Success,
-            "Failed to pre-factor hessian.");
-}
-
-Index HybridApp::PutHessianDyn(Index count, const std::vector<Trip> &hessian) {
-  for (const auto &h : hessian) {
-    global_hessian_dyn_data_.push_back(Trip(h.row() + global_variable_count_,
-                                        h.col() + global_variable_count_,
-                                        h.value()));
+  if (fluid_) {
+    fluid_->data_.velocity_ +=
+        (fluid_->substep_position_ - fluid_->data_.position_) / dt_ *
+        velocity_damping_;
+    fluid_->data_.velocity_ /= 2;
+    fluid_->data_.position_ = fluid_->substep_position_;
   }
-
-  auto last_count = global_variable_count_;
-  global_variable_count_ += count;
-  return last_count;
 }
 
-void HybridApp::EnforceConstraints() {
+void HybridAdmmApp::Init() {}
+
+void HybridAdmmApp::EnforceConstraints() {
   for (const auto &c : position_constraints_) {
-    // assert c is about cloth.
     auto &cl = cloth_[c.object_.object_];
     auto i = c.object_.id_;
-    cl.substep_position_.col(i) = c.value_;
+    cl.substep_solution_.col(i) = c.value_;
     cl.inertia_position_.col(i) = c.value_;
-    // ACG_INFO("Enforce position constraint obj {} id {}, {}",
-    // c.object_.object_, i,
-    //   c.value_.transpose());
   }
 
   for (auto &c : cloth_) {
-    for (auto v : view(c.substep_position_)) {
+    for (auto v : view(c.substep_solution_)) {
       v.z() = std::max(v.z(), ground_constraints_.z_value_);
     }
     for (auto v : view(c.inertia_position_)) {
@@ -376,13 +510,245 @@ void HybridApp::EnforceConstraints() {
     }
   }
   for (auto &c : softbody_) {
-    for (auto v : view(c.substep_position_)) {
+    for (auto v : view(c.substep_solution_)) {
       v.z() = std::max(v.z(), ground_constraints_.z_value_);
     }
     for (auto v : view(c.inertia_position_)) {
       v.z() = std::max(v.z(), ground_constraints_.z_value_);
     }
   }
+
+  if (fluid_) {
+    for (auto v : view(fluid_->substep_solution_)) {
+      v.z() = std::max(v.z(), ground_constraints_.z_value_);
+      v.x() = std::clamp(v.x(), wall_x_low_.value_, wall_x_high_.value_);
+      v.y() = std::clamp(v.y(), wall_y_low_.value_, wall_y_high_.value_);
+    }
+  }
+}
+
+void HybridAdmmApp::DetectCollisions(bool verbose) {
+  // Detect collisions between `position` and `ccd`
+  collisions_.clear();
+  minimum_toi_ = 1;
+  if (!fluid_) {
+    return;
+  }
+
+  if (enable_subd_) {
+    using AABB = spatial::AABB<Scalar, 3>;
+    Vec3<Scalar> epsi = Vec3<Scalar>::Constant(min_distance_);
+    spatial::SubDivisionAABB<Scalar, Index, 3, 4, 8> sd;
+    auto cpacc = view(fluid_->ccd_dst_position_);
+    for (auto [i, p] : enumerate(view(fluid_->substep_position_))) {
+      AABB aabbl(p - Vec3<Scalar>::Constant(min_distance_),
+                 p + Vec3<Scalar>::Constant(min_distance_));
+      AABB aabbr(cpacc(i) - Vec3<Scalar>::Constant(min_distance_),
+                 cpacc(i) + Vec3<Scalar>::Constant(min_distance_));
+      sd.Insert({aabbl.Merge(aabbr), i});
+    }
+
+    for (size_t i = 0; i < cloth_.size(); ++i) {
+      auto cur = view(cloth_[i].substep_position_);
+      auto dst = view(cloth_[i].ccd_dst_position_);
+      for (auto [j, tri] : enumerate(view(cloth_[i].data_.face_))) {
+        AABB c00(cur(tri.x()) - epsi, cur(tri.x()) + epsi);
+        AABB c01(cur(tri.y()) - epsi, cur(tri.y()) + epsi);
+        AABB c02(cur(tri.z()) - epsi, cur(tri.z()) + epsi);
+        AABB d00(dst(tri.x()) - epsi, dst(tri.x()) + epsi);
+        AABB d01(dst(tri.y()) - epsi, dst(tri.y()) + epsi);
+        AABB d02(dst(tri.z()) - epsi, dst(tri.z()) + epsi);
+        auto result =
+            c00.Merge(c01).Merge(c02).Merge(d00).Merge(d01).Merge(d02);
+        auto query = sd.Query(result);
+        for (auto sdi : query) {
+          auto fi = sd.Get(sdi).second;
+          ACG_INFO("SDI = {}, fi = {}", sdi, fi);
+          ACG_CHECK(fi < fluid_->data_.position_.cols(), "Invalid fluid id!");
+          auto p = fluid_->substep_position_.col(fi);
+          auto fdst = fluid_->ccd_dst_position_.col(fi);
+          physics::ccd::VertexTriangleDynamic<Scalar> vt;
+          vt.min_distance_ = min_distance_;
+          vt(p, cur(tri.x()), cur(tri.y()), cur(tri.z()), fdst, dst(tri.x()),
+             dst(tri.y()), dst(tri.z()));
+
+          if (vt.valid_) {
+            if (verbose) {
+              ACG_INFO("Found Collision! Object {}, Id {}, Fluid {}, toi {}", i,
+                       j, fi, vt.toi_);
+            }
+            Collision c;
+            c.type_ = physics::kVertexFace;
+            c.obj0_.type_ = physics::kCloth;
+            c.obj0_.object_ = i;
+            c.obj0_.id_ = j;
+            c.obj1_.id_ = fi;
+            collisions_.push_back(c);
+            minimum_toi_ = std::min(vt.toi_, minimum_toi_);
+            continue;
+          }
+
+          // Assert: vt at cur does not have a small distance.
+          physics::ccd::VertexTriangleStatic<Scalar> vts2;
+          vts2.min_distance_ = min_distance_;
+          vts2(dst(tri.x()), dst(tri.y()), dst(tri.z()), fdst);
+          if (vts2.valid_) {
+            if (verbose) {
+              ACG_INFO("Found Collision! Object {}, Id {}, Fluid {}, no toi", i,
+                       j, fi);
+            }
+            Collision c;
+            minimum_toi_ = std::min(0.99, minimum_toi_);
+            c.type_ = physics::kVertexFace;
+            c.obj0_.type_ = physics::kCloth;
+            c.obj0_.object_ = i;
+            c.obj0_.id_ = j;
+            c.obj1_.id_ = fi;
+            collisions_.push_back(c);
+          }
+        }
+      }
+    }
+  } else {
+
+    for (size_t i = 0; i < cloth_.size(); ++i) {
+      auto cur = view(cloth_[i].substep_position_);
+      auto dst = view(cloth_[i].ccd_dst_position_);
+      auto fluid_dst = view(fluid_->ccd_dst_position_);
+      // Parallel run:
+      for (auto [fi, p] : enumerate(view(fluid_->substep_position_))) {
+        auto fdst = fluid_dst(fi);
+        for (auto [j, tri] : enumerate(view(cloth_[i].data_.face_))) {
+          physics::ccd::VertexTriangleDynamic<Scalar> vt;
+          vt.min_distance_ = min_distance_;
+          vt(p, cur(tri.x()), cur(tri.y()), cur(tri.z()), fdst, dst(tri.x()),
+             dst(tri.y()), dst(tri.z()));
+
+          if (vt.valid_) {
+            if (verbose) {
+              ACG_INFO("Found Collision! Object {}, Id {}, Fluid {}, toi {}",
+              i,
+                       j, fi, vt.toi_);
+            }
+            Collision c;
+            c.type_ = physics::kVertexFace;
+            c.obj0_.type_ = physics::kCloth;
+            c.obj0_.object_ = i;
+            c.obj0_.id_ = j;
+            c.obj1_.id_ = fi;
+            collisions_.push_back(c);
+            minimum_toi_ = std::min(vt.toi_, minimum_toi_);
+            continue;
+          }
+
+          // Assert: vt at cur does not have a small distance.
+          physics::ccd::VertexTriangleStatic<Scalar> vts2;
+          vts2.min_distance_ = min_distance_;
+          vts2(dst(tri.x()), dst(tri.y()), dst(tri.z()), fdst);
+          if (vts2.valid_) {
+            if (verbose) {
+              ACG_INFO("Found Collision! Object {}, Id {}, Fluid {}, no toi",
+              i,
+                       j, fi);
+            }
+            Collision c;
+            minimum_toi_ = std::min(0.99, minimum_toi_);
+            c.type_ = physics::kVertexFace;
+            c.obj0_.type_ = physics::kCloth;
+            c.obj0_.object_ = i;
+            c.obj0_.id_ = j;
+            c.obj1_.id_ = fi;
+            collisions_.push_back(c);
+          }
+        }
+      }
+    }
+  }
+}
+
+void HybridAdmmApp::SetFluid(physics::LagrangeFluid<Scalar, 3> fluid) {
+  fluid_ = std::make_unique<Fluid>();
+  fluid_->data_ = std::move(fluid);
+  fluid_->substep_position_.resizeLike(fluid_->data_.position_);
+  fluid_->substep_solution_.resizeLike(fluid_->data_.position_);
+  fluid_->grad_.resizeLike(fluid_->data_.position_);
+}
+
+void HybridAdmmApp::SolveFluid() {
+  if (!fluid_) {
+    return;
+  }
+
+  auto sph_kernel_sample = [&](Scalar v) -> Scalar { return exp(-v / 2); };
+
+  auto sph_kernel_diff = [&](Scalar v) -> Scalar {
+    return -sph_kernel_sample(v) / 2;
+  };
+
+  std::vector<std::vector<Index>> neighbours;
+  neighbours.resize(fluid_->data_.position_.cols());
+  Field<Scalar> rho = Field<Scalar>::Zero(fluid_->data_.position_.cols());
+  auto vacc = view(fluid_->data_.velocity_);
+  auto pacc = view(fluid_->data_.position_);
+  // SPH Solve.
+  // 1. Neighbour finding.
+  auto &sd = fluid_->sd_;
+  sd.Clear();
+  for (auto [i, p] : enumerate(view(fluid_->data_.position_))) {
+    spatial::AABB<Scalar, 3> aabb(
+        p - Vec3<Scalar>::Constant(fluid_->sph_kern_size_),
+        p + Vec3<Scalar>::Constant(fluid_->sph_kern_size_));
+    sd.Insert({aabb, i});
+  }
+
+  // Maybe parallel run.
+  for (auto [i, p] : enumerate(view(fluid_->data_.position_))) {
+    spatial::AABB<Scalar, 3> aabb(
+        p - Vec3<Scalar>::Constant(fluid_->sph_kern_size_),
+        p + Vec3<Scalar>::Constant(fluid_->sph_kern_size_));
+    auto result = sd.Query(aabb);
+
+    // setup rho:
+    rho(i) = fluid_->data_.mass_(i);
+    for (auto r : result) {
+      auto j = sd.Get(r).second;
+      auto q = pacc(j);
+
+      // normalized (p - q)
+      auto dpq_n = (p - q) / fluid_->sph_kern_size_;
+      if (j != i && dpq_n.norm() <= 1) {
+        neighbours[i].push_back(j);
+        auto weight = sph_kernel_sample(dpq_n.norm());
+        // ACG_INFO("Neighbour for {} <- {}, weight := {}", i, j, weight);
+        rho(i) += fluid_->data_.mass_(j) * weight;
+      }
+    }
+  }
+
+  Field<Scalar> pressure = rho;
+  pressure.array() -= fluid_->data_.rho_;
+
+  // Compute force.
+  for (auto [i, p] : enumerate(view(fluid_->data_.position_))) {
+    Vec3<Scalar> a = Vec3<Scalar>::UnitZ() * -9.8;
+    Vec3<Scalar> ap = Vec3<Scalar>::Zero();
+    // Foreach neighbour.
+    for (auto j : neighbours[i]) {
+      auto m = fluid_->data_.mass_(j);
+      auto q = pacc(j);
+      auto dpq_n = (p - q) / fluid_->sph_kern_size_;
+      ap += (pressure(j) - pressure(i)) * m * sph_kernel_diff(dpq_n.norm()) *
+            dpq_n.normalized();
+    }
+    ap /= rho(i) * rho(i);
+
+    // ACG_INFO("A_p length = {}", ap.norm());
+    a -= fluid_->pressure_scale_ * ap;
+    fluid_->substep_solution_.col(i) =
+        fluid_->data_.position_.col(i) + vacc(i) * dt_ + .5 * a * dt_ * dt_;
+  }
+
+  fluid_->substep_position_ = fluid_->data_.position_;
 }
 
 } // namespace acg::app

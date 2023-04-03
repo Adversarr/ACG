@@ -13,7 +13,8 @@ target_include_directories(acg_physics PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/inclu
 # Dependent only on core
 target_link_libraries(acg_physics
   PUBLIC
-  acg_core)
+  acg_core
+  tight_inclusion::tight_inclusion)
 
 find_package(doctest CONFIG REQUIRED)
 include(doctest)

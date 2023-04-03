@@ -1,7 +1,10 @@
+#include "acore/math/sparse.hpp"
 #include <acore/math/common.hpp>
 #include <memory>
 
 #include <aphysics/mpm/transfer.hpp>
+
+#include <Eigen/IterativeLinearSolvers>
 
 /* Mpm3d in taichi
 import numpy as np
@@ -194,4 +197,5 @@ public:
 
   std::unique_ptr<physics::mpm::ApicRegular<Float64, 3>>
     apic_;
+  SpMat<double> nabla_;
 };

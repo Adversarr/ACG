@@ -15,8 +15,6 @@ template <typename F, int dim> struct AABB {
 
   AABB(const AABB &) = default;
 
-  AABB(AABB &&) = default;
-
   inline bool Intersect(const AABB<F, dim> &another) const {
     auto crossing
         = (upper_bound - another.lower_bound).array() * (another.upper_bound - lower_bound).array();
@@ -26,6 +24,12 @@ template <typename F, int dim> struct AABB {
   inline bool Contain(const AABB<F, dim> &another) const {
     return (lower_bound.array() <= another.lower_bound.array()).all()
            && (upper_bound.array() >= another.upper_bound.array()).all();
+  }
+
+  inline AABB<F, dim> Merge(const AABB<F, dim>& another) const {
+    auto lb = lower_bound.array().cwiseMin(another.lower_bound.array());
+    auto ub = upper_bound.array().cwiseMax(another.upper_bound.array());
+    return AABB<F, dim>(lb, ub);
   }
 };
 }  // namespace acg::spatial

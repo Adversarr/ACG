@@ -260,7 +260,7 @@ void HybridApp::AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody) {
   s.substep_position_.resizeLike(s.data_.position_);
   s.inertia_position_.resizeLike(s.substep_position_);
   s.linesearch_position_.resizeLike(s.data_.position_);
-  s.substep_solution_.resizeLike(s.substep_position_);
+  s.substep_direction_.resizeLike(s.substep_position_);
   s.grad_.resizeLike(s.substep_position_);
   using T = Eigen::Triplet<Scalar>;
   std::vector<T> hdata;
@@ -471,8 +471,8 @@ void HybridApp::ComputeStepDirection() {
   }
 
   for (auto &o : softbody_) {
-    o.substep_solution_.reshaped() = global_solve_direction_.middleRows(
-        o.global_solve_index_start_, o.substep_solution_.size());
+    o.substep_direction_.reshaped() = global_solve_direction_.middleRows(
+        o.global_solve_index_start_, o.substep_direction_.size());
   }
 
   fluid_.substep_direction_.reshaped() =
@@ -624,7 +624,7 @@ void HybridApp::ComputeLinesearchPosition(Scalar alpha) {
     o.linesearch_position_ = o.substep_position_ + o.substep_x_ * alpha;
   }
   for (auto &o : softbody_) {
-    o.linesearch_position_ = o.substep_position_ + o.substep_solution_ * alpha;
+    o.linesearch_position_ = o.substep_position_ + o.substep_direction_ * alpha;
   }
 
   fluid_.linesearch_position_ =
@@ -642,7 +642,7 @@ bool HybridApp::DetectLinesearchCollision(bool verbose) {
       auto c = view(cl.substep_position_);
       auto d = view(cl.linesearch_position_);
       for (auto [j, face] : enumerate(view(cl.data_.face_))) {
-        physics::ccd::VertexTriangle<Scalar> vf;
+        physics::ccd::VertexTriangleDynamic<Scalar> vf;
         if (vf(p, c(face.x()), c(face.y()), c(face.z()), p_dest, d(face.x()),
                d(face.y()), d(face.z()))) {
           // Found the collision.

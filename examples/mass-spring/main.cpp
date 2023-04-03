@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   acg::init(argc, argv);
 
   MassSpringApp app;
-  app.n_grids_ = 100;
+  app.n_grids_ = 10;
   app.Init();
   auto &gui = Gui::Instance();
   bool running = false;
@@ -31,7 +31,6 @@ int main(int argc, char **argv) {
   spatial::AABB<float, 3> aabb{{.2, .2, -.4}, {.6, .6, 0}};
   gui.SetUIDrawCallback([&]() {
     init_once = false;
-    ImGui::Begin("GGui User Window");
     init_once |= ImGui::Button("Reset Scene.");
     run_once = ImGui::Button("Run Once");
     ImGui::Checkbox("Run", &running);

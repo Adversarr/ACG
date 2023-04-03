@@ -14,5 +14,6 @@ struct CubicBSpline {
   auto operator()(const Vec<Scalar, dim>& v) {
     return matrix_apply<CubicBSpline<Scalar>>(v).prod();
   }
+
 };
 }  // namespace acg::math

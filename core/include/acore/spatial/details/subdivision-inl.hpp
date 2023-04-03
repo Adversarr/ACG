@@ -30,6 +30,7 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Insert(
   }
 
   // Now, parent is the index for aabb store.
+  ACG_DEBUG_CHECK(parent < nodes_.size() && parent >= 0, "Invalid node id.");
   auto &node = nodes_[parent];
   node.leafs_.push_back(ind);
   return parent;
@@ -38,7 +39,9 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Insert(
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureSubDivision(size_t parent,
                                                                                    size_t child) {
+  ACG_DEBUG_CHECK(parent < nodes_.size() && parent >= 0, "Invalid node id.");
   auto &pnode = nodes_[parent];
+  ACG_DEBUG_CHECK(child < pnode.sub_nodes_.size() && child >= 0, "Invalid node id.");
   auto &cid = pnode.sub_nodes_[child];
   if (cid == InvalidSubscript) {
     auto position = pnode.GetChildAABB(indexer_[child]);
@@ -90,6 +93,7 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindEntry(
     const AABB<F, dim> &aabb) const {
   // Foreach entry, test if the entry can hold the AABB
   for (const auto &i : entry_nodes_) {
+    ACG_DEBUG_CHECK(i >= 0 && i < nodes_.size(), "Invalid subscript.");
     if (nodes_[i].box_.Contain(aabb)) {
       return i;
     }
@@ -126,6 +130,7 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindVisitSequence(
   auto id = FindEntry(aabb);
   *it = id;
   if (id != InvalidSubscript) {
+  ACG_DEBUG_CHECK(id < nodes_.size() && id >= 0, "Invalid node id.");
     Node &entry_node = nodes_[id];
     Vec<F, dim> local_lb = (aabb.lower_bound - entry_node.box_.lower_bound) / entry_node.unit_;
     Vec<F, dim> local_ub = (aabb.upper_bound - entry_node.box_.lower_bound) / entry_node.unit_;
@@ -189,12 +194,14 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Visualize() const {
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 std::pair<AABB<F, dim>, D> &SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Get(
     size_t id) {
+  ACG_DEBUG_CHECK(id < data_.size() && id >= 0, "Invalid id");
   return data_[id];
 }
 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 const std::pair<AABB<F, dim>, D> &SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Get(
     size_t id) const {
+  ACG_DEBUG_CHECK(id < data_.size() && id >= 0, "Invalid id");
   return data_[id];
 }
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
@@ -219,9 +226,12 @@ std::vector<size_t> SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Qu
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryVisit(
     std::vector<size_t> &retval, size_t node, const AABB<F, dim> &aabb) const {
+  ACG_DEBUG_CHECK(node < nodes_.size() && node >= 0, "Invalid node id.");
   const auto &n = nodes_[node];
   if (n.box_.Intersect(aabb)) {
-    std::copy(n.leafs_.begin(), n.leafs_.end(), std::back_inserter(retval));
+    std::copy_if(n.leafs_.begin(), n.leafs_.end(), std::back_inserter(retval), [&](Index id) -> bool {
+      return Get(id).first.Intersect(aabb);
+    });
 
     for (auto id : n.sub_nodes_) {
       if (id != InvalidSubscript) {
@@ -253,10 +263,11 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryInternal() const 
 template <typename F, typename D, int dim, UInt32 subdivision_count, UInt32 max_depth>
 void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryVisitInternal(
     std::vector<std::pair<size_t, size_t>> &retval, size_t node) const {
+  ACG_DEBUG_CHECK(node < nodes_.size() && node >= 0, "Invalid node id.");
   const auto &n = nodes_[node];
   for (auto l : n.leafs_) {
     std::vector<size_t> intersect;
-    QueryVisit(intersect, node, data_[l].first);
+    QueryVisit(intersect, node, Get(l).first);
     for (auto r : intersect) {
       retval.push_back({l, r});
     }

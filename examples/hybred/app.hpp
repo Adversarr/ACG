@@ -25,6 +25,7 @@ public:
     physics::Cloth<Scalar, 3> data_;
     Field<Scalar, 3> inertia_position_;
     Field<Scalar, 3> substep_position_;
+    Field<Scalar, 3> substep_direction_;
     Field<Scalar, 3> substep_x_;
     Field<Scalar, 3> linesearch_position_;
     Field<Scalar, 3> grad_;
@@ -36,7 +37,7 @@ public:
     Field<Scalar, 3> inertia_position_;
     Field<Scalar, 3> substep_position_;
     Field<Scalar, 3> grad_;
-    Field<Scalar, 3> substep_solution_;
+    Field<Scalar, 3> substep_direction_;
     Field<Scalar, 3> linesearch_position_;
     Index global_solve_index_start_;
   };
