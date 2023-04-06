@@ -66,15 +66,15 @@ template <int dim> struct NdRangeIterator {
 };
 
 template <int dim> struct NdRange {
-  using container_type =
-      typename utils::god::Duplicate_t<acg::Index,
-                                       dim>::template cast<std::tuple>;
+  using container_type = utils::god::IndexTuple<dim>;
+
   constexpr explicit NdRange(const container_type &dims) : dims_{dims} {}
   template <typename ArgFront, typename... Args,
-            typename = std::enable_if_t<
-            sizeof...(Args) == dim - 1 && sizeof...(Args) != 0>>
-  constexpr explicit NdRange(ArgFront&& a, Args &&...args) : 
-      NdRange(utils::god::DuplicateTuple<Index, dim>(a, args...)) {}
+            typename = std::enable_if_t<sizeof...(Args) == dim - 1 &&
+                                        sizeof...(Args) != 0>>
+  constexpr explicit NdRange(ArgFront &&a, Args &&...args)
+      : NdRange(utils::god::IndexTuple<dim>(a, args...)) {}
+
   constexpr decltype(auto) begin() const { return NdRangeIterator<dim>(dims_); }
   constexpr decltype(auto) end() const {
     return NdRangeIterator<dim>(

@@ -1,3 +1,15 @@
+/**
+ * @file indexer.hpp
+ * @author Zherui Yang (yangzherui2001@foxmail.com)
+ * @brief ACG default Indexers.
+ * @version 0.0.1
+ * @date 2023-04-05
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
+
 #pragma once
 #include <acore/common.hpp>
 #include <acore/math/ndrange.hpp>
@@ -6,6 +18,8 @@
 #include "common.hpp"
 
 namespace acg {
+using utils::god::IndexTuple;
+
 /****************************************
  * NOTE: Foreach Indexer, it have:
  *  1. value_type: indicates the return value type
@@ -14,7 +28,6 @@ namespace acg {
  *  4. Iterate(): To corresponding Iterator.
  *  5. Fit(field) for each indexer.
  ****************************************/
-
 template <Index dim> class NdRangeIndexer;
 
 template <> class NdRangeIndexer<0> {
@@ -31,23 +44,23 @@ public:
   inline Index operator()(Index id) const { return id; }
 
   constexpr bool IsValid(Index this_size) const noexcept {
-    return 0 <= this_size && this_size < this_dim;
+    return 0 <= this_size && this_size < this_dim_;
   }
 
-  explicit constexpr NdRangeIndexer(Index this_dim = 0) : this_dim(this_dim) {}
+  explicit constexpr NdRangeIndexer(Index this_dim = 0) : this_dim_(this_dim) {}
 
   constexpr auto operator[](Index id) const noexcept {
     return std::tuple<Index>(id);
   }
 
-  constexpr auto Shape() const noexcept { return std::tuple<Index>(this_dim); }
+  constexpr auto Shape() const noexcept { return std::tuple<Index>(this_dim_); }
 
-  constexpr auto Iterate() const noexcept { return NdRange<1>(this_dim); }
+  constexpr auto Iterate() const noexcept { return NdRange<1>(this_dim_); }
 
-  template <typename T> inline void Fit(T &&field) { this_dim = field.cols(); }
+  template <typename T> inline void Fit(T &&field) { this_dim_ = field.cols(); }
 
 protected:
-  Index this_dim;
+  Index this_dim_;
 };
 
 template <Index dim> class NdRangeIndexer : public NdRangeIndexer<dim - 1> {
@@ -72,18 +85,17 @@ public:
 
   template <typename... Args>
   constexpr Index operator()(Index this_size, Args... indices) const noexcept {
-    assert(IsValid(this_size, indices...));
     return this_size * multiplier_ +
            NdRangeIndexer<dim - 1>::operator()(static_cast<Index>(indices)...);
   }
 
-  constexpr auto operator[](Index id) const noexcept {
+  constexpr utils::god::IndexTuple<dim> operator[](Index id) const noexcept {
     return std::tuple_cat(
         std::make_tuple<Index>(id / multiplier_),
         NdRangeIndexer<dim - 1>::operator[](id % multiplier_));
   }
 
-  constexpr utils::god::DuplicateTuple<Index, dim> Shape() const noexcept {
+  constexpr utils::god::IndexTuple<dim> Shape() const noexcept {
     return std::tuple_cat(std::tuple<Index>(this_dim_),
                           NdRangeIndexer<dim - 1>::Shape());
   }

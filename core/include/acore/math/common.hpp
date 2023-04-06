@@ -155,4 +155,88 @@ using TetraList = Field<Index, 4>;
 } // namespace topology
 } // namespace types
 
+// Helpers for std::array.
+template <typename Scalar, int dim> using StlVec = std::array<Scalar, dim>;
+template <int dim> using IndexVec = Vec<Index, dim>;
+template <int dim> using StlIndexVec = StlVec<Index, dim>;
+
+template <typename Scalar, int dim>
+inline std::array<Scalar, dim> to_array(Vec<Scalar, dim> vec) {
+  std::array<Scalar, dim> ret;
+  for (Index i = 0; i < dim; ++i) {
+    ret[i] = vec[i];
+  }
+  return ret;
+}
+
+template <typename Scalar, size_t dim>
+inline auto to_vector(const std::array<Scalar, dim> &arr) {
+  Vec<Scalar, dim> ret = Eigen::Map<const Vec<Scalar, dim>>(arr.data());
+  return ret;
+}
+
+// Helpers for std::tuple
+// I think Vec of max dim = 4 is enough. because your application is mostly
+// 2-3d.
+template <typename Scalar> Vec<Scalar, 1> to_vector(std::tuple<Scalar> tup) {
+  return Vec<Scalar, 1>{std::get<0>(tup)};
+}
+
+template <typename Scalar>
+Vec<Scalar, 2> to_vector(std::tuple<Scalar, Scalar> tup) {
+  return {std::get<0>(tup), std::get<1>(tup)};
+}
+
+template <typename Scalar>
+Vec<Scalar, 3> to_vector(std::tuple<Scalar, Scalar, Scalar> tup) {
+  return {std::get<0>(tup), std::get<1>(tup), std::get<2>(tup)};
+}
+
+template <typename Scalar>
+Vec<Scalar, 4> to_vector(std::tuple<Scalar, Scalar, Scalar, Scalar> tup) {
+  return {std::get<0>(tup), std::get<1>(tup), std::get<2>(tup),
+          std::get<3>(tup)};
+}
+
+template <typename Scalar> std::tuple<Scalar> to_tuple(Vec<Scalar, 1> vec) {
+  return {vec.x()};
+}
+
+template <typename Scalar>
+std::tuple<Scalar, Scalar> to_tuple(Vec<Scalar, 2> vec) {
+  return {vec.x(), vec.y()};
+}
+
+template <typename Scalar>
+std::tuple<Scalar, Scalar, Scalar> to_tuple(Vec<Scalar, 3> vec) {
+  return {vec.x(), vec.y(), vec.z()};
+}
+
+template <typename Scalar>
+std::tuple<Scalar, Scalar, Scalar, Scalar> to_tuple(Vec<Scalar, 4> vec) {
+  return {vec.x(), vec.y(), vec.z(), vec.w()};
+}
+
+// Helper for make a vector directly.
+template <typename Scalar> Vec<Scalar, 1> make_vector(Scalar s) {
+  return Vec<Scalar, 1>{s};
+}
+
+template <typename Scalar> Vec<Scalar, 2> make_vector(Scalar x, Scalar y) {
+  Vec<Scalar, 2> r({x, y});
+  return r;
+}
+
+template <typename Scalar>
+Vec<Scalar, 3> make_vector(Scalar x, Scalar y, Scalar z) {
+  Vec<Scalar, 3> r({x, y, z});
+  return r;
+}
+
+template <typename Scalar>
+Vec<Scalar, 4> make_vector(Scalar x, Scalar y, Scalar z, Scalar w) {
+  Vec<Scalar, 4> r({x, y, z, w});
+  return r;
+}
+
 } // namespace acg

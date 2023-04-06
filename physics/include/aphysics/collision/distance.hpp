@@ -11,7 +11,7 @@
 #include "distances/eed_value.hpp"
 #include "distances/vfd_value.hpp"
 
-namespace acg::physics::ccd {
+namespace acg::physics::collision {
 
 /**
  * @brief Vertex-Plane Distance. (only normal direction is computed)
@@ -97,6 +97,6 @@ template <typename Scalar = acg::Float> struct VertexTriangleNormalDistance {
     return g;
   }
 };
-} // namespace acg::physics::ccd
+} // namespace acg::physics::collision
 
 #endif // ACG_DISTANCE_HPP

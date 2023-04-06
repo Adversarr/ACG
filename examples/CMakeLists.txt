@@ -14,7 +14,7 @@ acg_add_example(bench_math_utils "acg_core;acg_gui;benchmark::benchmark;benchmar
 
 acg_add_example(fem-implicit "acg_core;acg_gui;acg_physics;acg_data")
 acg_add_example(mass-spring "acg_core;acg_gui")
-acg_add_example(mpm-explicit "acg_gui;acg_physics")
+acg_add_example(mpm-explicit "acg_gui;acg_physics;acg_data")
 acg_add_example(spatial-subdivision "acg_gui")
 acg_add_example(elastic-shape-matching "acg_gui;acg_physics")
 acg_add_example(hybred "acg_gui;acg_data;acg_physics")

@@ -30,37 +30,6 @@ template <typename Scalar, int dim> struct HyperElasticResultWithHessian {
 template <typename F, int dim, typename Derived> class HyperElasticModel {
   static_assert(dim == 2 || dim == 3,
                 "HyperElasticModel requires dim == 2 or 3.");
-
-public:
-  struct WithHessianFlag {};
-  struct WithoutHessianFlag {};
-
-  F ComputeEnergy() const noexcept {
-    return static_cast<const Derived *>(this)->ComputeEnergyImpl();
-  }
-  HyperElasticResult<F, dim> ComputeGradient() const noexcept {
-    return static_cast<const Derived *>(this)->ComputeGradientImpl();
-  }
-
-  HyperElasticResultWithHessian<F, dim> ComputeHessian() const noexcept {
-    return static_cast<const Derived *>(this)->ComputeHessianImpl();
-  }
-
-private:
-  HyperElasticResult<F, dim> ComputeGradientImpl() const noexcept {
-    static_assert(!std::is_same_v<Derived, Derived>,
-                  "Call to unimplemented Gradient Function.");
-  }
-
-  F ComputeEnergyImpl() const noexcept {
-    static_assert(!std::is_same_v<Derived, Derived>,
-                  "Call to unimplemented Energy Function.");
-  }
-
-  HyperElasticResultWithHessian<F, dim> ComputeHessianImpl() const noexcept {
-    static_assert(!std::is_same_v<Derived, Derived>,
-                  "Call to unimplemented Hessian Function.");
-  }
 };
 
 /**

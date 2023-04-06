@@ -5,10 +5,8 @@
 #pragma once
 #include "acore/math/func.hpp"
 
-#ifndef ACG_DETECT_INL_HPP
-#define ACG_DETECT_INL_HPP
 #include "../detect.hpp"
-namespace acg::physics::ccd {
+namespace acg::physics::collision {
 namespace details {
 
 template <typename Scalar>
@@ -142,8 +140,7 @@ inline bool inside_test(const Vec3<Scalar> &e1, const Vec3<Scalar> &e2,
   double s2 = v2.norm();
   double s3 = v3.norm();
   double s = e1.cross(e2).norm();
-  return std::fabs(s - s1 - s2 - s3) <=
-         math::square(min_distance) + tolerance;
+  return std::fabs(s - s1 - s2 - s3) <= math::square(min_distance) + tolerance;
 }
 
 template <typename Scalar>
@@ -290,7 +287,8 @@ bool VertexTriangleDynamic<Scalar>::operator()(
   if (t1 >= -tolerance_ && t1 <= 1 + tolerance_ &&
       details::inside_test<Scalar>(
           x10 * t1 + (1 - t1) * y10, x20 * t1 + y20 * (1 - t1),
-          v_relative_start * t1 + v_relative_end * (1 - t1), tolerance_, min_distance_)) {
+          v_relative_start * t1 + v_relative_end * (1 - t1), tolerance_,
+          min_distance_)) {
     toi_ = 1 - t1;
     valid_ = true;
     return true;
@@ -299,7 +297,8 @@ bool VertexTriangleDynamic<Scalar>::operator()(
   if (-tolerance_ <= t2 && t2 <= 1 + tolerance_ &&
       details::inside_test<Scalar>(
           x10 * t2 + (1 - t2) * y10, x20 * t2 + y20 * (1 - t2),
-          v_relative_start * t2 + v_relative_end * (1 - t2), tolerance_, min_distance_)) {
+          v_relative_start * t2 + v_relative_end * (1 - t2), tolerance_,
+          min_distance_)) {
     toi_ = 1 - t2;
     valid_ = true;
     return true;
@@ -308,7 +307,8 @@ bool VertexTriangleDynamic<Scalar>::operator()(
   if (-tolerance_ <= t3 && t3 <= 1 + tolerance_ &&
       details::inside_test<Scalar>(
           x10 * t3 + (1 - t3) * y10, x20 * t3 + y20 * (1 - t3),
-          v_relative_start * t3 + v_relative_end * (1 - t3), tolerance_, min_distance_)) {
+          v_relative_start * t3 + v_relative_end * (1 - t3), tolerance_,
+          min_distance_)) {
     toi_ = 1 - t3;
     valid_ = true;
     return true;
@@ -401,16 +401,16 @@ bool EdgeEdgeDynamic<Scalar>::operator()(
       return false;
     }
     bool collid = false;
-    collid |= test_2d(edge0_vertex0_start, edge0_vertex0_end,
+    collid |= details::test_2d(edge0_vertex0_start, edge0_vertex0_end,
                       edge1_vertex0_start, edge1_vertex1_end,
                       edge1_vertex1_start, edge1_vertex1_end, tolerance_, toi_);
-    collid |= test_2d(edge0_vertex1_start, edge0_vertex1_end,
+    collid |= details::test_2d(edge0_vertex1_start, edge0_vertex1_end,
                       edge1_vertex0_start, edge1_vertex1_end,
                       edge1_vertex1_start, edge1_vertex1_end, tolerance_, toi_);
-    collid |= test_2d(edge1_vertex0_start, edge1_vertex0_end,
+    collid |= details::test_2d(edge1_vertex0_start, edge1_vertex0_end,
                       edge0_vertex0_start, edge0_vertex1_end,
                       edge0_vertex1_start, edge0_vertex1_end, tolerance_, toi_);
-    collid |= test_2d(edge1_vertex1_start, edge1_vertex1_end,
+    collid |= details::test_2d(edge1_vertex1_start, edge1_vertex1_end,
                       edge0_vertex0_start, edge0_vertex1_end,
                       edge0_vertex1_start, edge0_vertex1_end, tolerance_, toi_);
     if (collid) {
@@ -460,6 +460,4 @@ bool EdgeEdgeDynamic<Scalar>::operator()(
   valid_ = false;
   return false;
 }
-} // namespace acg::physics::ccd
-
-#endif // ACG_DETECT_INL_HPP
+} // namespace acg::physics::collision

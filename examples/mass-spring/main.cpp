@@ -73,8 +73,19 @@ int main(int argc, char **argv) {
 
     auto [position, lines] = sd.Visualize();
     if (query_aabb) {
-      auto colls = sd.QueryInternal();
-      ACG_INFO("Count = {}", colls.size());
+      int colls = 0;
+      for (auto [i, v] : acg::enumerate(acg::view(app.position_))) {
+        acg::spatial::AABB<float, 3> aabb(v, (v.array() + .1).matrix());
+        auto r = sd.Query(aabb);
+        for (auto c : r) {
+          ACG_INFO("Collision for {}, has {}, id = {}", i, c,
+                   sd.Get(c).second);
+          ACG_CHECK(c < sd.Size(), "C >= size");
+          ACG_CHECK(sd.Get(c).second < app.position_.cols(), "sec >= col");
+        }
+        colls += r.size();
+      }
+      ACG_INFO("Count = {}", colls);
     }
     render_wf->SetPositions(position)
         .SetIndices(lines)

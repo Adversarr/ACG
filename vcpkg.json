@@ -12,6 +12,7 @@
     "glm",
     "nlohmann-json",
     "benchmark",
+    "tinyobjloader",
     {
       "name": "imgui",
       "features": ["vulkan-binding", "glfw-binding"]

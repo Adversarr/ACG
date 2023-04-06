@@ -219,6 +219,14 @@ private:
 
   bool scene_update_flag_{true};
   std::optional<std::function<void()>> ui_draw_callback_{std::nullopt};
+  
+  vk::CommandBuffer &WriteMeshRenderCommand(bool verbose, vk::CommandBuffer &cbuf);
+  
+  vk::CommandBuffer &WriteMeshParticleRenderCommand(bool verbose, vk::CommandBuffer &cbuf);
+  
+  vk::CommandBuffer &WritePointRenderCommand(bool verbose, vk::CommandBuffer &cbuf);
+  
+  vk::CommandBuffer &WriteWireframeRenderCommand(bool verbose, vk::CommandBuffer &cbuf);
 };
 
 }  // namespace details

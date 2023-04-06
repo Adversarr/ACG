@@ -17,7 +17,7 @@
 #include <acore/math/common.hpp>
 #include <autils/god/utilities.hpp>
 
-namespace acg::physics::ccd {
+namespace acg::physics::collision {
 
 template <typename Scalar> struct VertexTriangleDynamic {
   int max_iter_{10};
@@ -64,7 +64,6 @@ template <typename Scalar> struct VertexVertexDynamic {
                   const Vec3<Scalar> &v1_end) noexcept;
 };
 
-
 template <typename Scalar> struct VertexTriangleStatic {
   int max_iter_{10};
 
@@ -74,10 +73,11 @@ template <typename Scalar> struct VertexTriangleStatic {
   Scalar tolerance_{1e-7};
 
   bool operator()(const Vec3<Scalar> &f0, const Vec3<Scalar> &f1,
-                  const Vec3<Scalar> &f2,
-                  const Vec3<Scalar> &v) noexcept;
+                  const Vec3<Scalar> &f2, const Vec3<Scalar> &v) noexcept;
 };
-} // namespace acg::physics::ccd
+} // namespace acg::physics::collision
 
+#ifdef ACG_INCLUDE_IMPL
 #include "details/detect-simple-inl.hpp" // IWYU pragma: export
 #include "details/detect-vtee-inl.hpp"   // IWYU pragma: export
+#endif

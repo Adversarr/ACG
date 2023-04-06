@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include <acore/math/view.hpp>
 
 void ShapeMatchingApp::Step() {
   auto sm_goal = shape_matching_.ComputeGoalPositions(position_);

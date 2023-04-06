@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
   auto &gui = Gui::Instance();
 
   auto *cloth = gui.GetScene().AddMesh();
-  int plane_density = 10;
+  int plane_density = 3;
   auto plane =
       geometry::make_plane_xy(plane_density).Cast<app::HybridApp::Scalar>();
   auto position = plane.GetVertices();

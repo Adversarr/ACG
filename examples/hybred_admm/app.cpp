@@ -1,9 +1,7 @@
 #include "app.hpp"
 #include "aphysics/collision/distance.hpp"
-#include <Eigen/SparseCholesky>
 #include <acore/parallel/common.hpp>
 #include <aphysics/collision/detect.hpp>
-#include <aphysics/collision/tidetect.hpp>
 #include <aphysics/dynamics/inertia.hpp>
 #include <aphysics/solver/admm/spring.hpp>
 
@@ -212,11 +210,12 @@ void HybridAdmmApp::CcdPrologue() {
       // g.middleRows<3>(3) = normal_compute(v0 - v, v2 - v, v1 - v);
       // g.middleRows<3>(6) = normal_compute(v1 - v, v0 - v, v2 - v);
       // g.middleRows<3>(9) = normal_compute(v2 - v0, v1 - v0, v - v0);
-      g = physics::ccd::VertexTriangleNormalDistance<Scalar>(v0, v1, v2, v)
+      g = physics::collision::VertexTriangleNormalDistance<Scalar>(v0, v1, v2,
+                                                                   v)
               .Grad();
       g.normalize();
 
-      Scalar len = (x - xp).dot(g);
+      Scalar len = (x - xp).dot(g) + min_distance_;
       if (len < min_distance_) {
         len = min_distance_;
       }
@@ -275,6 +274,16 @@ void HybridAdmmApp::CcdEpilogue() {
 }
 
 void HybridAdmmApp::SubStepCollisionFree() {
+  if (! enable_collision_detect_) {
+    EnforceConstraints();
+    for (auto & o: cloth_) {
+      o.substep_position_ = o.substep_solution_;
+    }
+    if (fluid_) {
+      fluid_->substep_position_ = fluid_->substep_solution_;
+    }
+    return;
+  }
   CcdPrologue();
 
   for (auto &cl : cloth_) {
@@ -312,6 +321,7 @@ void HybridAdmmApp::Step() {
     ComputeGlobal();
     SubStepCollisionFree();
   }
+
   Scalar error = 0;
   for (auto &cl : cloth_) {
     auto lacc = view(cl.data_.constraints_);
@@ -561,11 +571,11 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
         auto query = sd.Query(result);
         for (auto sdi : query) {
           auto fi = sd.Get(sdi).second;
-          ACG_INFO("SDI = {}, fi = {}", sdi, fi);
+          //          ACG_INFO("SDI = {}, fi = {}", sdi, fi);
           ACG_CHECK(fi < fluid_->data_.position_.cols(), "Invalid fluid id!");
           auto p = fluid_->substep_position_.col(fi);
           auto fdst = fluid_->ccd_dst_position_.col(fi);
-          physics::ccd::VertexTriangleDynamic<Scalar> vt;
+          physics::collision::VertexTriangleDynamic<Scalar> vt;
           vt.min_distance_ = min_distance_;
           vt(p, cur(tri.x()), cur(tri.y()), cur(tri.z()), fdst, dst(tri.x()),
              dst(tri.y()), dst(tri.z()));
@@ -587,7 +597,7 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
           }
 
           // Assert: vt at cur does not have a small distance.
-          physics::ccd::VertexTriangleStatic<Scalar> vts2;
+          physics::collision::VertexTriangleStatic<Scalar> vts2;
           vts2.min_distance_ = min_distance_;
           vts2(dst(tri.x()), dst(tri.y()), dst(tri.z()), fdst);
           if (vts2.valid_) {
@@ -617,7 +627,7 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
       for (auto [fi, p] : enumerate(view(fluid_->substep_position_))) {
         auto fdst = fluid_dst(fi);
         for (auto [j, tri] : enumerate(view(cloth_[i].data_.face_))) {
-          physics::ccd::VertexTriangleDynamic<Scalar> vt;
+          physics::collision::VertexTriangleDynamic<Scalar> vt;
           vt.min_distance_ = min_distance_;
           vt(p, cur(tri.x()), cur(tri.y()), cur(tri.z()), fdst, dst(tri.x()),
              dst(tri.y()), dst(tri.z()));
@@ -639,7 +649,7 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
           }
 
           // Assert: vt at cur does not have a small distance.
-          physics::ccd::VertexTriangleStatic<Scalar> vts2;
+          physics::collision::VertexTriangleStatic<Scalar> vts2;
           vts2.min_distance_ = min_distance_;
           vts2(dst(tri.x()), dst(tri.y()), dst(tri.z()), fdst);
           if (vts2.valid_) {
@@ -662,89 +672,100 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
   }
 }
 
-void HybridAdmmApp::SetFluid(physics::LagrangeFluid<Scalar, 3> fluid) {
+void HybridAdmmApp::SetFluid(physics::LagrangeFluid<Scalar, 3> fluid, Index grid_size) {
   fluid_ = std::make_unique<Fluid>();
   fluid_->data_ = std::move(fluid);
   fluid_->substep_position_.resizeLike(fluid_->data_.position_);
   fluid_->substep_solution_.resizeLike(fluid_->data_.position_);
   fluid_->grad_.resizeLike(fluid_->data_.position_);
+
+  fluid_->euler_.grid_size_ = 1.0 / grid_size;
+  fluid_->euler_.lower_bound_.setZero();
+  fluid_->euler_.upper_bound_.setOnes();
+
+  fluid_->euler_.mass_.resize(grid_size * grid_size * grid_size);
+  fluid_->euler_.velocity_.resize(3, grid_size * grid_size * grid_size);
+  fluid_->euler_.div_count_.setConstant(grid_size);
+
+  fluid_->apic_ = std::make_unique<Fluid::APIC>(fluid_->data_, fluid_->euler_);
 }
 
 void HybridAdmmApp::SolveFluid() {
   if (!fluid_) {
     return;
   }
+  auto backup_position = fluid_->data_.position_.eval();
+  auto new_pos = (fluid_->data_.position_ + fluid_->data_.velocity_ * dt_).eval();
+  for (auto [i, blk] : enumerate(view(new_pos))) {
+    blk.x() = std::clamp(blk.x(), 0.01, .99);
+    blk.y() = std::clamp(blk.y(), 0.01, .99);
+    blk.z() = std::clamp(blk.z(), 0.01, .99);
+  }
+  fluid_->data_.velocity_ = (new_pos - fluid_->data_.position_) / dt_;
+  fluid_->data_.position_ = new_pos;
+  fluid_->apic_->Forward();
 
-  auto sph_kernel_sample = [&](Scalar v) -> Scalar { return exp(-v / 2); };
-
-  auto sph_kernel_diff = [&](Scalar v) -> Scalar {
-    return -sph_kernel_sample(v) / 2;
+  // cg.
+  auto& euler = fluid_->euler_;
+  Vec<double> x = euler.velocity_.reshaped();
+  auto vel = view(euler.velocity_, fluid_->apic_->grid_idxer_);
+  auto rho = view(euler.mass_, fluid_->apic_->grid_idxer_);
+  Index n_grid = 1 / fluid_->euler_.grid_size_;
+  auto sample_diff = [&](Index i, Index j, Index k) {
+    Vec3<double> result;
+    if (i == 0) {
+      result.x() = rho(1, j, k) - rho(0, j, k);
+    } else if (i == n_grid - 1) {
+      result.x() = rho(n_grid - 1, j, k) - rho(n_grid - 2, j, k);
+    } else {
+      result.x() = .5 * (rho(i + 1, j, k) - rho(i - 1, j, k));
+    }
+    if (j == 0) {
+      result.y() = rho(i, 1, k) - rho(i, 0, k);
+    } else if (j == n_grid - 1) {
+      result.y() = rho(i, j, k) - rho(i, j - 1, k);
+    } else {
+      result.y() = .5 * (rho(i, j + 1, k) - rho(i, j - 1, k));
+    }
+    if (k == 0) {
+      result.z() = rho(i, j, k + 1) - rho(i, j, k);
+    } else if (k == n_grid - 1) {
+      result.z() = rho(i, j, k) - rho(i, j, k - 1);
+    } else {
+      result.z() = .5 * (rho(i, j, k + 1) - rho(i, j, k - 1));
+    }
+    return result;
   };
-
-  std::vector<std::vector<Index>> neighbours;
-  neighbours.resize(fluid_->data_.position_.cols());
-  Field<Scalar> rho = Field<Scalar>::Zero(fluid_->data_.position_.cols());
-  auto vacc = view(fluid_->data_.velocity_);
-  auto pacc = view(fluid_->data_.position_);
-  // SPH Solve.
-  // 1. Neighbour finding.
-  auto &sd = fluid_->sd_;
-  sd.Clear();
-  for (auto [i, p] : enumerate(view(fluid_->data_.position_))) {
-    spatial::AABB<Scalar, 3> aabb(
-        p - Vec3<Scalar>::Constant(fluid_->sph_kern_size_),
-        p + Vec3<Scalar>::Constant(fluid_->sph_kern_size_));
-    sd.Insert({aabb, i});
+  auto dx_ = fluid_->euler_.grid_size_;
+  for (auto [i, j, k] : fluid_->apic_->grid_idxer_.Iterate()) {
+    vel(i, j, k) -= sample_diff(i, j, k) / dx_ * fluid_->pressure_scale_;
   }
+  // while (iter < 100 && delta_new > 0.01 * delta_0) {
+  //   ACG_INFO("nabla shape {} x {}, d shape {}", nabla_.rows(), nabla_.cols(),
+  //            d.size());
+  //   Vec<double> q = a * d;
+  //   double alpha = delta_new / (d.dot(q));
+  //   x += alpha * d;
+  //   if (iter % 5 == 0) {
+  //     r = -a * x;
+  //   } else {
+  //     r = r - alpha * q;
+  //   }
 
-  // Maybe parallel run.
-  for (auto [i, p] : enumerate(view(fluid_->data_.position_))) {
-    spatial::AABB<Scalar, 3> aabb(
-        p - Vec3<Scalar>::Constant(fluid_->sph_kern_size_),
-        p + Vec3<Scalar>::Constant(fluid_->sph_kern_size_));
-    auto result = sd.Query(aabb);
+  //   double delta_old = delta_new;
+  //   delta_new = r.squaredNorm();
+  //   double beta = delta_new / delta_old;
+  //   d = r + beta * d;
+  //   iter += 1;
+  //   ACG_INFO("Conjugate Gradient Iter {}: delta = {} divergence = {}", iter,
+  //            delta_old, (nabla_ * x).squaredNorm());
+  // }
+  // euler_.velocity_.reshaped() = x;
+  euler.velocity_.array().row(2) -= 9.8 * dt_;
+  fluid_->apic_->Backward();
 
-    // setup rho:
-    rho(i) = fluid_->data_.mass_(i);
-    for (auto r : result) {
-      auto j = sd.Get(r).second;
-      auto q = pacc(j);
-
-      // normalized (p - q)
-      auto dpq_n = (p - q) / fluid_->sph_kern_size_;
-      if (j != i && dpq_n.norm() <= 1) {
-        neighbours[i].push_back(j);
-        auto weight = sph_kernel_sample(dpq_n.norm());
-        // ACG_INFO("Neighbour for {} <- {}, weight := {}", i, j, weight);
-        rho(i) += fluid_->data_.mass_(j) * weight;
-      }
-    }
-  }
-
-  Field<Scalar> pressure = rho;
-  pressure.array() -= fluid_->data_.rho_;
-
-  // Compute force.
-  for (auto [i, p] : enumerate(view(fluid_->data_.position_))) {
-    Vec3<Scalar> a = Vec3<Scalar>::UnitZ() * -9.8;
-    Vec3<Scalar> ap = Vec3<Scalar>::Zero();
-    // Foreach neighbour.
-    for (auto j : neighbours[i]) {
-      auto m = fluid_->data_.mass_(j);
-      auto q = pacc(j);
-      auto dpq_n = (p - q) / fluid_->sph_kern_size_;
-      ap += (pressure(j) - pressure(i)) * m * sph_kernel_diff(dpq_n.norm()) *
-            dpq_n.normalized();
-    }
-    ap /= rho(i) * rho(i);
-
-    // ACG_INFO("A_p length = {}", ap.norm());
-    a -= fluid_->pressure_scale_ * ap;
-    fluid_->substep_solution_.col(i) =
-        fluid_->data_.position_.col(i) + vacc(i) * dt_ + .5 * a * dt_ * dt_;
-  }
-
-  fluid_->substep_position_ = fluid_->data_.position_;
+  fluid_->substep_solution_ = fluid_->data_.position_;
+  fluid_->data_.position_ = backup_position;
 }
 
 } // namespace acg::app

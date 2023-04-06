@@ -7,7 +7,7 @@
  ******************************************************************************/
 #include <aphysics/collision/distances/vfd_value.hpp>
 #include <cmath>
-namespace acg::physics::ccd::details {
+namespace acg::physics::collision::details {
 
 double vfd_value(double a_0, double a_1, double a_2, double b_0, double b_1,
                  double b_2, double c_0, double c_1, double c_2, double d_0,
@@ -200,4 +200,4 @@ void vfd_grad(float a_0, float a_1, float a_2, float b_0, float b_1, float b_2,
   out_1250655405979693308[10] = -x19 * x22;
   out_1250655405979693308[11] = x18 * x22;
 }
-} // namespace acg::physics::ccd::details
+} // namespace acg::physics::collision::details

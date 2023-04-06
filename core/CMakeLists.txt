@@ -4,7 +4,9 @@ find_package(cxxopts CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(Taskflow CONFIG REQUIRED)
 
-file(GLOB_RECURSE ACG_CORE_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/source/**.cpp")
+file(GLOB_RECURSE ACG_CORE_SOURCE CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/source/**.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/**.hpp")
 
 add_library(acg_core STATIC
   ${ACG_CORE_SOURCE})
@@ -20,7 +22,6 @@ target_link_libraries(acg_core
   spdlog::spdlog_header_only
   Taskflow::Taskflow)
 
-
 find_package(doctest CONFIG REQUIRED)
 include(doctest)
 file(GLOB_RECURSE ACORE_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/test/*.cpp")
@@ -29,7 +30,7 @@ add_executable(acg_core_test
 
 target_link_libraries(acg_core_test PRIVATE doctest::doctest acg_core)
 
-doctest_discover_tests(
-  acg_core_test
-)
+# doctest_discover_tests(
+# acg_core_test
+# )
 acg_set_warn_levels(acg_core)

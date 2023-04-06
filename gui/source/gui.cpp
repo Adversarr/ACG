@@ -449,73 +449,42 @@ void Gui::RenderOnce(bool verbose) {
     result = acg::gui::VkGraphicsContext::Instance().BeginDraw();
   }
   auto cbuf = graphics_pass_->BeginRender();
-  // 1. Mesh
-  mesh_pipeline_->BeginPipeline(cbuf);
-  for (const auto &info : mesh_render_info_) {
-    if (verbose) {
-      ACG_DEBUG_LOG(
-          "Rendering mesh: buffers = [{} {} {}], #index={}, #instance={}",
-          info.vertex, info.index, info.instance, info.index_count,
-          info.instance_count);
-    }
-    auto v = GetAllocatedBuffer(info.vertex).GetBuffer();
-    auto id = GetAllocatedBuffer(info.index).GetBuffer();
-    auto it = GetAllocatedBuffer(info.instance).GetBuffer();
-    cbuf.bindVertexBuffers(0, v, static_cast<vk::DeviceSize>(0));
-    cbuf.bindVertexBuffers(1, it, static_cast<vk::DeviceSize>(0));
-    cbuf.bindIndexBuffer(id, 0, vk::IndexType::eUint32);
-    cbuf.pushConstants(mesh_pipeline_->GetPipelineLayout(),
-                       vk::ShaderStageFlagBits::eVertex |
-                           vk::ShaderStageFlagBits::eFragment,
-                       0, sizeof(MeshPushConstants), &info.pc);
-    cbuf.drawIndexed(info.index_count, info.instance_count, 0, 0, 0);
-  }
+  cbuf = WriteMeshRenderCommand(verbose, cbuf);
+  cbuf = WriteMeshParticleRenderCommand(verbose, cbuf);
+  cbuf = WritePointRenderCommand(verbose, cbuf);
+  cbuf = WriteWireframeRenderCommand(verbose, cbuf);
+  graphics_pass_->EndRender();
 
-  for (const auto &info : mesh_particle_render_info_) {
-    if (verbose) {
-      ACG_DEBUG_LOG("Rendering mesh particle: buffers = [{} {} {}], #index={}, "
-                    "#instance={}",
-                    info.vertex, info.index, info.instance, info.index_count,
-                    info.instance_count);
-    }
-    auto v = GetAllocatedBuffer(info.vertex).GetBuffer();
-    auto id = GetAllocatedBuffer(info.index).GetBuffer();
-    auto it = GetAllocatedBuffer(info.instance).GetBuffer();
-    cbuf.bindVertexBuffers(0, v, static_cast<vk::DeviceSize>(0));
-    cbuf.bindVertexBuffers(1, it, static_cast<vk::DeviceSize>(0));
-    cbuf.bindIndexBuffer(id, 0, vk::IndexType::eUint32);
-    cbuf.pushConstants(mesh_pipeline_->GetPipelineLayout(),
-                       vk::ShaderStageFlagBits::eVertex |
-                           vk::ShaderStageFlagBits::eFragment,
-                       0, sizeof(MeshPushConstants), &info.pc);
-    cbuf.drawIndexed(info.index_count, info.instance_count, 0, 0, 0);
+  ImGui_ImplVulkan_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+  if (ui_draw_callback_.has_value()) {
+    ImGui::Begin("ImGui User Window");
+    (*ui_draw_callback_)();
+    ImGui::End();
   }
-  mesh_pipeline_->EndPipeline(cbuf);
-
-  point_pipeline_->BeginPipeline(cbuf);
-  for (const auto &info : particle_render_info_) {
-    if (verbose) {
-      ACG_DEBUG_LOG("Rendering particle: buffers=[{}]", info.vertex);
-    }
-    auto v = info.vertex;
-    cbuf.pushConstants(point_pipeline_->GetPipelineLayout(),
-                       vk::ShaderStageFlagBits::eVertex |
-                           vk::ShaderStageFlagBits::eFragment,
-                       0, sizeof(info.pc), &(info.pc));
-    cbuf.bindVertexBuffers(0, GetAllocatedBuffer(v).GetBuffer(),
-                           static_cast<vk::DeviceSize>(0));
-    cbuf.draw(info.vertex_count, 1, 0, 0);
+  DrawDefaultUI();
+  // ImGui::End();
+  ImGui::Render();
+  auto *data = ImGui::GetDrawData();
+  auto ui_cbuf = ui_pass_->Render(data);
+  auto result2 =
+      acg::gui::VkGraphicsContext::Instance().EndDraw({cbuf, ui_cbuf});
+  if (result2) {
+    RecreateSwapchain();
   }
+}
 
+vk::CommandBuffer &Gui::WriteWireframeRenderCommand(bool verbose, vk::CommandBuffer &cbuf) {
   wireframe_pipeline_->BeginPipeline(cbuf);
   cbuf.setLineWidth(linewidth_);
   if (xy_plane_info_.enable) {
     cbuf.bindVertexBuffers(
-        0, GetAllocatedBuffer(xy_plane_render_info_.vertex).GetBuffer(),
-        static_cast<vk::DeviceSize>(0));
+      0, GetAllocatedBuffer(xy_plane_render_info_.vertex).GetBuffer(),
+      static_cast<vk::DeviceSize>(0));
     cbuf.bindIndexBuffer(
-        GetAllocatedBuffer(xy_plane_render_info_.index).GetBuffer(), 0,
-        vk::IndexType::eUint32);
+      GetAllocatedBuffer(xy_plane_render_info_.index).GetBuffer(), 0,
+      vk::IndexType::eUint32);
     cbuf.drawIndexed(xy_plane_render_info_.index_count, 1, 0, 0, 0);
   }
   for (const auto &info : wireframe_render_info_) {
@@ -537,32 +506,80 @@ void Gui::RenderOnce(bool verbose) {
                       info.index_count * 2);
       }
       cbuf.bindVertexBuffers(
-          0, GetAllocatedBuffer(info.wireframe_vertex).GetBuffer(),
-          static_cast<vk::DeviceSize>(0));
+        0, GetAllocatedBuffer(info.wireframe_vertex).GetBuffer(),
+        static_cast<vk::DeviceSize>(0));
       cbuf.bindIndexBuffer(GetAllocatedBuffer(info.wireframe_index).GetBuffer(),
                            0, vk::IndexType::eUint32);
       cbuf.drawIndexed(info.index_count * 2, 1, 0, 0, 0);
     }
   }
-  graphics_pass_->EndRender();
-  ImGui_ImplVulkan_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
-  if (ui_draw_callback_.has_value()) {
-    ImGui::Begin("ImGui User Window");
-    (*ui_draw_callback_)();
-    ImGui::End();
+  return cbuf;
+}
+
+vk::CommandBuffer &Gui::WritePointRenderCommand(bool verbose, vk::CommandBuffer &cbuf) {
+  point_pipeline_->BeginPipeline(cbuf);
+  for (const auto &info : particle_render_info_) {
+    if (verbose) {
+      ACG_DEBUG_LOG("Rendering particle: buffers=[{}]", info.vertex);
+    }
+    auto v = info.vertex;
+    cbuf.pushConstants(point_pipeline_->GetPipelineLayout(),
+                       vk::ShaderStageFlagBits::eVertex |
+                           vk::ShaderStageFlagBits::eFragment,
+                       0, sizeof(info.pc), &(info.pc));
+    cbuf.bindVertexBuffers(0, GetAllocatedBuffer(v).GetBuffer(),
+                           static_cast<vk::DeviceSize>(0));
+    cbuf.draw(info.vertex_count, 1, 0, 0);
   }
-  DrawDefaultUI();
-  // ImGui::End();
-  ImGui::Render();
-  auto *data = ImGui::GetDrawData();
-  auto ui_cbuf = ui_pass_->Render(data);
-  auto result2 =
-      acg::gui::VkGraphicsContext::Instance().EndDraw({cbuf, ui_cbuf});
-  if (result2) {
-    RecreateSwapchain();
+  return cbuf;
+}
+
+vk::CommandBuffer &Gui::WriteMeshParticleRenderCommand(bool verbose, vk::CommandBuffer &cbuf) {
+  for (const auto &info : mesh_particle_render_info_) {
+    if (verbose) {
+      ACG_DEBUG_LOG("Rendering mesh particle: buffers = [{} {} {}], #index={}, "
+                    "#instance={}",
+                    info.vertex, info.index, info.instance, info.index_count,
+                    info.instance_count);
+    }
+    auto v = GetAllocatedBuffer(info.vertex).GetBuffer();
+    auto id = GetAllocatedBuffer(info.index).GetBuffer();
+    auto it = GetAllocatedBuffer(info.instance).GetBuffer();
+    cbuf.bindVertexBuffers(0, v, static_cast<vk::DeviceSize>(0));
+    cbuf.bindVertexBuffers(1, it, static_cast<vk::DeviceSize>(0));
+    cbuf.bindIndexBuffer(id, 0, vk::IndexType::eUint32);
+    cbuf.pushConstants(mesh_pipeline_->GetPipelineLayout(),
+                       vk::ShaderStageFlagBits::eVertex |
+                           vk::ShaderStageFlagBits::eFragment,
+                       0, sizeof(MeshPushConstants), &info.pc);
+    cbuf.drawIndexed(info.index_count, info.instance_count, 0, 0, 0);
   }
+  mesh_pipeline_->EndPipeline(cbuf);
+  return cbuf;
+}
+
+vk::CommandBuffer &Gui::WriteMeshRenderCommand(bool verbose, vk::CommandBuffer &cbuf) {
+  mesh_pipeline_->BeginPipeline(cbuf);
+  for (const auto &info : mesh_render_info_) {
+    if (verbose) {
+      ACG_DEBUG_LOG(
+          "Rendering mesh: buffers = [{} {} {}], #index={}, #instance={}",
+          info.vertex, info.index, info.instance, info.index_count,
+          info.instance_count);
+    }
+    auto v = GetAllocatedBuffer(info.vertex).GetBuffer();
+    auto id = GetAllocatedBuffer(info.index).GetBuffer();
+    auto it = GetAllocatedBuffer(info.instance).GetBuffer();
+    cbuf.bindVertexBuffers(0, v, static_cast<vk::DeviceSize>(0));
+    cbuf.bindVertexBuffers(1, it, static_cast<vk::DeviceSize>(0));
+    cbuf.bindIndexBuffer(id, 0, vk::IndexType::eUint32);
+    cbuf.pushConstants(mesh_pipeline_->GetPipelineLayout(),
+                       vk::ShaderStageFlagBits::eVertex |
+                           vk::ShaderStageFlagBits::eFragment,
+                       0, sizeof(MeshPushConstants), &info.pc);
+    cbuf.drawIndexed(info.index_count, info.instance_count, 0, 0, 0);
+  }
+  return cbuf;
 }
 
 void Gui::RecreateSwapchain() {

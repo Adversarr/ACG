@@ -14,8 +14,7 @@ template <typename Scalar, int dim,
 ApicRegular<Scalar, dim, KernT>::ApicRegular(
     LagrangeFluid<Scalar, dim> &lag, EulerFluidRegular<Scalar, dim> &euler)
     : lagrange_(lag), euler_(euler),
-      grid_idxer_(std::make_from_tuple<NdRangeIndexer<dim>>(
-          make_tuple_from_vector(euler.div_count_))) {
+      grid_idxer_(euler_.div_count_) {
   matrix_b_.resize(Eigen::NoChange, lag.mass_.cols());
   matrix_b_.setZero();
 }
@@ -32,8 +31,7 @@ void ApicRegular<Scalar, dim, KernT>::Forward() {
   // Transfer mass.
   Foreach([&mass, &grid_m](Index p, Vec<Index, dim> g, Scalar weight,
                            Vec3<Scalar>) {
-    auto gt = make_tuple_from_vector(g);
-    std::apply(grid_m, gt) += weight * mass(p);
+    grid_m(g) += weight * mass(p);
   });
 
   // Transfer momentum
@@ -43,10 +41,9 @@ void ApicRegular<Scalar, dim, KernT>::Forward() {
       utils::as_const_arg(matrix_b_));
   Foreach([&](Index p, Vec<Index, dim> g, Scalar weight,
               Vec<Scalar, dim> displacement) -> void {
-    auto gt = make_tuple_from_vector(g);
     Vec<Scalar, dim> momentum_inc =
         weight * mass(p) * (velo(p) + bp(p) * dp_inv * displacement);
-    std::apply(grid_v, gt) += momentum_inc;
+    grid_v(g) += momentum_inc;
   });
   // compute velocity.
   auto acc = view(euler_.mass_);
@@ -65,7 +62,7 @@ void ApicRegular<Scalar, dim, KernT>::Foreach(
         f) const {
   constexpr Index kern_size = Kern::KernelSize();
   auto posi = view(lagrange_.position_);
-  auto cor = GridCoordConventer<Scalar, 3>(
+  auto cor = GridCoordConventer<Scalar, dim>(
       euler_.lower_bound_, euler_.upper_bound_, euler_.grid_size_);
   for (auto [p, po] : enumerate(posi)) {
     Vec<Scalar, dim> p_position_local = cor.World2LocalContinuous(po);
@@ -74,7 +71,7 @@ void ApicRegular<Scalar, dim, KernT>::Foreach(
          NdRange<dim>(utils::god::tuple_duplicate<dim>(kern_size * 2 + 1))) {
       Vec<Index, dim> dijk{std::make_from_tuple<Vec<Index, dim>>(idx)};
       Vec<Index, dim> ijk = (most_close_grid + dijk).array() - kern_size;
-      if ((ijk.array() < 0).any() || (ijk.array() > euler_.div_count_.array()).any()) {
+      if ((ijk.array() < 0).any() || (ijk.array() >= euler_.div_count_.array()).any()) {
         // invalid index.
         continue;
       }

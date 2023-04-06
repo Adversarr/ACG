@@ -19,16 +19,24 @@ struct Empty {};
 // H, T... => H
 template <typename... T> struct Front {};
 
-template <> struct Front<> { using type = Empty; };
+template <> struct Front<> {
+  using type = Empty;
+};
 
-template <typename H, typename... T> struct Front<H, T...> { using type = H; };
+template <typename H, typename... T> struct Front<H, T...> {
+  using type = H;
+};
 
 // H..., T => T
 template <typename... T> struct Back;
 
-template <> struct Back<> { using type = Empty; };
+template <> struct Back<> {
+  using type = Empty;
+};
 
-template <typename T> struct Back<T> { using type = T; };
+template <typename T> struct Back<T> {
+  using type = T;
+};
 
 template <typename H, typename... T> struct Back<H, T...> {
   using type = typename Back<T...>::type;
@@ -64,13 +72,17 @@ template <> struct ListRange<0> {
 };
 
 template <typename T> struct Reverse;
-template <> struct Reverse<List<>> { using type = List<>; };
+template <> struct Reverse<List<>> {
+  using type = List<>;
+};
 template <typename H, typename... T> struct Reverse<List<H, T...>> {
   using last_type = typename Reverse<List<T...>>::type;
   using type = typename last_type::template append<H>;
 };
 
-template <typename T> struct IsList { static constexpr bool value = false; };
+template <typename T> struct IsList {
+  static constexpr bool value = false;
+};
 template <typename... T> struct IsList<List<T...>> {
   static constexpr bool value = true;
 };
@@ -93,13 +105,17 @@ template <typename H, typename... T> struct Cdr<List<H, T...>> {
   using type = List<T...>;
 };
 
-template <typename H> struct Cdr<List<H>> { using type = List<>; };
+template <typename H> struct Cdr<List<H>> {
+  using type = List<>;
+};
 
 // GetElem
 template <int x, typename T> struct GetElem {};
 
 // GetElem x [] => Empty
-template <int x> struct GetElem<x, List<>> { using type = Empty; };
+template <int x> struct GetElem<x, List<>> {
+  using type = Empty;
+};
 
 // GetElem 0 [H T ...] => H
 template <typename H, typename... T> struct GetElem<0, List<H, T...>> {
@@ -107,7 +123,8 @@ template <typename H, typename... T> struct GetElem<0, List<H, T...>> {
 };
 
 // GetElem x [H T ...] => GetElem (x - 1) [T ...]
-template <int x, typename... T> struct GetElem<x, List<T...>>
+template <int x, typename... T>
+struct GetElem<x, List<T...>>
     : public GetElem<x - 1, typename Cdr<List<T...>>::type> {};
 
 // Concat
@@ -119,20 +136,20 @@ struct Concat<List<LT...>, List<RT...>> {
   using type = List<LT..., RT...>;
 };
 
-template <typename L, typename R> using ConcatType =
-    typename Concat<L, R>::type;
+template <typename L, typename R>
+using ConcatType = typename Concat<L, R>::type;
 template <typename T, typename L,
           template <typename, typename> typename Eq = std::is_same>
 struct IsElem;
 template <typename T, template <typename, typename> typename Eq>
 struct IsElem<T, List<>, Eq> {
-  static constexpr bool value = false;  // NOLINT
+  static constexpr bool value = false; // NOLINT
   static constexpr int count = 0;
 };
 template <typename T, template <typename, typename> typename Eq, typename H,
           typename... LT>
 struct IsElem<T, List<H, LT...>, Eq> {
-  static constexpr bool value  // NOLINT
+  static constexpr bool value // NOLINT
       = Eq<H, T>::value ? true : IsElem<T, List<LT...>, Eq>::value;
   static constexpr int count = Eq<H, T>::value
                                    ? IsElem<T, List<LT...>, Eq>::value
@@ -141,57 +158,21 @@ struct IsElem<T, List<H, LT...>, Eq> {
 
 template <typename T, typename H, template <typename, typename> typename Eq>
 struct IsElem<T, List<H>, Eq> {
-  static constexpr bool value = Eq<H, T>::value;          // NOLINT
-  static constexpr bool count = Eq<H, T>::value ? 1 : 0;  // NOLINT
+  static constexpr bool value = Eq<H, T>::value;         // NOLINT
+  static constexpr bool count = Eq<H, T>::value ? 1 : 0; // NOLINT
 };
-
-template <typename K, typename V> struct Pair {
-  using KeyType = K;
-  using ValueType = V;
-};
-
-template <typename T> struct GetKey;
-template <typename T> struct GetValue;
-template <typename K, typename T> struct GetKeyValue;
-template <typename K> struct GetKeyValue<K, List<>> { using type = Empty; };
-template <typename K, typename H, typename... T>
-struct GetKeyValue<K, List<H, T...>> {
-  using type = std::conditional_t<std::is_same_v<typename H::KeyType, K>,
-                                  typename H::ValueType,
-                                  typename GetKeyValue<K, List<T...>>::type>;
-};
-template <typename K, typename V> struct GetKey<Pair<K, V>> { using type = K; };
-template <typename K, typename V> struct GetValue<Pair<K, V>> {
-  using type = V;
-};
-
-template <typename H, typename L> struct Update;
-template <typename H> struct Update<H, List<>> { using type = List<H>; };
-template <typename P, typename H, typename... T>
-struct Update<P, List<H, T...>> {
-  using type = std::conditional_t<
-      std::is_same_v<typename H::KeyType, typename P::KeyType>, List<P, T...>,
-      typename Concat<List<H>, typename Update<P, List<T...>>::type>::type>;
-};
-
-/**
- * NOTE: Meta Programming Assistants
- */
-
-// struct Identity {
-//   template <typename T> inline decltype(auto) operator()(T&& in) const
-//   noexcept { return in; }
-// };
 
 template <typename T, int count> struct Duplicate;
-template <typename T> struct Duplicate<T, 0> { using type = List<>; };
+template <typename T> struct Duplicate<T, 0> {
+  using type = List<>;
+};
 template <typename T, int count> struct Duplicate {
   static_assert(count >= 0, "Count < 0 detected.");
   using last_type = typename Duplicate<T, count - 1>::type;
   using type = typename last_type::template append<T>;
 };
 
-}  // namespace details
+} // namespace details
 
 using Empty = details::Empty;
 
@@ -210,8 +191,8 @@ template <typename T> using Cdr = details::Cdr<T>;
 template <typename T> using Cdr_t = typename details::Cdr<T>::type;
 
 template <int x, typename T> using Get = details::GetElem<x, T>;
-template <int x, typename T> using Get_t =
-    typename details::GetElem<x, T>::type;
+template <int x, typename T>
+using Get_t = typename details::GetElem<x, T>::type;
 
 template <typename S, typename T> using Concat = details::Concat<S, T>;
 template <typename S, typename T> using Concat_t = typename Concat<S, T>::type;
@@ -229,24 +210,11 @@ template <typename T, typename L,
           template <typename, typename> typename Eq = std::is_same>
 static constexpr bool Count_v = Count<T, L, Eq>::count;
 
-template <typename K, typename V> using Pair = details::Pair<K, V>;
-template <typename T> using GetKey = details::GetKey<T>;
-template <typename T> using GetKey_t = typename details::GetKey<T>::type;
-template <typename T> using GetValue = details::GetValue<T>;
-template <typename T> using GetValue_t = typename details::GetValue<T>::type;
-template <typename T, typename L> using GetKeyValue
-    = details::GetKeyValue<T, L>;
-template <typename T, typename L> using GetKeyValue_t =
-    typename GetKeyValue<T, L>::type;
-template <typename H, typename L> using Update = details::Update<H, L>;
-template <typename H, typename L> using Update_t =
-    typename details::Update<H, L>::type;
-
 template <typename L> using Reverse = details::Reverse<L>;
 template <typename L> using Reverse_t = typename Reverse<L>::type;
 
 template <typename L, int count> using Duplicate = details::Duplicate<L, count>;
-template <typename L, int count> using Duplicate_t =
-    typename Duplicate<L, count>::type;
-}  // namespace acg::utils::god
+template <typename L, int count>
+using Duplicate_t = typename Duplicate<L, count>::type;
+} // namespace acg::utils::god
 // NOLINTEND(readability-identifier-naming)

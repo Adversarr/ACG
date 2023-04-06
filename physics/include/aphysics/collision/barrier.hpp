@@ -3,7 +3,7 @@
 #include <acore/math/common.hpp>
 
 #include "distances/all.hpp"
-namespace acg::physics::ccd {
+namespace acg::physics::collision {
 template <typename Scalar> struct EdgeEdgeBarrier;
 
 template <typename Scalar> struct VertexTriangleBarrier;
@@ -104,4 +104,4 @@ template <> struct VertexTriangleBarrier<Float64> {
 
   explicit VertexTriangleBarrier(Float64 dh) : d_hat_{dh} {}
 };
-} // namespace acg::physics::ccd
+} // namespace acg::physics::collision

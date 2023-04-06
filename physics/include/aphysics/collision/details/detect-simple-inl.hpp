@@ -2,7 +2,7 @@
 
 #include "../detect.hpp"
 
-namespace acg::physics::ccd {
+namespace acg::physics::collision {
 
 template <typename Scalar>
 bool VertexVertexDynamic<Scalar>::operator()(const Vec3<Scalar> &v0_start,
@@ -81,4 +81,4 @@ bool VertexTriangleStatic<Scalar>::operator()(const Vec3<Scalar> &f0,
   return valid_;
 }
 
-} // namespace acg::physics::ccd
+} // namespace acg::physics::collision

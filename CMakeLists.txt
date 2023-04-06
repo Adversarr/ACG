@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(acg
-  DESCRIPTION "Adversarr's CG Toolbox"
-  LANGUAGES CXX)
+option(ENABLE_TIME_TRACE "Enable time trace for compile time optimization." OFF)
 
 
 # Remove this block after bumping CMake to v3.21.0
@@ -31,6 +29,11 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
 endif()
 
+
+project(acg
+  DESCRIPTION "Adversarr's CG Toolbox"
+  LANGUAGES CXX)
+
 include(CheckCXXCompilerFlag)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
@@ -38,11 +41,17 @@ include(CMakeDependentOption)
 include(cmake/utils.cmake)
 
 # Further optimize for SIMD.
-if (NOT MSVC)
+if(NOT MSVC)
   acg_add_cxx_compiler_flag("-march=native")
 endif()
 
-add_subdirectory(3rdparty/Tight-Inclusion)
+
+# Time trace
+if(${ENABLE_TIME_TRACE})
+  acg_add_cxx_compiler_flag("-ftime-trace")
+endif()
+
+
 
 add_subdirectory(core)
 add_subdirectory(gui)

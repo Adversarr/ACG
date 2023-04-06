@@ -26,4 +26,9 @@ private:
   Scalar mass_sum_;
 };
 }  // namespace acg::physics::elastic
+
+
+#ifdef ACG_INCLUDE_IMPL
 #include "./details/shape_matching-inl.hpp" // IWYU pragma: export
+#undef ACG_INCLUDE_IMPL
+#endif

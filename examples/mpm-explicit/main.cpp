@@ -1,16 +1,18 @@
 #include <acore/init.hpp>
+#include <adata/json/splash_surf_json.hpp>
 #include <agui/backend/context.hpp>
 #include <agui/backend/graphics_context.hpp>
 #include <agui/backend/window.hpp>
 #include <agui/gui.hpp>
 #include <autils/init.hpp>
 #include <autils/time/time.hpp>
+#include <fstream>
 
 #include "app.hpp"
 
 using namespace acg::gui;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   // Setup all the global instances.
   auto utils_hooker = acg::utils::UtilsHooker();
   utils_hooker.default_logging_level = spdlog::level::debug;
@@ -30,6 +32,7 @@ int main(int argc, char **argv) {
     bool clear = false;
     bool running = false;
     bool run_once = false;
+    bool export_frame = false;
     MpmExplictApp app;
     app.Init();
     gui.SetUIDrawCallback([&]() {
@@ -39,11 +42,12 @@ int main(int argc, char **argv) {
       run_once = ImGui::Button("Run once");
       acg::Float64 vel_eng = app.lag_.velocity_.array().square().sum();
       Vec3f pos = app.lag_.position_.rowwise().mean().cast<Float32>();
-      ImGui::Text("Velocity Energy = %lf, Weight %lf", vel_eng,
-                  app.weight_sum_);
+      ImGui::Text("Velocity Energy = %lf, Weight %lf", vel_eng, app.weight_sum_);
       ImGui::InputFloat3("Position", pos.data());
       ImGui::DragFloat3("Gravity", app.grav_.data(), 0.1, -3, 3);
       ImGui::InputDouble("Scaling", &app.E_);
+
+      export_frame = ImGui::Button("Export this frame");
     });
 
     auto* mp = gui.GetScene().AddMeshParticles();
@@ -59,6 +63,15 @@ int main(int argc, char **argv) {
       if (clear) {
         app.Init();
         mp->SetPositions(app.lag_.position_.cast<Float32>()).MarkUpdate();
+      }
+
+      if (export_frame) {
+        acg::data::SplashSurfJson json_exportor(app.lag_.position_);
+        std::ofstream of("./output.json", std::ios::out);
+        ACG_CHECK(of.good(), "Failed to create/open output file.");
+        json_exportor.ExportTo(of);
+
+        ACG_INFO("Export done.");
       }
 
       if (running || run_once) {

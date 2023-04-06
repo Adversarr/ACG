@@ -1,10 +1,6 @@
 #pragma once
-#include "aphysics/elastic/neohookean.hpp"
-#include "aphysics/solver/admm/hyperelastic.hpp"
-#include <Eigen/SparseCholesky>
-
-#include <acore/spatial/subdivision.hpp>
 #include <Eigen/IterativeLinearSolvers>
+#include <Eigen/SparseCholesky>
 #include <acore/math/sparse.hpp>
 #include <acore/spatial/subdivision.hpp>
 #include <aphysics/constriants.hpp>
@@ -15,6 +11,10 @@
 #include <set>
 #include <unordered_set>
 #include <vector>
+
+#include "aphysics/elastic/neohookean.hpp"
+#include "aphysics/mpm/transfer.hpp"
+#include "aphysics/solver/admm/hyperelastic.hpp"
 
 namespace acg::app {
 
@@ -54,9 +54,7 @@ public:
     Field<Scalar, 3> ccd_dst_position_;
     Field<Scalar, 3> substep_x_;
     Field<Scalar, 9> constraint_admm_multiplier_;
-    physics::admm::HyperElasticConstraint<
-        Scalar, physics::elastic::OgdenNeoHookean<Scalar, 3>>
-        admm_compute_;
+    physics::admm::HyperElasticConstraint<Scalar, physics::elastic::OgdenNeoHookean<Scalar, 3>> admm_compute_;
     Scalar admm_weight_{.5};
     Scalar hessian_coefficient_;
     Index global_solve_index_start_;
@@ -73,7 +71,10 @@ public:
     Field<Scalar, 3> ccd_dst_position_;
     Field<Scalar, 3> substep_solution_;
     Scalar pressure_scale_ = 10;
+    physics::EulerFluidRegular<Scalar, 3> euler_;
 
+    using APIC = physics::mpm::ApicRegular<Scalar, 3, physics::mpm::CubicBSplineKernel>;
+    std::unique_ptr<APIC> apic_;
     Scalar sph_kern_size_{1e-1};
     spatial::SubDivisionAABB<Scalar, Index, 3> sd_;
   };
@@ -87,6 +88,7 @@ public:
   // Optionally one fluid.
   std::unique_ptr<Fluid> fluid_;
 
+  bool enable_collision_detect_ = false;
 
   // ADMM Helper.
   Index global_variable_count_{0};
@@ -112,7 +114,6 @@ public:
   Scalar minimum_toi_{1};
   Scalar min_distance_{1e-3};
 
-
   bool enable_result_check_{true};
 
   void Step();
@@ -121,15 +122,13 @@ public:
 
   void AddCloth(physics::Cloth<Scalar, 3> cloth);
 
-  void AddCloth(Field<Scalar, 3> vert, Field<Index, 3> face, Field<Scalar> mass,
-                Scalar stiffness);
+  void AddCloth(Field<Scalar, 3> vert, Field<Index, 3> face, Field<Scalar> mass, Scalar stiffness);
 
   void AddSoftbody(physics::HyperElasticSoftbody<Scalar, 3> softbody);
 
-  void AddSoftbody(Field<Scalar, 3> position, Field<Index, 4> tetras,
-                   Field<Scalar> mass, Scalar lambda, Scalar mu);
+  void AddSoftbody(Field<Scalar, 3> position, Field<Index, 4> tetras, Field<Scalar> mass, Scalar lambda, Scalar mu);
 
-  void SetFluid(physics::LagrangeFluid<Scalar, 3> fluid);
+  void SetFluid(physics::LagrangeFluid<Scalar, 3> fluid, Index grid_size = 20);
 
   void ComputeExtForce();
 
@@ -160,4 +159,4 @@ public:
   bool enable_subd_{false};
 };
 
-} // namespace acg::app
+}  // namespace acg::app

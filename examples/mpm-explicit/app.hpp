@@ -183,6 +183,7 @@ public:
   Float64 E_ = 4;
   Float64 weight_sum_;
 
+
   Index n_particles_;
   Field<Float64, 3> grid_velocity_;
   Field<Float64, 1> grid_mass_;

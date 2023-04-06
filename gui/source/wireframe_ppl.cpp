@@ -67,7 +67,7 @@ void WireframePipeline::CleanUp() {
 WireframePipeline::~WireframePipeline() { CleanUp(); }
 
 void WireframePipeline::CreateUniformBuffers() {
-  auto buffer_size = static_cast<vk::DeviceSize>(sizeof(ubo_));
+  auto buffer_size = static_cast<vk::DeviceSize>(sizeof(Ubo));
   uniform_buffers_.clear();
   for (size_t i = 0; i < VkGraphicsContext::Instance().swapchain_size_; ++i) {
     auto buffer = VkContext2::Instance().CreateBufferWithMemory(
@@ -211,7 +211,7 @@ void WireframePipeline::EndPipeline(vk::CommandBuffer & /* current_command_buffe
 void WireframePipeline::SetCamera(const Camera &cam) {
   auto extent = VkGraphicsContext::Instance().swapchain_extent_;
   ubo_.mvp = cam.GetProjection(extent.width, extent.height) * cam.GetView() * cam.GetModel();
-  ubo_.eye_position = to_glm(cam.GetPosition());
+  // ubo_.eye_position = to_glm(cam.GetPosition());
 }
 
 void WireframePipeline::UpdateUbo(bool fast) {

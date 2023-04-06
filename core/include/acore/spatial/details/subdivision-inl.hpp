@@ -32,7 +32,7 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Insert(
 
   // Now, parent is the index for aabb store.
   ACG_DEBUG_CHECK(parent < nodes_.size() && parent >= 0, "Invalid node id.");
-  auto &node = nodes_[parent];
+  auto &node = nodes_.at(parent);
   node.leafs_.push_back(ind);
   return parent;
 }
@@ -43,10 +43,10 @@ size_t
 SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureSubDivision(
     size_t parent, size_t child) {
   ACG_DEBUG_CHECK(parent < nodes_.size() && parent >= 0, "Invalid node id.");
-  auto &pnode = nodes_[parent];
+  auto &pnode = nodes_.at(parent);
   ACG_DEBUG_CHECK(child < pnode.sub_nodes_.size() && child >= 0,
                   "Invalid node id.");
-  auto &cid = pnode.sub_nodes_[child];
+  auto &cid = pnode.sub_nodes_.at(child);
   if (cid == InvalidSubscript) {
     auto position = pnode.GetChildAABB(indexer_[child]);
     auto child_id = PutNode(pnode.unit_ / subdivision_count, position);
@@ -102,7 +102,7 @@ size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindEntry(
   // Foreach entry, test if the entry can hold the AABB
   for (const auto &i : entry_nodes_) {
     ACG_DEBUG_CHECK(i >= 0 && i < nodes_.size(), "Invalid subscript.");
-    if (nodes_[i].box_.Contain(aabb)) {
+    if (nodes_.at(i).box_.Contain(aabb)) {
       return i;
     }
   }
@@ -145,7 +145,7 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindVisitSequence(
   *it = id;
   if (id != InvalidSubscript) {
     ACG_DEBUG_CHECK(id < nodes_.size() && id >= 0, "Invalid node id.");
-    Node &entry_node = nodes_[id];
+    Node &entry_node = nodes_.at(id);
     Vec<F, dim> local_lb =
         (aabb.lower_bound - entry_node.box_.lower_bound) / entry_node.unit_;
     Vec<F, dim> local_ub =
@@ -221,7 +221,7 @@ template <typename F, typename D, int dim, UInt32 subdivision_count,
 std::pair<AABB<F, dim>, D> &
 SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Get(size_t id) {
   ACG_DEBUG_CHECK(id < data_.size() && id >= 0, "Invalid id");
-  return data_[id];
+  return data_.at(id);
 }
 
 template <typename F, typename D, int dim, UInt32 subdivision_count,
@@ -229,7 +229,7 @@ template <typename F, typename D, int dim, UInt32 subdivision_count,
 const std::pair<AABB<F, dim>, D> &
 SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Get(size_t id) const {
   ACG_DEBUG_CHECK(id < data_.size() && id >= 0, "Invalid id");
-  return data_[id];
+  return data_.at(id);
 }
 template <typename F, typename D, int dim, UInt32 subdivision_count,
           UInt32 max_depth>
@@ -257,7 +257,7 @@ template <typename F, typename D, int dim, UInt32 subdivision_count,
 void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::QueryVisit(
     std::vector<size_t> &retval, size_t node, const AABB<F, dim> &aabb) const {
   ACG_DEBUG_CHECK(node < nodes_.size() && node >= 0, "Invalid node id.");
-  const auto &n = nodes_[node];
+  const auto &n = nodes_.at(node);
   if (n.box_.Intersect(aabb)) {
     for (auto leaf: n.leafs_) {
       retval.push_back(leaf);
@@ -298,7 +298,7 @@ void SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::
     QueryVisitInternal(std::vector<std::pair<size_t, size_t>> &retval,
                        size_t node) const {
   ACG_DEBUG_CHECK(node < nodes_.size() && node >= 0, "Invalid node id.");
-  const auto &n = nodes_[node];
+  const auto &n = nodes_.at(node);
   for (auto l : n.leafs_) {
     std::vector<size_t> intersect;
     QueryVisit(intersect, node, Get(l).first);

@@ -408,7 +408,7 @@ void HybridApp::ComputeStepDirection() {
     auto t0 = p(t.x());
     auto t1 = p(t.y());
     auto t2 = p(t.z());
-    physics::ccd::VertexTriangleNormalDistance<Scalar> vtnd(t0, t1, t2, f);
+    physics::collision::VertexTriangleNormalDistance<Scalar> vtnd(t0, t1, t2, f);
     Vec<Scalar, 12> g = -vtnd.Grad();
     g *= collision_stiffness_;
     ACG_INFO("g = {}", g.transpose());
@@ -505,7 +505,7 @@ void HybridApp::ComputeLinesearchEnergy() {
     auto p = view(cloth_[c.obj1_.object_].linesearch_position_);
     auto t = view(cloth_[c.obj1_.object_].data_.face_)(c.obj1_.id_);
     auto f = view(fluid_.linesearch_position_)(c.obj0_.id_);
-    physics::ccd::VertexTriangleNormalDistance<Scalar> b(p(t.x()), p(t.y()),
+    physics::collision::VertexTriangleNormalDistance<Scalar> b(p(t.x()), p(t.y()),
                                                          p(t.z()), f);
     coll_energy += collision_stiffness_ / (1e-4 + b.Value());
   }
@@ -642,7 +642,7 @@ bool HybridApp::DetectLinesearchCollision(bool verbose) {
       auto c = view(cl.substep_position_);
       auto d = view(cl.linesearch_position_);
       for (auto [j, face] : enumerate(view(cl.data_.face_))) {
-        physics::ccd::VertexTriangleDynamic<Scalar> vf;
+        physics::collision::VertexTriangleDynamic<Scalar> vf;
         if (vf(p, c(face.x()), c(face.y()), c(face.z()), p_dest, d(face.x()),
                d(face.y()), d(face.z()))) {
           // Found the collision.

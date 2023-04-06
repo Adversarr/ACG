@@ -2,6 +2,8 @@
 #include <fmt/format.h>
 
 #include <aphysics/mpm/transfer.hpp>
+
+#include <acore/math/utilities.hpp>
 using namespace acg;
 TEST_CASE("apic") {
   physics::LagrangeFluid<float, 3> lag;
