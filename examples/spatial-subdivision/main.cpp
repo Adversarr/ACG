@@ -1,4 +1,5 @@
 #include <acore/init.hpp>
+#include <acore/spatial/octree.hpp>
 #include <acore/spatial/subdivision.hpp>
 #include <agui/gui.hpp>
 #include <agui/init.hpp>
@@ -8,15 +9,16 @@
 using namespace acg;
 using namespace acg::gui;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // Setup all the global instances.
   acg::utils::hook_default_utils_environment();
   acg::gui::hook_default_gui_environment("Spatial Subdivision");
   acg::init(argc, argv);
-  spatial::SubDivisionAABB<Float, Index, 3, 2, 7> ss;
-  auto& gui = acg::gui::Gui::Instance();
-  auto* wireframe = gui.GetScene().AddWireframe();
-  auto* particles_render = gui.GetScene().AddMeshParticles();
+  spatial::BoundedOctree<Float, 3> ss(
+      spatial::AlignedBox<float, 3>(-Vec3f::Ones(), Vec3f::Ones()));
+  auto &gui = acg::gui::Gui::Instance();
+  auto *wireframe = gui.GetScene().AddWireframe();
+  auto *particles_render = gui.GetScene().AddMeshParticles();
 
   Field<Float, 3> particles;
   Float particles_size = 0.01;
@@ -35,7 +37,12 @@ int main(int argc, char** argv) {
         .SetUniformColor(types::Rgba{0.7, 0, 0, 1})
         .SetPositions(particles)
         .MarkUpdate();
-    auto [position, lines] = ss.Visualize();
+    Field<Float, 3> position;
+    types::topology::LineList lines;
+    ss.Plot(position, lines);
+    ss.ForeachTree([] (const auto& tree) {
+      std::cout << tree.GetLowerBound() << std::endl;
+    });
     wireframe->SetPositions(position);
     wireframe->SetIndices(lines);
     wireframe->SetColors(types::Rgb{.7, .7, .7});
@@ -49,6 +56,7 @@ int main(int argc, char** argv) {
     if (regenerate) {
       particles.resize(3, seed_count);
       particles.setRandom();
+      particles *= 0.5;
       ss.Clear();
       for (auto [i, v] : acg::enumerate(acg::view(particles))) {
         ss.Insert({{

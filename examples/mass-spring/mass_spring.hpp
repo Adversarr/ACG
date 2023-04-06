@@ -46,7 +46,7 @@ public:
 
   int global_step_count_{3};
 
-  tf::Executor executor_{8};
+  tf::Executor executor_{1};
 
   bool eval_error_{false};
 

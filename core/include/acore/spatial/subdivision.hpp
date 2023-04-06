@@ -8,6 +8,8 @@
 
 #include "common.hpp"
 
+
+
 namespace acg::spatial {
 
 template <typename F, typename D, int dim, UInt32 subdivision_count = 4,
@@ -63,8 +65,7 @@ public:
 
   explicit SubDivisionAABB(F unit_length = 1.0, F epsilon = 1e-6)
       : epsilon_(epsilon), unit_(unit_length),
-        indexer_(std::make_from_tuple<NdRangeIndexer<dim>>(
-            utils::god::tuple_duplicate<dim>(subdivision_count))) {}
+        indexer_(IndexVec<dim>::Constant(subdivision_count)) {}
 
   struct Node {
     AABB<F, dim> box_;
@@ -116,7 +117,7 @@ private:
   // @brief Indicates the maximal length for the root aabb.
   const F epsilon_ = std::numeric_limits<F>::min();
   const F unit_;
-  NdRangeIndexer<dim> indexer_;
+  DiscreteStorageSequentialTransform<dim> indexer_;
 };
 
 } // namespace acg::spatial

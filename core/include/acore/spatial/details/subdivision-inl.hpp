@@ -48,7 +48,7 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureSubDivision(
                   "Invalid node id.");
   auto &cid = pnode.sub_nodes_.at(child);
   if (cid == InvalidSubscript) {
-    auto position = pnode.GetChildAABB(indexer_[child]);
+    auto position = pnode.GetChildAABB(to_tuple(indexer_.Backward(child)));
     auto child_id = PutNode(pnode.unit_ / subdivision_count, position);
     cid = child_id;
   }
@@ -68,8 +68,8 @@ template <typename F, typename D, int dim, UInt32 subdivision_count,
           UInt32 max_depth>
 size_t SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::EnsureEntry(
     const AABB<F, dim> &aabb) {
-  auto ub_ceil = aabb.upper_bound.array().ceil().eval();
-  auto lb_floor = aabb.lower_bound.array().floor().eval();
+  auto ub_ceil = aabb.upper_bound_.array().ceil().eval();
+  auto lb_floor = aabb.lower_bound_.array().floor().eval();
   if ((ub_ceil - unit_ != lb_floor).any()) {
     // Too Large
     return InvalidSubscript;
@@ -125,9 +125,9 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Node::GetChildAABB(
     utils::god::IndexTuple<dim> index) const {
   auto local_index_nd = std::make_from_tuple<Vec<Index, dim>>(index);
   auto units = Vec<F, dim>::Constant(unit_);
-  auto lb =
-      (box_.lower_bound + units.cwiseProduct(local_index_nd.template cast<F>()))
-          .eval();
+  auto lb = (box_.lower_bound_ +
+             units.cwiseProduct(local_index_nd.template cast<F>()))
+                .eval();
   auto ub = lb + units;
   return AABB<F, dim>(lb, ub);
 }
@@ -147,9 +147,9 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::FindVisitSequence(
     ACG_DEBUG_CHECK(id < nodes_.size() && id >= 0, "Invalid node id.");
     Node &entry_node = nodes_.at(id);
     Vec<F, dim> local_lb =
-        (aabb.lower_bound - entry_node.box_.lower_bound) / entry_node.unit_;
+        (aabb.lower_bound_ - entry_node.box_.lower_bound_) / entry_node.unit_;
     Vec<F, dim> local_ub =
-        (aabb.upper_bound - entry_node.box_.lower_bound) / entry_node.unit_;
+        (aabb.upper_bound_ - entry_node.box_.lower_bound_) / entry_node.unit_;
     ++it;
     while (id != InvalidSubscript && it != seq.end()) {
       Vec<Index, dim> local_index_l =

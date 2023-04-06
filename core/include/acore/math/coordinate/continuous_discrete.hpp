@@ -15,6 +15,8 @@ struct ContinuousDiscreteTransformRegular
   using domain_type = Vec<Scalar, dim>;
   using range_type = IndexVec<dim>;
 
+  ContinuousDiscreteTransformRegular() : grid_size_(0), grid_size_inverse_(0) {}
+
   static_assert(std::is_floating_point_v<Scalar>,
                 "Type argument Scalar is not float point.");
   explicit ContinuousDiscreteTransformRegular(Scalar grid_size)
@@ -30,14 +32,38 @@ struct ContinuousDiscreteTransformRegular
 
   domain_type Backward(range_type x) const noexcept {
     domain_type x0 = x.template cast<Scalar>();
-    // x0.array() += static_cast<Scalar>(.5);
     return x0 * grid_size_;
   }
-
-  range_type operator()(domain_type x) const noexcept { return Forward(x); }
 
   Scalar grid_size_;
   Scalar grid_size_inverse_;
 };
 
-}
+template <typename Scalar, int dim>
+struct ContinuousDiscreteTransformBoundedRegular
+    : CoordinateTransformBase<
+          ContinuousDiscreteTransformBoundedRegular<Scalar, dim>,
+          Vec<Scalar, dim>, IndexVec<dim>> {
+  using domain_type = Vec<Scalar, dim>;
+  using range_type = Vec<Index, dim>;
+
+  explicit ContinuousDiscreteTransformBoundedRegular(domain_type lower_bound,
+                                                     Scalar grid_size)
+      : c_d_(grid_size),
+        bias_(
+            -(lower_bound / grid_size).array().floor().template cast<Index>()) {
+  }
+
+  range_type Forward(domain_type x) const noexcept {
+    return bias_.Forward(c_d_.Forward(x));
+  }
+
+  domain_type Backward(range_type x) const noexcept {
+    return c_d_.Backward(bias_.Backward(x));
+  }
+
+  ContinuousDiscreteTransformRegular<Scalar, dim> c_d_;
+  BiasTransform<Index, dim> bias_;
+};
+
+} // namespace acg

@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include "acore/spatial/octree.hpp"
 #include "aphysics/collision/distance.hpp"
 #include <acore/parallel/common.hpp>
 #include <aphysics/collision/detect.hpp>
@@ -194,28 +195,13 @@ void HybridAdmmApp::CcdPrologue() {
       xp.middleRows<3>(9) = fluid_->substep_solution_.col(fi);
       Vec3<Scalar> v0 = p(tri.x()), v1 = p(tri.y()), v2 = p(tri.z()),
                    v = fluid_->substep_position_.col(fi);
-
-      // auto normal_compute = [](Vec3<Scalar> e0, Vec3<Scalar> e1,
-      //                          Vec3<Scalar> ev) -> Vec3<Scalar> {
-      //   Vec3<Scalar> n = e0.cross(e1).normalized();
-      //   if (n.dot(ev) >= 0) {
-      //     return n;
-      //   } else {
-      //     return -n;
-      //   }
-      // };
-
       Vec<Scalar, 12> g;
-      // g.middleRows<3>(0) = normal_compute(v1 - v, v2 - v, v0 - v);
-      // g.middleRows<3>(3) = normal_compute(v0 - v, v2 - v, v1 - v);
-      // g.middleRows<3>(6) = normal_compute(v1 - v, v0 - v, v2 - v);
-      // g.middleRows<3>(9) = normal_compute(v2 - v0, v1 - v0, v - v0);
       g = physics::collision::VertexTriangleNormalDistance<Scalar>(v0, v1, v2,
                                                                    v)
               .Grad();
       g.normalize();
 
-      Scalar len = (x - xp).dot(g) + min_distance_;
+      Scalar len = (x - xp).dot(g);
       if (len < min_distance_) {
         len = min_distance_;
       }
@@ -274,9 +260,9 @@ void HybridAdmmApp::CcdEpilogue() {
 }
 
 void HybridAdmmApp::SubStepCollisionFree() {
-  if (! enable_collision_detect_) {
+  if (!enable_collision_detect_) {
     EnforceConstraints();
-    for (auto & o: cloth_) {
+    for (auto &o : cloth_) {
       o.substep_position_ = o.substep_solution_;
     }
     if (fluid_) {
@@ -314,11 +300,13 @@ void HybridAdmmApp::SubStepCollisionFree() {
 void HybridAdmmApp::Step() {
   ComputeExtForce();
 
-  SolveFluid();
   for (auto i = 0; i < max_iteration_; ++i) {
     // ACG_INFO("Iteration {}", i);
     ComputeLocal();
     ComputeGlobal();
+    if (i % 4 == 0) {
+      SolveFluid();
+    }
     SubStepCollisionFree();
   }
 
@@ -546,14 +534,15 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
   }
 
   if (enable_subd_) {
-    using AABB = spatial::AABB<Scalar, 3>;
+    using AABB = spatial::AlignedBox<Scalar, 3>;
     Vec3<Scalar> epsi = Vec3<Scalar>::Constant(min_distance_);
-    spatial::SubDivisionAABB<Scalar, Index, 3, 4, 8> sd;
+    spatial::BoundedOctree<Scalar, 3, 4, 8> sd(spatial::AlignedBox<Scalar, 3>(
+        Vec3<Scalar>::Ones() * (-2), Vec3<Scalar>::Ones() * 2));
     auto cpacc = view(fluid_->ccd_dst_position_);
     for (auto [i, p] : enumerate(view(fluid_->substep_position_))) {
       AABB aabbl(p - epsi, p + epsi);
       AABB aabbr(cpacc(i) - epsi, cpacc(i) + epsi);
-      sd.Insert({aabbl.Merge(aabbr), i});
+      sd.Insert(aabbl.merged(aabbr), i);
     }
 
     for (size_t i = 0; i < cloth_.size(); ++i) {
@@ -567,11 +556,9 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
         AABB d01(dst(tri.y()) - epsi, dst(tri.y()) + epsi);
         AABB d02(dst(tri.z()) - epsi, dst(tri.z()) + epsi);
         auto result =
-            c00.Merge(c01).Merge(c02).Merge(d00).Merge(d01).Merge(d02);
+            c00.merged(c01).merged(c02).merged(d00).merged(d01).merged(d02);
         auto query = sd.Query(result);
-        for (auto sdi : query) {
-          auto fi = sd.Get(sdi).second;
-          //          ACG_INFO("SDI = {}, fi = {}", sdi, fi);
+        for (auto fi : query) {
           ACG_CHECK(fi < fluid_->data_.position_.cols(), "Invalid fluid id!");
           auto p = fluid_->substep_position_.col(fi);
           auto fdst = fluid_->ccd_dst_position_.col(fi);
@@ -618,7 +605,6 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
       }
     }
   } else {
-
     for (size_t i = 0; i < cloth_.size(); ++i) {
       auto cur = view(cloth_[i].substep_position_);
       auto dst = view(cloth_[i].ccd_dst_position_);
@@ -672,19 +658,20 @@ void HybridAdmmApp::DetectCollisions(bool verbose) {
   }
 }
 
-void HybridAdmmApp::SetFluid(physics::LagrangeFluid<Scalar, 3> fluid, Index grid_size) {
+void HybridAdmmApp::SetFluid(physics::LagrangeFluid<Scalar, 3> fluid,
+                             Index grid_size) {
   fluid_ = std::make_unique<Fluid>();
   fluid_->data_ = std::move(fluid);
   fluid_->substep_position_.resizeLike(fluid_->data_.position_);
   fluid_->substep_solution_.resizeLike(fluid_->data_.position_);
   fluid_->grad_.resizeLike(fluid_->data_.position_);
 
-  fluid_->euler_.grid_size_ = 1.0 / grid_size;
-  fluid_->euler_.lower_bound_.setZero();
-  fluid_->euler_.upper_bound_.setOnes();
+  fluid_->euler_.grid_size_ = 2.0 / grid_size;
+  fluid_->euler_.lower_bound_ = Vec3<Scalar>({-.5, -.5, -.5});
+  fluid_->euler_.upper_bound_ = Vec3<Scalar>({1.5, 1.5, 1.5});
 
-  fluid_->euler_.mass_.resize(grid_size * grid_size * grid_size);
-  fluid_->euler_.velocity_.resize(3, grid_size * grid_size * grid_size);
+  fluid_->euler_.mass_.setZero(grid_size * grid_size * grid_size);
+  fluid_->euler_.velocity_.setZero(3, grid_size * grid_size * grid_size);
   fluid_->euler_.div_count_.setConstant(grid_size);
 
   fluid_->apic_ = std::make_unique<Fluid::APIC>(fluid_->data_, fluid_->euler_);
@@ -694,19 +681,20 @@ void HybridAdmmApp::SolveFluid() {
   if (!fluid_) {
     return;
   }
+
   auto backup_position = fluid_->data_.position_.eval();
-  auto new_pos = (fluid_->data_.position_ + fluid_->data_.velocity_ * dt_).eval();
+  auto new_pos =
+      (fluid_->data_.position_ + fluid_->data_.velocity_ * dt_).eval();
   for (auto [i, blk] : enumerate(view(new_pos))) {
-    blk.x() = std::clamp(blk.x(), 0.01, .99);
-    blk.y() = std::clamp(blk.y(), 0.01, .99);
-    blk.z() = std::clamp(blk.z(), 0.01, .99);
+    blk.x() = std::clamp(blk.x(), -.5, 1.5);
+    blk.y() = std::clamp(blk.y(), -.5, 1.5);
+    blk.z() = std::clamp(blk.z(), -.5, 1.5);
   }
   fluid_->data_.velocity_ = (new_pos - fluid_->data_.position_) / dt_;
   fluid_->data_.position_ = new_pos;
   fluid_->apic_->Forward();
 
-  // cg.
-  auto& euler = fluid_->euler_;
+  auto &euler = fluid_->euler_;
   Vec<double> x = euler.velocity_.reshaped();
   auto vel = view(euler.velocity_, fluid_->apic_->grid_idxer_);
   auto rho = view(euler.mass_, fluid_->apic_->grid_idxer_);
@@ -738,32 +726,13 @@ void HybridAdmmApp::SolveFluid() {
   };
   auto dx_ = fluid_->euler_.grid_size_;
   for (auto [i, j, k] : fluid_->apic_->grid_idxer_.Iterate()) {
+    if (rho(i, j, k) < 1e-7) {
+      continue;
+    }
     vel(i, j, k) -= sample_diff(i, j, k) / dx_ * fluid_->pressure_scale_;
   }
-  // while (iter < 100 && delta_new > 0.01 * delta_0) {
-  //   ACG_INFO("nabla shape {} x {}, d shape {}", nabla_.rows(), nabla_.cols(),
-  //            d.size());
-  //   Vec<double> q = a * d;
-  //   double alpha = delta_new / (d.dot(q));
-  //   x += alpha * d;
-  //   if (iter % 5 == 0) {
-  //     r = -a * x;
-  //   } else {
-  //     r = r - alpha * q;
-  //   }
-
-  //   double delta_old = delta_new;
-  //   delta_new = r.squaredNorm();
-  //   double beta = delta_new / delta_old;
-  //   d = r + beta * d;
-  //   iter += 1;
-  //   ACG_INFO("Conjugate Gradient Iter {}: delta = {} divergence = {}", iter,
-  //            delta_old, (nabla_ * x).squaredNorm());
-  // }
-  // euler_.velocity_.reshaped() = x;
   euler.velocity_.array().row(2) -= 9.8 * dt_;
   fluid_->apic_->Backward();
-
   fluid_->substep_solution_ = fluid_->data_.position_;
   fluid_->data_.position_ = backup_position;
 }

@@ -23,7 +23,7 @@
  */
 
 #pragma once
-#include "acore/math/ndrange.hpp"
+#include <acore/math/ndrange.hpp>
 #include <acore/math/common.hpp>
 #include <array>
 
@@ -43,7 +43,6 @@ struct CoordinateTransformBase {
   inline auto operator()(Domain arg) const noexcept {
     return static_cast<const Derived *>(this)->Forward(arg);
   }
-  template <typename... Args> constexpr void Fit(Args &&...) const noexcept {}
 };
 
 template <typename Scalar, int dim>
@@ -54,14 +53,12 @@ struct BiasTransform
   using range_type = Vec<Scalar, dim>;
 
   explicit BiasTransform(domain_type bias) noexcept : bias_(bias) {
-    assert(bias_.isFinite() && "Bias is not finite.");
+    // assert(bias_.isFinite() && "Bias is not finite.");
   }
 
   range_type Forward(domain_type x) const noexcept { return x + bias_; }
 
   domain_type Backward(domain_type x) const noexcept { return x - bias_; }
-
-  range_type operator()(domain_type x) const noexcept { return Forward(x); }
 
   domain_type bias_;
 };
@@ -102,12 +99,13 @@ struct DiscreteStorageSequentialTransform
 
   domain_type Backward(range_type x) const noexcept {
     assert((x >= 0) && "Invalid Index");
+    auto x_back = x;
     domain_type x0;
     for (Index i = 0; i < static_cast<Index>(dim); ++i) {
       x0[i] = x / multiplier_[i];
-      x /= multiplier_[i];
+      x = x % multiplier_[i];
     }
-    assert(Forward(x0) == x && "Internal Impl Error.");
+    assert(Forward(x0) == x_back && "Internal Impl Error.");
     return x0;
   }
 

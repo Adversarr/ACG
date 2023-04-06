@@ -72,11 +72,8 @@ public:
     Field<Scalar, 3> substep_solution_;
     Scalar pressure_scale_ = 10;
     physics::EulerFluidRegular<Scalar, 3> euler_;
-
     using APIC = physics::mpm::ApicRegular<Scalar, 3, physics::mpm::CubicBSplineKernel>;
     std::unique_ptr<APIC> apic_;
-    Scalar sph_kern_size_{1e-1};
-    spatial::SubDivisionAABB<Scalar, Index, 3> sd_;
   };
 
   // Clothes
@@ -157,6 +154,8 @@ public:
   int max_iteration_{10};
 
   bool enable_subd_{false};
+
+  bool check_subdivision_result_{false};
 };
 
 }  // namespace acg::app

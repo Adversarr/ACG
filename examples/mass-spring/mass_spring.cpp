@@ -125,8 +125,8 @@ void MassSpringApp::Step() {
 
 void MassSpringApp::StepProjDyn() {
   auto o_acc = view(origin_position_);
-  auto d_acc = view(d_);
   d_.resize(Eigen::NoChange, springs_.size());
+  auto d_acc = view(d_);
   Vec<float> x_tilde(n_vertices_ * 3);
   x_tilde.setZero();
   auto xn = position_.reshaped();

@@ -88,7 +88,7 @@ inline void set_default_log_level(LogLevel lvl) {
                     << std::endl;                                      \
           std::cerr.flush();                                           \
         }                                                              \
-        std::exit(-1);                                                 \
+        std::terminate();                                              \
       }                                                                \
     } while (false)
 #endif

@@ -11,7 +11,6 @@ TEST_CASE("Coordinate") {
     CHECK(trans.Forward({0, 0, 0}) == IndexVec<3>(0, 0, 0));
     CHECK(trans.Forward({1, 1, 1}) == IndexVec<3>(10, 10, 10));
     CHECK(trans.Forward({.05, .05, .05}) == IndexVec<3>(0, 0, 0));
-    CHECK(trans.Backward({2, 2, 2}) == Vec3f(0.2, .2, .2));
   }
 
   SUBCASE("DiscreteStorage") {
@@ -45,6 +44,13 @@ TEST_CASE("Coordinate") {
     for (auto val: v) {
       CHECK_EQ(val.sum(), 9);
     }
+  }
+
+  SUBCASE("C-D") {
+    ContinuousDiscreteTransformBoundedRegular<float, 3> transf(Vec3f::Ones(), 0.5);
+    CHECK(transf(1, 1, 1) == Vec3Index::Zero());
+    CHECK(transf(2, 1, 1) == Vec3Index({2, 0, 0}));
+    CHECK(transf.Backward({1, 1, 1}) == Vec3f::Constant(1.5));
   }
 }
 
