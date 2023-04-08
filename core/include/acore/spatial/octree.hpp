@@ -1,17 +1,17 @@
 #pragma once
 
-#include "acore/math/view.hpp"
+#include <acore/math/view.hpp>
 #include <Eigen/Geometry>
 #include <acore/math/coordinate/common.hpp>
+#include <acore/math/coordinate/continuous_discrete.hpp>
 #include <acore/math/func.hpp>
 #include <acore/math/indexer.hpp>
-
-#include <acore/math/coordinate/continuous_discrete.hpp>
 #include <acore/spatial/common.hpp>
+#include <memory>
 
 namespace acg::spatial {
 
-template <typename Scalar, int dim = 3, int subd = 4, int max_depth = 4,
+template <typename Scalar, int dim = 3, int subd = 2, int max_depth = 4,
           size_t cacheline_size = 16>
 class BoundedOctree {
   using BoundingBox = AlignedBox<Scalar, dim>;
@@ -214,12 +214,22 @@ public:
     });
   }
 
-  void Clear() {
-    for (auto &child : child_tree_) {
-      child.reset();
-    }
+  void Clear(bool all_internal = false) {
     cache_usage_ = 0;
     nb_leafs_.clear();
+
+    if (depth_ == max_depth - 1) {
+      return;
+    }
+    for (auto &child : child_tree_) {
+      if (all_internal) {
+        child.reset();
+      } else {
+        if (child) {
+          child->Clear(all_internal);
+        }
+      }
+    }
   }
 
 private:

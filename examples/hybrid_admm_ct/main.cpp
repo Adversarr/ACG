@@ -19,7 +19,7 @@ using namespace acg;
 
 int main(int argc, char **argv) {
   using namespace gui;
-  app::HybridAdmmApp app;
+  app::HybridAdmmCt app;
   acg::utils::hook_default_utils_environment();
   acg::gui::hook_default_gui_environment("Hybred Application");
   acg::init(argc, argv);
@@ -28,43 +28,39 @@ int main(int argc, char **argv) {
 
   auto &gui = Gui::Instance();
 
-  app.ground_constraints_.z_value_ = -.05;
+  app.ground_constraints_.z_value_ = -0.9;
   app.wall_x_low_.value_ = 0;
   app.wall_y_low_.value_ = 0;
   app.wall_x_high_.value_ = 1;
   app.wall_y_high_.value_ = 1;
 
   int export_every_x_frame = 1;
-  // auto *cloth = gui.GetScene().AddMesh();
-  // int plane_density = 12;
-  // auto plane =
-  //     geometry::make_plane_xy(plane_density).Cast<app::HybridAdmmApp::Scalar>();
-  // auto position = plane.GetVertices();
-  // position *= 1.2;
-  // position.array().row(0) -= 0.1;
-  // position.array().row(1) -= 0.1;
-  // position.array().row(2) += .2;
-  //
-  // app.AddCloth(position, plane.GetFaces(),
-  //              1e-2 * Field<app::HybridAdmmApp::Scalar>::Ones(
-  //                         plane.GetVertices().cols()),
-  //              10 * plane_density * plane_density);
-  //
-  // for (auto i : {0, plane_density - 1, plane_density * plane_density - 1,
-  //                plane_density * plane_density - plane_density}) {
-  //   physics::PositionStaticConstraint<app::HybridAdmmApp::Scalar, 3> constraint(
-  //       physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0, i),
-  //       position.col(i));
-  //   app.position_constraints_.push_back(constraint);
-  // }
-  //
-  // for (auto [i] : NdRange(plane_density)) {
-  //   physics::PositionStaticConstraint<app::HybridAdmmApp::Scalar, 3>
-  //   constraint(
-  //       physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0, i),
-  //       position.col(i));
-  //   app.position_constraints_.push_back(constraint);
-  // }
+  auto *cloth = gui.GetScene().AddMesh();
+  int plane_density = 12;
+  auto plane =
+      geometry::make_plane_xy(plane_density).Cast<app::HybridAdmmCt::Scalar>();
+  auto position = plane.GetVertices();
+  position *= 1.2;
+  position.array().row(0) -= 0.1;
+  position.array().row(1) -= 0.1;
+  position.array().row(2) += .2;
+
+  app.AddCloth(position, plane.GetFaces(),
+               1e-2 * Field<app::HybridAdmmCt::Scalar>::Ones(
+                          plane.GetVertices().cols()),
+               10 * plane_density * plane_density);
+
+  for (auto [i] : NdRange(plane_density)) {
+    physics::PositionStaticConstraint<app::HybridAdmmCt::Scalar, 3>
+    constraint(
+        physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0, i),
+        position.col(i));
+    app.position_constraints_.push_back(constraint);
+    physics::PositionStaticConstraint<app::HybridAdmmCt::Scalar, 3> constraint2(
+        physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0, plane_density * plane_density - 1 - i),
+        position.col(plane_density * plane_density - 1 - i));
+    app.position_constraints_.push_back(constraint2);
+  }
 
   // for (auto [i] : NdRange(plane_density)) {
   //   physics::PositionStaticConstraint<app::HybridAdmmApp::Scalar, 3>
@@ -75,71 +71,71 @@ int main(int argc, char **argv) {
   //   app.position_constraints_.push_back(constraint);
   // }
 
-  // physics::LagrangeFluid<app::HybridAdmmApp::Scalar, 3> fluid;
-  // // 1 kg.
-  // Index fluid_particle_num = 1000;
-  // fluid.mass_.setConstant(fluid_particle_num, 1e-3);
-  // // 1 dm3
-  // fluid.position_.setRandom(Eigen::NoChange, fluid_particle_num);
-  // fluid.position_.array() *= .2;
-  // fluid.position_.array() += .5;
-  // // fluid.position_.row(2).array() += .15;
-  // fluid.position_.row(2) = fluid.position_.row(2).array().cwiseMin(0.99);
-  // fluid.velocity_.setZero(Eigen::NoChange, fluid_particle_num);
-  // // Rho for water = 1e3
-  // fluid.rho_ = 1e3;
-  // app.SetFluid(fluid, 40);
-  // // 1cm3
-  // app.fluid_->pressure_scale_ = 3;
-  //
-  // auto *particles = gui.GetScene().AddMeshParticles();
+  physics::LagrangeFluid<app::HybridAdmmCt::Scalar, 3> fluid;
+  // 1 kg.
+  Index fluid_particle_num = 5000;
+  fluid.mass_.setConstant(fluid_particle_num, 1e-3);
+  // 1 dm3
+  fluid.position_.setRandom(Eigen::NoChange, fluid_particle_num);
+  fluid.position_.array() *= .2;
+  fluid.position_.array() += .5;
+  // fluid.position_.row(2).array() += .15;
+  fluid.position_.row(2) = fluid.position_.row(2).array().cwiseMin(0.99);
+  fluid.velocity_.setZero(Eigen::NoChange, fluid_particle_num);
+  // Rho for water = 1e3
+  fluid.rho_ = 1e3;
+  app.SetFluid(fluid, 40);
+  // 1cm3
+  app.fluid_->pressure_scale_ = 3;
 
-  auto data_path = acg::data::get_data_dir();
-  std::ifstream ele_file(data_path + "/house-ele-node/house.ele");
-  std::ifstream node_file(data_path + "/house-ele-node/house.node");
-  auto house_ele = acg::data::triangle::EleLoader(ele_file, false);
-  auto house_node = acg::data::triangle::NodeLoader(node_file);
-  house_ele.Load();
-  house_node.Load();
-  ACG_INFO("Ele load {} x {}, ", house_ele.GetData().rows(),
-           house_ele.GetData().cols());
-  ACG_INFO("Node load {} x {}, ", house_node.GetData().rows(),
-           house_node.GetData().cols());
-  auto tet = house_ele.GetData().cast<acg::Index>();
-  tet.array() -= house_node.GetOffset();
-  auto *mesh = gui.GetScene().AddMesh();
-  app.AddSoftbody(
-      house_node.GetData().cast<app::HybridAdmmApp::Scalar>() * 0.1, tet,
-      Field<app::HybridAdmmApp::Scalar>::Ones(house_node.GetData().cols()),
-      0, 200);
+  auto *particles = gui.GetScene().AddMeshParticles();
+
+  // auto data_path = acg::data::get_data_dir();
+  // std::ifstream ele_file(data_path + "/house-ele-node/house.ele");
+  // std::ifstream node_file(data_path + "/house-ele-node/house.node");
+  // auto house_ele = acg::data::triangle::EleLoader(ele_file, false);
+  // auto house_node = acg::data::triangle::NodeLoader(node_file);
+  // house_ele.Load();
+  // house_node.Load();
+  // ACG_INFO("Ele load {} x {}, ", house_ele.GetData().rows(),
+  //          house_ele.GetData().cols());
+  // ACG_INFO("Node load {} x {}, ", house_node.GetData().rows(),
+  //          house_node.GetData().cols());
+  // auto tet = house_ele.GetData().cast<acg::Index>();
+  // tet.array() -= house_node.GetOffset();
+  // auto *mesh = gui.GetScene().AddMesh();
+  // app.AddSoftbody(
+  //     house_node.GetData().cast<app::HybridAdmmCt::Scalar>() * 0.1, tet,
+  //     Field<app::HybridAdmmCt::Scalar>::Ones(house_node.GetData().cols()),
+  //     0, 200);
 
   auto update_scene = [&]() {
-    // cloth->SetVertices(app.cloth_.front().data_.position_.cast<float>())
-    //     .SetIndices(app.cloth_.front().data_.face_)
-    //     .ComputeDefaultNormal()
-    //     .SetUniformColor(types::Rgba{.7, .7, .7, 1})
-    //     .SetEnableWireframe()
-    //     .MarkUpdate();
-    // particles->SetPositions(app.fluid_->data_.position_.cast<float>())
-    //     .SetUniformColor(types::Rgba{.7, .3, .3, 1})
-    //     .SetRadius(.02)
-    //     .MarkUpdate();
-
-    auto sposition = app.softbody_.front().data_.position_.cast<float>();
-    auto face = acg::geometry::Tet2Face<float>{
-        sposition, app.softbody_.front().data_.tetras_};
-    face();
-    using namespace acg;
-    auto position = Field<Float32, 3>(3, face.faces_.cols() * 3);
-    auto faces = Field<Index, 3>(3, face.faces_.cols());
-    auto pnt = gui::PerfaceNormalTransform(
-        app.softbody_.front().data_.position_.cast<Float32>(), face.faces_);
-    mesh->SetVertices(pnt.out_position_)
-        .SetIndices(pnt.out_triangle_list_)
-        .SetUniformColor(acg::types::Rgba{.7, .7, .7, 1})
+    cloth->SetVertices(app.cloth_.front().data_.position_.cast<float>())
+        .SetIndices(app.cloth_.front().data_.face_)
         .ComputeDefaultNormal()
-        .SetEnableWireframe(true)
+        .SetUniformColor(types::Rgba{.7, .7, .7, 1})
+        .SetEnableWireframe()
         .MarkUpdate();
+    particles->SetPositions(app.fluid_->data_.position_.cast<float>())
+        .SetUniformColor(types::Rgba{.7, .3, .3, 1})
+        .SetRadius(.02)
+        .MarkUpdate();
+
+    // auto sposition = app.softbody_.front().data_.position_.cast<float>();
+    // auto face = acg::geometry::Tet2Face<float>{
+    //     sposition, app.softbody_.front().data_.tetras_};
+    // face();
+    // using namespace acg;
+    // auto position = Field<Float32, 3>(3, face.faces_.cols() * 3);
+    // auto faces = Field<Index, 3>(3, face.faces_.cols());
+    // auto pnt = gui::PerfaceNormalTransform(
+    //     app.softbody_.front().data_.position_.cast<Float32>(), face.faces_);
+    // mesh->SetVertices(pnt.out_position_)
+    //     .SetIndices(pnt.out_triangle_list_)
+    //     .SetUniformColor(acg::types::Rgba{.7, .7, .7, 1})
+    //     .ComputeDefaultNormal()
+    //     .SetEnableWireframe(true)
+    //     .MarkUpdate();
     gui.UpdateScene();
   };
 

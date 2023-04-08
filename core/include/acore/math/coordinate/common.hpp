@@ -102,10 +102,10 @@ struct DiscreteStorageSequentialTransform
     auto x_back = x;
     domain_type x0;
     for (Index i = 0; i < static_cast<Index>(dim); ++i) {
-      x0[i] = x / multiplier_[i];
-      x = x % multiplier_[i];
+      x0[i] = x_back / multiplier_[i];
+      x_back = x_back % multiplier_[i];
     }
-    assert(Forward(x0) == x_back && "Internal Impl Error.");
+    assert(Forward(x0) == x && "Internal Impl Error.");
     return x0;
   }
 

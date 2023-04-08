@@ -12,13 +12,14 @@
 #include <unordered_set>
 #include <vector>
 
+#include "acore/spatial/octree.hpp"
 #include "aphysics/elastic/neohookean.hpp"
 #include "aphysics/mpm/transfer.hpp"
 #include "aphysics/solver/admm/hyperelastic.hpp"
 
 namespace acg::app {
 
-class HybridAdmmApp {
+class HybridAdmmCt {
 public:
   using Scalar = Float64;
   using PositionConstraint = physics::PositionStaticConstraint<Scalar, 3>;
@@ -37,6 +38,8 @@ public:
     Field<Scalar, 3> ccd_dst_position_;
     Field<Scalar, 3> substep_x_;
     Field<Scalar, 3> constraint_admm_multiplier_;
+    Field<Scalar> collision_dst_weight_;
+    Field<Scalar, 3> collision_dst_dst_;
 
     physics::admm::SpringConstraint<Scalar> admm_compute_;
     Scalar admm_weight_{0.7};
@@ -70,12 +73,15 @@ public:
     Field<Scalar, 3> grad_;
     Field<Scalar, 3> ccd_dst_position_;
     Field<Scalar, 3> substep_solution_;
+
+    Field<Scalar> collision_dst_weight_;
+    Field<Scalar, 3> collision_dst_dst_;
     Scalar pressure_scale_ = 10;
     physics::EulerFluidRegular<Scalar, 3> euler_;
     using APIC = physics::mpm::ApicRegular<Scalar, 3, physics::mpm::CubicBSplineKernel>;
     std::unique_ptr<APIC> apic_;
   };
-
+  std::unique_ptr<spatial::BoundedOctree<Scalar, 3, 2, 8>> accel_;
   // Clothes
   std::vector<Cloth> cloth_;
 
