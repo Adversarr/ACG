@@ -199,7 +199,9 @@ void HybridAdmmCt::CcdPrologue() {
       xp.middleRows<3>(3) = pp(tri.y());
       xp.middleRows<3>(6) = pp(tri.z());
       xp.middleRows<3>(9) = fluid_->substep_solution_.col(fi);
-      Vec3<Scalar> v0 = p(tri.x()), v1 = p(tri.y()), v2 = p(tri.z()),
+      Vec3<Scalar> v0 = p(tri.x()), 
+                   v1 = p(tri.y()),
+                   v2 = p(tri.z()),
                    v = fluid_->substep_position_.col(fi);
       Vec<Scalar, 12> g;
       g = physics::collision::VertexTriangleNormalDistance<Scalar>(v0, v1, v2,
@@ -211,7 +213,7 @@ void HybridAdmmCt::CcdPrologue() {
       if (len < min_distance_) {
         len = min_distance_;
       }
-      // ACG_INFO("Length = {}", len);
+      ACG_INFO("Length = {}", len);
       ACG_CHECK(!std::isnan(len), "Length is nan");
       auto cl = view(cloth_[c.obj0_.object_].collision_dst_dst_);
       cl(tri.x()) += g.middleRows<3>(0) * len;

@@ -63,7 +63,7 @@ void HybridApp::SubStep(bool verbose) {
       // ACG_INFO("Linesearch {}: Energy = {}, alpha = {}", ls_count,
       //          linesearch_energy_, linesearch_alpha_);
     }
-    if (isinf(linesearch_energy_) || isnan(linesearch_energy_)) {
+    if (std::isinf(linesearch_energy_) || std::isnan(linesearch_energy_)) {
       // not a valid step, smaller alpha required.
       continue;
     }
@@ -367,7 +367,7 @@ void HybridApp::ComputeStepDirection() {
       auto result = physics::elastic::SNHNeoHookean<Scalar, 3>(
                         deform_grad, o.data_.lambda_, o.data_.mu_)
                         .ComputeGradient();
-      ACG_CHECK(!isnan(result.energy_),
+      ACG_CHECK(!std::isnan(result.energy_),
                 "result.energy is nan, gradient may be inaccurate.");
       auto g = pfpx.transpose() * result.grad_;
 
@@ -589,7 +589,7 @@ bool HybridApp::ComputeConstraintEnergy() {
       auto result = physics::elastic::OgdenNeoHookean<Scalar, 3>(
                         deform_grad, o.data_.lambda_, o.data_.mu_)
                         .ComputeEnergy();
-      if (isnan(result)) {
+      if (std::isnan(result)) {
         // The step is too large, and energy -> invalid.
         linesearch_energy_ = std::numeric_limits<Scalar>().infinity();
         return false;

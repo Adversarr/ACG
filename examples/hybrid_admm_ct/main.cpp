@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
 
   physics::LagrangeFluid<app::HybridAdmmCt::Scalar, 3> fluid;
   // 1 kg.
-  Index fluid_particle_num = 5000;
+  Index fluid_particle_num = 100;
   fluid.mass_.setConstant(fluid_particle_num, 1e-3);
   // 1 dm3
   fluid.position_.setRandom(Eigen::NoChange, fluid_particle_num);
@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
   fluid.velocity_.setZero(Eigen::NoChange, fluid_particle_num);
   // Rho for water = 1e3
   fluid.rho_ = 1e3;
-  app.SetFluid(fluid, 40);
+  app.SetFluid(fluid, 20);
   // 1cm3
   app.fluid_->pressure_scale_ = 3;
 
