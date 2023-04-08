@@ -213,7 +213,7 @@ void HybridAdmmCt::CcdPrologue() {
       if (len < min_distance_) {
         len = min_distance_;
       }
-      ACG_INFO("Length = {}", len);
+      // ACG_INFO("Length = {}", len);
       ACG_CHECK(!std::isnan(len), "Length is nan");
       auto cl = view(cloth_[c.obj0_.object_].collision_dst_dst_);
       cl(tri.x()) += g.middleRows<3>(0) * len;

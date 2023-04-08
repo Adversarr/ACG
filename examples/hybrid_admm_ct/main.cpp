@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
 
   physics::LagrangeFluid<app::HybridAdmmCt::Scalar, 3> fluid;
   // 1 kg.
-  Index fluid_particle_num = 100;
+  Index fluid_particle_num = 5000;
   fluid.mass_.setConstant(fluid_particle_num, 1e-3);
   // 1 dm3
   fluid.position_.setRandom(Eigen::NoChange, fluid_particle_num);

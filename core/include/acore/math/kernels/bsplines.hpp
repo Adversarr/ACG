@@ -10,8 +10,8 @@ struct CubicBSpline {
     return cubic_bspline(v);
   }
 
-  template <int dim>
-  auto operator()(const Vec<Scalar, dim>& v) {
+  template <typename Derived>
+  auto operator()(const Eigen::MatrixBase<Derived>& v) const noexcept {
     return matrix_apply<CubicBSpline<Scalar>>(v).prod();
   }
 
