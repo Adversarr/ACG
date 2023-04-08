@@ -190,8 +190,8 @@ SubDivisionAABB<F, D, dim, subdivision_count, max_depth>::Visualize() const {
   auto iacc = view(lines);
   Index np = 0, nl = 0;
   for (const auto &node : nodes_) {
-    auto l = node.box_.lower_bound;
-    auto u = node.box_.upper_bound;
+    auto l = node.box_.lower_bound_;
+    auto u = node.box_.upper_bound_;
     iacc(nl++) = Vec2<Index>{np, np + 1};
     iacc(nl++) = Vec2<Index>{np + 1, np + 2};
     iacc(nl++) = Vec2<Index>{np + 2, np + 3};
