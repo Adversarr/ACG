@@ -71,7 +71,7 @@ Quasi newton based solver for both `cloth` and `softbody` solve. (Implicit Euler
 
 ![image-20230329134931068](./media//image-20230329134931068.png)
 
-
+![with tracing](./media/with tracing.png)
 
 ### Other Stuffs
 
