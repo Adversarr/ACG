@@ -34,4 +34,8 @@ TEST_CASE("Octree") {
   for (auto id: ret) {
     fmt::print("Result= {}\n", id);
   }
+
+  // acg::spatial::ParallelMultiOctree<acg::spatial::BoundedOctree<float, 3>>
+  //   pmo;
+  // pmo.dim;
 }

@@ -23,32 +23,49 @@
  */
 
 #pragma once
-#include <acore/math/ndrange.hpp>
 #include <acore/math/common.hpp>
+#include <acore/math/ndrange.hpp>
 #include <array>
+#include <type_traits>
 
 namespace acg {
 
-template <typename Derived, typename Domain, typename Range>
-struct CoordinateTransformBase {
+/**
+ * The base type provides a helper operator(), support several input format.
+ *
+ * 1. Same as `Forward`, i.e. `Domain`.
+ * 2. A variadic input, that can construct a `Domain`
+ * 3. A tuple, that can be used to construct `Domain`
+ *
+ */
+template <typename Derived, typename Domain, typename Range> struct CoordinateTransformBase {
   using domain_type = Domain;
   using range_type = Range;
-  // Helper for forward method
-  template <typename Front, typename... Args>
-  inline auto operator()(Front arg0, Args... arg) const noexcept {
-    return static_cast<const Derived *>(this)->Forward(
-        make_vector<typename Domain::Scalar>(arg0, arg...));
+
+  // Input is `Domain`
+  inline auto operator()(const Domain &arg) const noexcept {
+    return static_cast<const Derived *>(this)->Forward(arg);
   }
 
-  inline auto operator()(Domain arg) const noexcept {
-    return static_cast<const Derived *>(this)->Forward(arg);
+  // Input can construct a `Domain`
+  template <typename Front, typename... Args,
+            typename = std::enable_if_t<std::is_constructible_v<Domain, Front, Args...>
+                                        && !std::is_same_v<std::remove_cv_t<Front>, Domain>>>
+  inline auto operator()(Front &&arg0, Args &&...arg) const noexcept {
+    return static_cast<const Derived *>(this)->Forward(
+        Domain(std::forward<Front>(arg0), std::forward<Args>(arg)...));
+  }
+
+  // Input is tuple, but can construct a `Domain`.
+  template <typename... Args, typename = std::enable_if_t<std::is_constructible_v<Domain, Args...>>>
+  inline auto operator()(std::tuple<Args...> tup) const noexcept {
+    return static_cast<const Derived *>(this)->Forward(std::make_from_tuple<Domain>(tup));
   }
 };
 
-template <typename Scalar, int dim>
-struct BiasTransform
-    : public CoordinateTransformBase<BiasTransform<Scalar, dim>,
-                                     Vec<Scalar, dim>, Vec<Scalar, dim>> {
+template <typename Scalar, int dim> struct BiasTransform
+    : public CoordinateTransformBase<BiasTransform<Scalar, dim>, Vec<Scalar, dim>,
+                                     Vec<Scalar, dim>> {
   using domain_type = Vec<Scalar, dim>;
   using range_type = Vec<Scalar, dim>;
 
@@ -69,22 +86,18 @@ struct BiasTransform
  *
  * @tparam dim
  */
-template <int dim>
-struct DiscreteStorageSequentialTransform
-    : public CoordinateTransformBase<DiscreteStorageSequentialTransform<dim>,
-                                     IndexVec<dim>, Index> {
+template <int dim> struct DiscreteStorageSequentialTransform
+    : public CoordinateTransformBase<DiscreteStorageSequentialTransform<dim>, IndexVec<dim>,
+                                     Index> {
   using domain_type = IndexVec<dim>;
   using range_type = Index;
 
-  DiscreteStorageSequentialTransform(
-      const DiscreteStorageSequentialTransform &) = default;
+  DiscreteStorageSequentialTransform(const DiscreteStorageSequentialTransform &) = default;
 
   DiscreteStorageSequentialTransform() = default;
 
-  explicit DiscreteStorageSequentialTransform(domain_type bound) noexcept
-      : bound_(bound) {
-    assert((bound_.array() > 0).all() &&
-           "Invalid bound. bound should be all greater than zero.");
+  explicit DiscreteStorageSequentialTransform(domain_type bound) noexcept : bound_(bound) {
+    assert((bound_.array() > 0).all() && "Invalid bound. bound should be all greater than zero.");
     Index scale = 1;
     for (Index i = 0; i < static_cast<Index>(dim); ++i) {
       multiplier_[dim - i - 1] = scale;
@@ -109,9 +122,7 @@ struct DiscreteStorageSequentialTransform
     return x0;
   }
 
-  NdRange<dim> Iterate() const noexcept {
-    return NdRange<dim>(to_tuple(bound_));
-  }
+  NdRange<dim> Iterate() const noexcept { return NdRange<dim>(to_tuple(bound_)); }
 
   template <typename Arg> constexpr void Fit(Arg &&data) {
     if constexpr (dim == 1) {
@@ -128,10 +139,8 @@ struct DiscreteStorageSequentialTransform
   domain_type multiplier_;
 };
 
-template <typename Front, typename Back>
-struct CombinedTransform
-    : public CoordinateTransformBase<CombinedTransform<Front, Back>,
-                                     typename Front::domain_type,
+template <typename Front, typename Back> struct CombinedTransform
+    : public CoordinateTransformBase<CombinedTransform<Front, Back>, typename Front::domain_type,
                                      typename Back::range_type> {
   explicit CombinedTransform(Front f, Back b) : front_(f), back_(b) {}
   using domain_type = typename Front::domain_type;
@@ -151,9 +160,8 @@ struct CombinedTransform
   Back back_;
 };
 
-template <typename Front, typename Back>
-auto combine_transform(Front &&f, Back &&b) {
+template <typename Front, typename Back> auto combine_transform(Front &&f, Back &&b) {
   return CombinedTransform<std::decay_t<Front>, std::decay_t<Back>>(f, b);
 }
 
-} // namespace acg
+}  // namespace acg

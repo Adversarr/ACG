@@ -4,12 +4,16 @@
 
 #pragma once
 
+#include <acore/common.hpp>
 #include <taskflow/taskflow.hpp>
 
 namespace acg::parallel {
+inline tf::Executor make_executor(size_t num_threads = std::thread::hardware_concurrency()) {
+  return tf::Executor(num_threads);
+}
 
-template<typename Task>
-void foreach_index() {
+template<typename Task, typename F>
+void foreach_index(tf::Executor* executor, Index beg, Index end, Index step, F&& fu) {
 
 }
 

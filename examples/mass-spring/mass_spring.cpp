@@ -44,7 +44,7 @@ void MassSpringApp::Init() {
   velocity_.resizeLike(position_);
   velocity_.setZero();
 
-  auto indexer = acg::NdRangeIndexer<2>(n_grids_, n_grids_);
+  auto indexer = acg::DiscreteStorageSequentialTransform<2>({n_grids_, n_grids_});
   for (Index i = 0; i < n_grids_ - 1; ++i) {
     for (Index j = 0; j < n_grids_ - 1; ++j) {
       AddSpring(indexer(i, j), indexer(i, j + 1));

@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   acg::init(argc, argv);
 
   MassSpringApp app;
-  app.n_grids_ = 10;
+  app.n_grids_ = 100;
   app.Init();
   auto &gui = Gui::Instance();
   bool running = false;

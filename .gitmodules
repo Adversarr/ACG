@@ -1,6 +1,0 @@
-[submodule "3rdparty/autodiff"]
-	path = 3rdparty/autodiff
-	url = https://github.com/autodiff/autodiff.git
-[submodule "3rdparty/Tight-Inclusion"]
-	path = 3rdparty/Tight-Inclusion
-	url = https://github.com/Continuous-Collision-Detection/Tight-Inclusion.git

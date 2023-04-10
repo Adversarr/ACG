@@ -29,35 +29,37 @@ int main(int argc, char **argv) {
   auto &gui = Gui::Instance();
 
   app.ground_constraints_.z_value_ = -0.9;
-  app.wall_x_low_.value_ = 0;
-  app.wall_y_low_.value_ = 0;
-  app.wall_x_high_.value_ = 1;
-  app.wall_y_high_.value_ = 1;
+  app.wall_x_low_.value_ = -.5;
+  app.wall_y_low_.value_ = -.5;
+  app.wall_x_high_.value_ = 1.5;
+  app.wall_y_high_.value_ = 1.5;
 
   int export_every_x_frame = 1;
   auto *cloth = gui.GetScene().AddMesh();
-  int plane_density = 12;
-  auto plane =
-      geometry::make_plane_xy(plane_density).Cast<app::HybridAdmmCt::Scalar>();
+  int plane_density = 7;
+  auto plane = geometry::make_plane_xy(plane_density).Cast<app::HybridAdmmCt::Scalar>();
   auto position = plane.GetVertices();
-  position *= 1.2;
-  position.array().row(0) -= 0.1;
-  position.array().row(1) -= 0.1;
-  position.array().row(2) += .2;
+  position *= 0.8;
+  position.array().row(0) += 0.1;
+  position.array().row(1) += 0.1;
+  position.array().row(2) += .3;
+
+  // Apply a transform
+  for (auto v : view(position)) {
+    v.z() += 0.3 * v.y();
+  }
 
   app.AddCloth(position, plane.GetFaces(),
-               1e-2 * Field<app::HybridAdmmCt::Scalar>::Ones(
-                          plane.GetVertices().cols()),
+               1e-2 * Field<app::HybridAdmmCt::Scalar>::Ones(plane.GetVertices().cols()),
                10 * plane_density * plane_density);
 
   for (auto [i] : NdRange(plane_density)) {
-    physics::PositionStaticConstraint<app::HybridAdmmCt::Scalar, 3>
-    constraint(
-        physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0, i),
-        position.col(i));
+    physics::PositionStaticConstraint<app::HybridAdmmCt::Scalar, 3> constraint(
+        physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0, i), position.col(i));
     app.position_constraints_.push_back(constraint);
     physics::PositionStaticConstraint<app::HybridAdmmCt::Scalar, 3> constraint2(
-        physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0, plane_density * plane_density - 1 - i),
+        physics::PhysicsObject(physics::PhysicsObjectType::kCloth, 0,
+                               plane_density * plane_density - 1 - i),
         position.col(plane_density * plane_density - 1 - i));
     app.position_constraints_.push_back(constraint2);
   }
@@ -79,8 +81,9 @@ int main(int argc, char **argv) {
   fluid.position_.setRandom(Eigen::NoChange, fluid_particle_num);
   fluid.position_.array() *= .2;
   fluid.position_.array() += .5;
+  fluid.position_.array().row(2) += 0.5;
   // fluid.position_.row(2).array() += .15;
-  fluid.position_.row(2) = fluid.position_.row(2).array().cwiseMin(0.99);
+  fluid.position_.row(2) = fluid.position_.row(2).array().cwiseMin(1.49);
   fluid.velocity_.setZero(Eigen::NoChange, fluid_particle_num);
   // Rho for water = 1e3
   fluid.rho_ = 1e3;
@@ -174,17 +177,17 @@ int main(int argc, char **argv) {
     if (export_frame) {
       if (c % export_every_x_frame == 0) {
         acg::data::SplashSurfJson json_exportor(app.fluid_->data_.position_);
-        std::ofstream of(fmt::format("./output/fluid/output_fluid_{}.json",
-                                     c / export_every_x_frame),
-                         std::ios::out);
+        std::ofstream of(
+            fmt::format("./output/fluid/output_fluid_{}.json", c / export_every_x_frame),
+            std::ios::out);
         ACG_CHECK(of.good(), "Failed to create/open output file.");
         json_exportor.ExportTo(of);
 
         acg::data::ObjExport obj;
         obj.position_ = app.cloth_.front().data_.position_;
         obj.triangle_ = app.cloth_.front().data_.face_;
-        std::ofstream of2(fmt::format("./output/cloth/output_cloth_{}.obj",
-                                      c / export_every_x_frame));
+        std::ofstream of2(
+            fmt::format("./output/cloth/output_cloth_{}.obj", c / export_every_x_frame));
         ACG_CHECK(of2.good(), "Failed to open cloth.");
         obj.ExportTo(of2);
         ACG_INFO("Export done. frame = {}", c / export_every_x_frame);

@@ -47,7 +47,7 @@ void MpmExplictApp::Init() {
   using Trip = Eigen::Triplet<double>;
   std::vector<Trip> hessian;
   auto dvc = euler_.div_count_;
-  auto idxer = NdRangeIndexer<3>(dvc.x(), dvc.y(), dvc.z());
+  auto idxer = DiscreteStorageSequentialTransform<3>({dvc.x(), dvc.y(), dvc.z()});
   for (auto [i, j, k] : NdRange<3>(make_tuple_from_vector(euler_.div_count_))) {
     auto row = idxer(i, j, k);
     for (Index dim = 0; dim < 3; ++dim) {
