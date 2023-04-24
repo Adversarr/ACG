@@ -7,7 +7,7 @@
 #include <acore/math/kernels/bsplines.hpp>
 
 TEST_CASE("LinearInterpolation") {
-  acg::math::LinearInterpolation interp;
+  acg::math::Lerp<double> interp;
   using namespace acg;
   auto result = interp(Vec2d{.3, .3});
   std::cout << result << std::endl;

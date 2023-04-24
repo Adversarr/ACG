@@ -7,7 +7,6 @@
 namespace acg::sad {
 namespace details {
 using namespace acg::utils::god;
-using namespace acg::details;
 
 // Expr
 template <typename T, typename... E> struct Expr {

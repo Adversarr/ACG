@@ -4,7 +4,6 @@
 #include "common.hpp"
 
 namespace acg {
-namespace details {
 
 template <typename T> struct Trait {
   static constexpr int rows = T::RowsAtCompileTime;
@@ -40,13 +39,7 @@ template <> struct Trait<acg::Float64> {
   using Scalar = acg::Float64;
 };
 
-
-}  // namespace details
 ///< Type Defines
 
-// Tensor Trait Meta-Programming Helper
-using details::Trait;
-
-
-}  // namespace acg
+} // namespace acg
 // NOLINTEND(readability-identifier-naming)

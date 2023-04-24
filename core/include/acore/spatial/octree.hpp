@@ -9,6 +9,8 @@
 #include <memory>
 
 #include <acore/parallel/common.hpp>
+#include <taskflow/algorithm/reduce.hpp>
+#include <taskflow/algorithm/sort.hpp>
 
 namespace acg::spatial {
 
@@ -93,74 +95,133 @@ public:
   using Scalar = typename BoundingBox::Scalar;
   constexpr static int dim = BoundingBox::VectorType::RowsAtCompileTime;
 
+  ParallelMultiOctree(Scalar grid_size, size_t threads):
+    executor_(threads),
+    ParallelMultiOctree(grid_size) {}
+
   explicit ParallelMultiOctree(Scalar grid_size)
       : grid_size_(grid_size), cd_transf_(grid_size) {}
 
-  void Insert(std::vector<StorageType> &group) {
-    // Sort Inputs
+  void SetFromPairs(std::vector<StorageType> &group) {
+    octrees_.clear();
     tf::Taskflow flow;
-    auto sort_task = flow.sort(
-        group.begin(), group.end(),
-        [this](const StorageType &lhs, const StorageType &rhs) {
-          return cd_transf_(lhs.first.min()) < cd_transf_(rhs.first.min());
-        });
-    // Find each Box's entry.
-    std::vector<Index> entries(group.size());
-    auto entry_task =
-        flow.for_each_index(0, static_cast<int>(group.size()), 1, [&](int i) {
-          entries[i] = cd_transf_(group[i].first.min());
-        });
+    StorageType largest_box;
+    largest_box.first.setEmpty();
+    flow.reduce(group.begin(), group.end(), largest_box,
+                [](const StorageType &lhs, const StorageType &rhs) {
+                  StorageType merged;
+                  merged.first = lhs.first.merged(rhs.first);
+                  return merged;
+                });
+    // Get the result:
+    executor_.run(flow).wait();
 
-    // Predict num of unique entries
-    std::vector<std::pair<size_t, size_t>> u_entries(
-        std::thread::hardware_concurrency());
-    auto unique_task = flow.emplace([&]() {
-      for (size_t i = 1; i < entries.size(); ++i) {
-        if (entries[i] < entries[i - 1]) {
-          u_entries.push_back({entries[i - 1], i});
+    // Create transform.
+    IndexVec<dim> lbound = (largest_box.first.min() / grid_size_)
+                               .array()
+                               .floor()
+                               .template cast<Index>();
+    IndexVec<dim> ubound = (largest_box.first.max() / grid_size_)
+                               .array()
+                               .ceil()
+                               .template cast<Index>();
+    ds_transf_ = DiscreteStorageSequentialTransform<3>(ubound - lbound);
+    l_transf_.bias_ = -lbound;
+    auto combined =
+        combine_transform(combine_transform(cd_transf_, l_transf_), ds_transf_);
+    for (auto [i] : NdRange<1>((ubound - lbound).prod())) {
+      // Make tree.
+      Vec3<Scalar> tree_lower = combined.Backward(i);
+      Vec3<Scalar> tree_upper = tree_lower + Vec3<Scalar>::Constant(grid_size_);
+      octrees_.push_back(Tree(BoundingBox(tree_lower, tree_upper)));
+    }
+
+    using InsertType = std::pair<StorageType, Index>;
+    std::vector<InsertType> tree_node;
+    tree_node.reserve(group.size() / 1.5);
+    flow.clear();
+    flow.emplace([&]() {
+      for (const auto &p : group) {
+        auto l = combined(p.first.min());
+        auto u = combined(p.first.max());
+        if (l == u) {
+          tree_node.push_back(std::make_pair(p, l));
         }
       }
-      if (entries.back() != entries[entries.size() - 2]) {
-        u_entries.push_back({entries.back(), entries.size() - 1});
-      }
-
-      for (auto u: u_entries) {
-        if (octrees_.find(u.first) == octrees_.end()) {
-          octrees_.insert(u.first, Tree()); // TODO:
-        }
-      }
-
-      // Prepare the entry trees.
     });
-
-    // Foreach Unique entry. Insert into tree.
-    auto insert_task = flow.for_each_index(
-        0, static_cast<int>(u_entries.size()) + 1, 1, [&](int i) {
-          if (i ==static_cast<int>(u_entries.size())) {
-            // Is root
-            for (const auto& item: group) {
-              if (cd_transf_(item.first.min()) != cd_transf_(item.first.max())) {
-                large_leafs_.push_back(item);
-              }
-            }
-          } else {
-            auto& child = octrees_[u_entries[i].first];
-            for (size_t id = u_entries[i].second; id < entries.size(); ++id) {
-              
-            }
+    flow.emplace([&]() {
+      for (const auto &p : group) {
+        auto l = combined(p.first.min());
+        auto u = combined(p.first.max());
+        if (l != u) {
+          large_leafs_.push_back(p);
+        }
+      }
+    });
+    executor_.run(flow).wait();
+    flow.clear();
+    // Sort Inputs
+    tf::Task sort_task =
+        flow.sort(tree_node.begin(), tree_node.end(),
+                  [&](const InsertType &lhs, const InsertType &rhs) {
+                    return lhs.second < rhs.second;
+                  });
+    // Find entries.
+    std::vector<Index> entries((ubound - lbound).prod(), -1);
+    entries[tree_node.front().second] = 0;
+    tf::Task entry_task = flow.for_each_index(
+        0, static_cast<int>(tree_node.size() - 1), 1, [&](int i) {
+          if (tree_node[i + 1].second != tree_node[i].second) {
+            entries[tree_node[i + 1].second] = i + 1;
           }
         });
+
+    // Insert all the nodes.
+    tf::Task insert_task =
+        flow.for_each(entries.begin(), entries.end(), [&](Index beg) {
+          if (beg < 0) {
+            return;
+          }
+          auto entry = tree_node[beg].second;
+          for (auto i = beg; i < tree_node.size(); ++i) {
+            if (tree_node[i].second != entry) {
+              break;
+            }
+            octrees_[entry].Insert(tree_node[i].first);
+          }
+        });
+
     sort_task.precede(entry_task);
+    entry_task.precede(insert_task);
     executor_.run(flow).wait();
   }
 
-private:
-  Scalar grid_size_;
-  ContinuousDiscreteTransformRegular<Scalar, dim> cd_transf_;
+  std::vector<Index> Query(BoundingBox query) const noexcept {
+    std::vector<Index> result;
+    for (const auto &box : large_leafs_) {
+      if (query.intersects(box.first)) {
+        result.push_back(box.second);
+      }
+    }
 
-  Vec<Scalar, dim> single_tree_size_;
-  std::map<Index, Tree> octrees_;
+    for (const auto &tree : octrees_) {
+      tree.Query(query, result);
+    }
+
+    return result;
+  }
+
+private:
+  // Size for each tree.
+  Scalar grid_size_;
+  // Transforms
+  ContinuousDiscreteTransformRegular<Scalar, dim> cd_transf_;
+  BiasTransform<Index, dim> l_transf_;
+  DiscreteStorageSequentialTransform<dim> ds_transf_;
+  // Containers
+  std::vector<Tree> octrees_;
   std::vector<StorageType> large_leafs_;
+  // Par Runner
   tf::Executor executor_;
 };
 

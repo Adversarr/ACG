@@ -4,6 +4,7 @@
 #include <agui/backend/graphics_context.hpp>
 #include <agui/backend/window.hpp>
 #include <agui/gui.hpp>
+#include <agui/imnodes/imnodes.hpp>
 #include <autils/init.hpp>
 #include <autils/time/time.hpp>
 
@@ -28,9 +29,37 @@ int main(int argc, char **argv) {
   auto &gui = Gui::Instance();
   bool clear = false;
   gui.SetUIDrawCallback([&clear]() {
-    ImGui::Begin("GGui User Window");
     ImGui::Text("Hello world!");
     clear = ImGui::Button("Clear Scene!");
+  });
+
+  gui.SetNodeDrawCallback([]() -> void {
+    ImGui::Begin("node editor");
+    ImNodes::BeginNodeEditor();
+    ImNodes::BeginNode(1);
+    const int output_attr_id = 1;
+    ImGui::Dummy(ImVec2(80.0f, 45.0f));
+    ImNodes::BeginOutputAttribute(output_attr_id);
+    ImGui::Text("output pin");
+    ImNodes::EndOutputAttribute();
+    ImNodes::EndNode();
+    ImNodes::BeginNode(2);
+    ImGui::Dummy(ImVec2(80.0f, 45.0f));
+    ImGui::Text("input pin");
+    ImNodes::BeginInputAttribute(2);
+    ImNodes::EndInputAttribute();
+    ImNodes::EndNode();
+
+    ImNodes::BeginNode(3);
+    ImGui::Dummy(ImVec2(80.0f, 45.0f));
+    ImGui::Text("input pin");
+    ImNodes::BeginInputAttribute(3);
+    ImNodes::EndInputAttribute();
+    ImNodes::EndNode();
+    ImNodes::Link(0, 1, 2);
+    ImNodes::Link(1, 1, 3);
+    ImNodes::EndNodeEditor();
+    ImGui::End();
   });
 
   auto *cloth = gui.GetScene().AddMesh();
@@ -42,7 +71,7 @@ int main(int argc, char **argv) {
       .SetEnableWireframe()
       .MarkUpdate();
   auto v = plane.GetVertices().eval();
-  v.array().row(2)+= 1.0;
+  v.array().row(2) += 1.0;
 
   auto *cloth2 = gui.GetScene().AddMesh();
   cloth2->SetIndices(plane.GetFaces())

@@ -46,6 +46,7 @@ int main(int argc, char** argv) {
       ImGui::InputFloat3("Position", pos.data());
       ImGui::DragFloat3("Gravity", app.grav_.data(), 0.1, -3, 3);
       ImGui::InputDouble("Scaling", &app.E_);
+      ImGui::InputDouble("Rho 0", & app.rho0_);
 
       export_frame = ImGui::Button("Export this frame");
     });

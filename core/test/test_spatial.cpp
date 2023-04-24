@@ -1,5 +1,5 @@
 #include <doctest/doctest.h>
-
+#include <acore/math/utilities.hpp>
 #include <acore/spatial/subdivision.hpp>
 #include <acore/spatial/octree.hpp>
 #include <iostream>
@@ -34,8 +34,19 @@ TEST_CASE("Octree") {
   for (auto id: ret) {
     fmt::print("Result= {}\n", id);
   }
-
-  // acg::spatial::ParallelMultiOctree<acg::spatial::BoundedOctree<float, 3>>
-  //   pmo;
-  // pmo.dim;
+  using Pmo = 
+  acg::spatial::ParallelMultiOctree<acg::spatial::BoundedOctree<float, 3, 2, 2>>;
+  Pmo pmo(1);
+  using BB = Pmo::BoundingBox;
+  using ST = Pmo::StorageType;
+  std::vector<ST> data;
+  for (auto [i]: NdRange<1>(10)) {
+    auto p = Vec3f::Random().eval();
+    data.push_back(std::make_pair(BB(p, p + Vec3f::Constant(.1)), i));
+    fmt::print("Point {}: {}\n", i, p.transpose());
+  }
+  pmo.SetFromPairs(data);
+  for (auto i: pmo.Query(BB(-Vec3f::Ones(), Vec3f::Ones()))) {
+    fmt::print("i = {}\n", i);
+  }
 }

@@ -254,3 +254,16 @@ TEST_CASE("SVD") {
   std::cout << svd33.v_ << std::endl;
   mat33.block<3, 3>(0, 0).setZero();
 }
+
+
+struct BaseType {
+  virtual ~BaseType() { std::cout << "Base type destruct." << std::endl;}
+};
+
+struct DerivedType: public BaseType {
+  virtual ~DerivedType() { std::cout << "Derived type destruct." << std::endl;}
+};
+
+TEST_CASE("BASE DERIVED") {
+  std::unique_ptr<BaseType> ptr = std::make_unique<DerivedType>();
+}

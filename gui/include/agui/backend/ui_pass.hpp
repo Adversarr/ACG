@@ -13,6 +13,7 @@ class UiPass {
 public:
   struct Config {
     bool is_ui_only;
+    bool enable_node_editor = true;
 
     std::optional<std::function<void()>> call_on_init{std::nullopt};
 
@@ -35,6 +36,8 @@ private:
   void CleanupSwapchain();
 
   void Cleanup();
+
+  bool enable_node_editor_ = false;
 
   vk::CommandPool command_pool_;
   std::vector<vk::CommandBuffer> command_buffers_;

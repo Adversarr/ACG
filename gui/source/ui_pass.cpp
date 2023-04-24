@@ -3,6 +3,7 @@
 #include "agui/backend/context.hpp"
 #include "agui/backend/graphics_context.hpp"
 #include "agui/backend/window.hpp"
+#include "agui/imnodes/imnodes.hpp"
 #include "autils/log.hpp"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
@@ -13,6 +14,7 @@ static void check_vk_result(VkResult err) {
 namespace acg::gui::details {
 
 UiPass::UiPass(Config config) {
+  enable_node_editor_ = config.enable_node_editor;
   vk::DescriptorPoolSize pool_sizes[] = {{vk::DescriptorType::eSampler, 1000},
                                          {vk::DescriptorType::eCombinedImageSampler, 1000},
                                          {vk::DescriptorType::eSampledImage, 1000},
@@ -36,6 +38,9 @@ UiPass::UiPass(Config config) {
     config.call_on_init.value()();
   }
   ImGui::CreateContext();
+  if (enable_node_editor_) {
+    ImNodes::CreateContext();
+  }
   ImGui_ImplGlfw_InitForVulkan(Window::Instance().GetWindow(), true);
 
   {  // Command Pool and Command Buffer.
@@ -142,11 +147,16 @@ UiPass::~UiPass() {
   device.destroy(descriptor_pool_);
   device.destroy(command_pool_);
   ImGui_ImplVulkan_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImNodes::DestroyContext();
+  if (enable_node_editor_) {
+    ImGui::DestroyContext();
+  }
 }
 
 void UiPass::DestroyFramebuffers() {
   auto device = VkContext2::Instance().device_;
-  for (auto fb: framebuffers_) {
+  for (auto fb : framebuffers_) {
     device.destroy(fb);
   }
   framebuffers_.clear();

@@ -8,7 +8,7 @@ MpmExplictApp::MpmExplictApp() = default;
 void MpmExplictApp::Init() {
   dx_ = simulation_range_ / n_grid_;
 
-  Index grid_size = (n_grid_ + 1) * (n_grid_ + 1) * (n_grid_ + 1);
+  Index grid_size = math::pow<3>(n_grid_);
   grid_velocity_.resize(Eigen::NoChange, grid_size);
   grid_mass_.resize(Eigen::NoChange, grid_size);
   grid_mass_.setZero();
@@ -23,7 +23,7 @@ void MpmExplictApp::Init() {
   particle_C_.setZero();
   particle_velocity_.setZero();
   for (Index i = 0; i < n_particles_; ++i) {
-    Vec3d dpos = Vec3d::Ones() * 0.5 + Vec3d::Random() * 0.499;
+    Vec3d dpos = Vec3d::Ones() * 0.5 + Vec3d::Random() * 0.2;
     particle_position_.col(i) = dpos;
     particle_J_(i) = 1.0;
   }
@@ -47,7 +47,8 @@ void MpmExplictApp::Init() {
   using Trip = Eigen::Triplet<double>;
   std::vector<Trip> hessian;
   auto dvc = euler_.div_count_;
-  auto idxer = DiscreteStorageSequentialTransform<3>({dvc.x(), dvc.y(), dvc.z()});
+  auto idxer =
+      DiscreteStorageSequentialTransform<3>({dvc.x(), dvc.y(), dvc.z()});
   for (auto [i, j, k] : NdRange<3>(make_tuple_from_vector(euler_.div_count_))) {
     auto row = idxer(i, j, k);
     for (Index dim = 0; dim < 3; ++dim) {
@@ -252,7 +253,14 @@ void MpmExplictApp::Step() {
   double delta_new = r.squaredNorm();
   double delta_0 = delta_new;
   auto vel = view(euler_.velocity_, apic_->grid_idxer_);
-  auto rho = view(euler_.mass_, apic_->grid_idxer_);
+  Field<Float64> rh_biased = euler_.mass_ / math::pow<3>(euler_.grid_size_);
+  for (auto rh : view(rh_biased)) {
+    if (rh.x() != 0) {
+      rh.x() = std::max<Float64>(0, rh.x() - rho0_);
+    }
+  }
+
+  auto rho = view(rh_biased, apic_->grid_idxer_);
   auto sample_diff = [&](Index i, Index j, Index k) {
     Vec3<double> result;
     if (i == 0) {

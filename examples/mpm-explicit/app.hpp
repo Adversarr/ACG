@@ -175,10 +175,11 @@ public:
 
   Float64 simulation_range_{1};
   Float64 dx_;
+  Float64 rho0_{1000};
   Float64 dt_ = 4e-3;
 
   Float64 rho_ = 1e3;
-  Float64 particle_mass_;
+  Float64 particle_mass_{0.0046};
   Float64 particle_vol_;
   Float64 E_ = 4;
   Float64 weight_sum_;
