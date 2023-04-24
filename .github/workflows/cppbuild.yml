@@ -1,7 +1,6 @@
 name: cpp-build
 on: [push]
 
-
 jobs:
   ubuntu-job:
     runs-on: ubuntu-latest
@@ -9,6 +8,7 @@ jobs:
       - name: install Vulkan
         run: |
           sudo apt update && sudo apt install libeigen3-dev cmake
+          sudo apt install libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
           mkdir -p $HOME/Downloads
           mkdir -p $HOME/tools
           wget -q -P $HOME/Downloads https://sdk.lunarg.com/sdk/download/1.3.236.0/linux/vulkansdk-linux-x86_64-1.3.236.0.tar.gz
@@ -17,17 +17,12 @@ jobs:
           echo "Vulkan sdk path = $VULKAN_SDK"
       - uses: actions/checkout@v3
       - run: git submodule update --init --remote --recursive
-      - uses: xmake-io/github-action-setup-xmake@v1
-        with:
-          xmake-version: '2.7.5'
-          actions-cache-folder: '.xmake-cache'
+
       - name: configure
         run: |
           source $HOME/tools/1.3.236.0/setup-env.sh
-          xmake f -y --toolchain=clang -m debug
+          cmake -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake -S. -Bbuild -DCMAKE_CXX_COMPILER=clang++
       - name: build
         run: | 
           source $HOME/tools/1.3.236.0/setup-env.sh
-          xmake b -v
-      - name: run-test
-        run: xmake run --group=test
+          cmake --build build --target all

@@ -5,11 +5,6 @@
 #include <autils/record/roting_record.hpp>
 #include <autils/result.hpp>
 #include <cassert>
-#include <iostream>
-#include <vector>
-
-#include "Eigen/Eigen"
-
 using namespace acg::utils::god::details;
 
 template <typename L, typename R> struct Right { using type = R; };

@@ -7,7 +7,7 @@ namespace utils {
        Likely support for brancing.
 ***************************************/
 #ifdef __clang__
-#if __cplusplus >= 201703L
+#if __cplusplus > 201703L
 #  define LIKELY [[likely]]
 #  define UNLIKELY [[unlikely]]
 #else

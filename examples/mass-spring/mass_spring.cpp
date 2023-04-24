@@ -44,7 +44,7 @@ void MassSpringApp::Init() {
   velocity_.resizeLike(position_);
   velocity_.setZero();
 
-  auto indexer = acg::NdRangeIndexer<2>(n_grids_, n_grids_);
+  auto indexer = acg::DiscreteStorageSequentialTransform<2>({n_grids_, n_grids_});
   for (Index i = 0; i < n_grids_ - 1; ++i) {
     for (Index j = 0; j < n_grids_ - 1; ++j) {
       AddSpring(indexer(i, j), indexer(i, j + 1));
@@ -125,8 +125,8 @@ void MassSpringApp::Step() {
 
 void MassSpringApp::StepProjDyn() {
   auto o_acc = view(origin_position_);
-  auto d_acc = view(d_);
   d_.resize(Eigen::NoChange, springs_.size());
+  auto d_acc = view(d_);
   Vec<float> x_tilde(n_vertices_ * 3);
   x_tilde.setZero();
   auto xn = position_.reshaped();

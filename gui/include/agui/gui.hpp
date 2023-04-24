@@ -105,6 +105,7 @@ class Gui {
 public:
   struct Config {
     vk::DeviceSize staging_buffer_size = 16 * 1024 * 1024;
+    bool enable_ui_editor = true;
     bool enable_blending = false;
     bool init_default_scene = false;
     void Hook() const;
@@ -124,6 +125,7 @@ public:
   void UpdateLightCamera();
 
   void SetUIDrawCallback(std::function<void()> callback) { ui_draw_callback_ = callback; }
+  void SetNodeDrawCallback(std::function<void()> callback) { node_draw_callback_ = callback; }
 
   void RenderOnce(bool verbose = false);
 
@@ -219,6 +221,17 @@ private:
 
   bool scene_update_flag_{true};
   std::optional<std::function<void()>> ui_draw_callback_{std::nullopt};
+  std::optional<std::function<void()>> node_draw_callback_{std::nullopt};
+
+  bool enable_node_editor_ {true};
+
+  vk::CommandBuffer& WriteMeshRenderCommand(bool verbose, vk::CommandBuffer& cbuf);
+
+  vk::CommandBuffer& WriteMeshParticleRenderCommand(bool verbose, vk::CommandBuffer& cbuf);
+
+  vk::CommandBuffer& WritePointRenderCommand(bool verbose, vk::CommandBuffer& cbuf);
+
+  vk::CommandBuffer& WriteWireframeRenderCommand(bool verbose, vk::CommandBuffer& cbuf);
 };
 
 }  // namespace details

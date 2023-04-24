@@ -49,8 +49,10 @@ public:
   EulerFluidRegular<Scalar, dim> &euler_; // Standard Euler Fluid Model
   Kern interp_kernel_;                    // Kernel for P2G and G2P
   Field<Scalar, dim * dim> matrix_b_;
-  NdRangeIndexer<dim> grid_idxer_;
+  DiscreteStorageSequentialTransform<dim> grid_idxer_;
 };
 } // namespace acg::physics::mpm
 
+#ifdef ACG_INCLUDE_IMPL
 #include "details/transfer-inl.hpp" // IWYU pragma: export
+#endif

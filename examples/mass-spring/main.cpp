@@ -31,7 +31,6 @@ int main(int argc, char **argv) {
   spatial::AABB<float, 3> aabb{{.2, .2, -.4}, {.6, .6, 0}};
   gui.SetUIDrawCallback([&]() {
     init_once = false;
-    ImGui::Begin("GGui User Window");
     init_once |= ImGui::Button("Reset Scene.");
     run_once = ImGui::Button("Run Once");
     ImGui::Checkbox("Run", &running);
@@ -47,15 +46,15 @@ int main(int argc, char **argv) {
         app.record_.Reduce(0, [](float a, float b) { return std::max(a, b); }));
     ImGui::InputFloat("Delta t for TimeStep", &app.dt_);
 
-    ImGui::InputFloat3("lb", aabb.lower_bound.data());
-    ImGui::InputFloat3("ub", aabb.upper_bound.data());
+    ImGui::InputFloat3("lb", aabb.lower_bound_.data());
+    ImGui::InputFloat3("ub", aabb.upper_bound_.data());
     ImGui::Checkbox("Query", &query_aabb);
     ImGui::Text("Error Last = %f", app.record_.Last());
     init_once |= ImGui::InputFloat("Spring K", &app.k_);
   });
 
   auto *render_mesh = gui.GetScene().AddMesh();
-  auto *render_wf = gui.GetScene().AddWireframe();
+  // auto *render_wf = gui.GetScene().AddWireframe();
 
   acg::spatial::SubDivisionAABB<Float, Index, 3, 4, 8> sd;
   for (auto [i, v] : acg::enumerate(acg::view(app.position_))) {
@@ -72,15 +71,26 @@ int main(int argc, char **argv) {
         .SetEnableWireframe()
         .MarkUpdate();
 
-    auto [position, lines] = sd.Visualize();
-    if (query_aabb) {
-      auto colls = sd.QueryInternal();
-      ACG_INFO("Count = {}", colls.size());
-    }
-    render_wf->SetPositions(position)
-        .SetIndices(lines)
-        .SetColors(types::Rgb{.7, 0, 0})
-        .MarkUpdate();
+    // auto [position, lines] = sd.Visualize();
+    // if (query_aabb) {
+    //   int colls = 0;
+    //   for (auto [i, v] : acg::enumerate(acg::view(app.position_))) {
+    //     acg::spatial::AABB<float, 3> aabb(v, (v.array() + .1).matrix());
+    //     auto r = sd.Query(aabb);
+    //     for (auto c : r) {
+    //       ACG_INFO("Collision for {}, has {}, id = {}", i, c,
+    //                sd.Get(c).second);
+    //       ACG_CHECK(c < sd.Size(), "C >= size");
+    //       ACG_CHECK(sd.Get(c).second < app.position_.cols(), "sec >= col");
+    //     }
+    //     colls += r.size();
+    //   }
+    //   ACG_INFO("Count = {}", colls);
+    // }
+    // render_wf->SetPositions(position)
+    //     .SetIndices(lines)
+    //     .SetColors(types::Rgb{.7, 0, 0})
+    //     .MarkUpdate();
   };
 
   update_mesh();

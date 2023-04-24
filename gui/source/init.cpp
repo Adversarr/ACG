@@ -13,6 +13,7 @@ void hook_default_gui_environment(std::string app_name) {
   vkctx_hooker.Hook();
   VkGraphicsContext::Hooker().Hook();
   Gui::Config config;
+  config.enable_ui_editor = true;
   config.Hook();
 }
 

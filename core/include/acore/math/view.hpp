@@ -7,8 +7,10 @@
 #include "indexer.hpp"
 #include "transform.hpp"
 
+#include "coordinate/common.hpp"
+
 namespace acg {
-using DefaultIndexer = NdRangeIndexer<1>;
+using DefaultIndexer = DiscreteStorageSequentialTransform<1>;
 
 /****************************************
  * NOTE: When access a field(dense), two things should be considered:
@@ -29,41 +31,52 @@ using DefaultIndexer = NdRangeIndexer<1>;
 // NOTE: Access Function for fields.
 
 // 1. For r-value.
-template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
-          typename Type>
-decltype(auto) view(Type&& field, Indexer getter = Indexer()) {
-  getter.Fit(field);
-  return details::FieldAccessor<const std::remove_cv_t<Type>, Transform, Indexer>(
-      std::forward<Type>(field), getter, utils::god::RvalueTag{});
+template <typename Indexer = DefaultIndexer,
+          typename Transform = IdentityTransform, typename Type>
+decltype(auto) view(Type &&field, Indexer getter = Indexer()) {
+  if constexpr (std::is_same_v<Indexer, DefaultIndexer>) {
+    getter.Fit(field);
+  }
+  return details::FieldAccessor<std::remove_cv_t<Type>, Transform,
+                                Indexer>(std::forward<Type>(field), getter,
+                                         utils::god::RvalueTag{});
 }
 
 // 2. For cr-value
-template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
-          typename Type>
-decltype(auto) view(const Type&& field, Indexer getter = Indexer()) {
-  getter.Fit(field);
-  return details::FieldAccessor<Type, Transform, Indexer>(std::forward<decltype(field)>(field),
-                                                          getter, utils::god::ConstRvalueTag{});
+template <typename Indexer = DefaultIndexer,
+          typename Transform = IdentityTransform, typename Type>
+decltype(auto) view(const Type &&field, Indexer getter = Indexer()) {
+  if constexpr (std::is_same_v<Indexer, DefaultIndexer>) {
+    getter.Fit(field);
+  }
+  return details::FieldAccessor<Type, Transform, Indexer>(
+      field, getter,
+      utils::god::ConstRvalueTag{});
 }
 
 // 3. For cl-value
-template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
-          typename Type>
-decltype(auto) view(const Type& field, Indexer getter = Indexer()) {
-  getter.Fit(field);
-  return details::FieldAccessor<const Type&, Transform, Indexer>(field, getter,
-                                                                 utils::god::ConstLvalueTag{});
+template <typename Indexer = DefaultIndexer,
+          typename Transform = IdentityTransform, typename Type>
+decltype(auto) view(const Type &field, Indexer getter = Indexer()) {
+  if constexpr (std::is_same_v<Indexer, DefaultIndexer>) {
+    getter.Fit(field);
+  }
+  return details::FieldAccessor<const Type &, Transform, Indexer>(
+      field, getter, utils::god::ConstLvalueTag{});
 }
 
 // 4. For l-value
-template <typename Indexer = NdRangeIndexer<1>, typename Transform = IdentityTransform,
-          typename Type>
-decltype(auto) view(Type& field, Indexer getter = Indexer()) {
-  getter.Fit(field);
-  return details::FieldAccessor<Type&, Transform, Indexer>(field, getter, utils::god::LvalueTag{});
+template <typename Indexer = DefaultIndexer,
+          typename Transform = IdentityTransform, typename Type>
+decltype(auto) view(Type &field, Indexer getter = Indexer()) {
+  if constexpr (std::is_same_v<Indexer, DefaultIndexer>) {
+    getter.Fit(field);
+  }
+  return details::FieldAccessor<Type &, Transform, Indexer>(
+      field, getter, utils::god::LvalueTag{});
 }
 
-template <typename A> decltype(auto) enumerate(A&& access) {
+template <typename A> decltype(auto) enumerate(A &&access) {
   return details::FieldEnumerate<std::decay_t<A>>(access);
 }
 
@@ -81,9 +94,11 @@ public:
 
   inline auto Zeros() { return Field<Scalar, dim>::Zero(dim, n_).eval(); }
 
-  inline auto Constant(Scalar s) { return Field<Scalar, dim>::Constant(dim, n_, s).eval(); }
+  inline auto Constant(Scalar s) {
+    return Field<Scalar, dim>::Constant(dim, n_, s).eval();
+  }
 
   inline auto Random() { return Field<Scalar, dim>::Random(dim, n_).eval(); }
 };
 
-}  // namespace acg
+} // namespace acg

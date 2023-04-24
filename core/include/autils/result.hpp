@@ -3,8 +3,8 @@
 
 #include "log.hpp"
 
-#define ACG_CHECK_STATUS_OK(r, ...) \
-  ACG_CHECK((r) == acg::Status::kOk, "Status expr[" #r "] check failed." __VA_ARGS__)
+#define ACG_CHECK_STATUS_OK(r)\
+  ACG_CHECK((r) == acg::Status::kOk, "Status expr[" #r "] check failed.")
 
 namespace acg {
 // Reference: Google/Abseil

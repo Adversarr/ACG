@@ -33,7 +33,7 @@ TEST_CASE("Field Enumerate") {
     CHECK((positions.col(i).array() == i).all());
   }
 
-  auto acc2d = acg::view(positions, acg::NdRangeIndexer<2>(2, 2));
+  auto acc2d = acg::view(positions, acg::DiscreteStorageSequentialTransform<2>({2, 2}));
   for (auto [i, j, v] : acg::enumerate(acc2d)) {
     v.setConstant(i);
   }
@@ -92,7 +92,7 @@ TEST_CASE("Row") {
   NdRangeIndexer<3> getter(p, q, r);
   Field<float, 1> field(1, p * q * r);
   auto acc = view(field, getter);
-  acc[x * r * q + r * y + z].setOnes();
+  acc[x * r * q + r * y + z] = 1;
   CHECK(acc(x, y, z) == 1);
 }
 
@@ -253,4 +253,17 @@ TEST_CASE("SVD") {
   std::cout << svd33.sigma_ << std::endl;
   std::cout << svd33.v_ << std::endl;
   mat33.block<3, 3>(0, 0).setZero();
+}
+
+
+struct BaseType {
+  virtual ~BaseType() { std::cout << "Base type destruct." << std::endl;}
+};
+
+struct DerivedType: public BaseType {
+  virtual ~DerivedType() { std::cout << "Derived type destruct." << std::endl;}
+};
+
+TEST_CASE("BASE DERIVED") {
+  std::unique_ptr<BaseType> ptr = std::make_unique<DerivedType>();
 }

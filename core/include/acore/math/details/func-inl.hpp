@@ -17,18 +17,18 @@ struct Func<InputType,
 
   template<int times, typename Derived>
   constexpr auto Pow(const Eigen::MatrixBase<Derived>& v) const noexcept {
-    return v.array().pow(times);
+    return v.array().pow(times).matrix();
   }
 
   template<typename Derived>
   constexpr auto Sqrt(const Eigen::MatrixBase<Derived>& v) const noexcept {
-    return v.array.sqrt();
+    return v.array.sqrt().matrix();
   }
 };
 
 template <typename T>
 struct Func<T, std::enable_if_t<std::is_arithmetic_v<std::decay_t<T>>>> {
-  constexpr T Sin(T input) const { return ::sin(input); }
+  constexpr T Sin(T input) const { return sin(input); }
 
   template <int times> constexpr T Pow(T value) const noexcept {
     if constexpr (times > 0) {
@@ -40,6 +40,10 @@ struct Func<T, std::enable_if_t<std::is_arithmetic_v<std::decay_t<T>>>> {
     } else {
       return static_cast<T>(1);
     }
+  }
+  
+  constexpr T Sqrt(T input) const noexcept  {
+    return std::sqrt(input);
   }
 };
 

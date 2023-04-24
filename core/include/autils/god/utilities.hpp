@@ -3,13 +3,10 @@
 #include <autils/common.hpp>
 #include <tuple>
 #include <utility>
-
 #include "god.hpp"
 
 namespace acg::utils {
-
 namespace god {
-
 struct LvalueTag {};
 struct RvalueTag {};
 struct ConstRvalueTag {};

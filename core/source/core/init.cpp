@@ -3,6 +3,7 @@
 #include <autils/log.hpp>
 #include <spdlog/spdlog.h>
 #include <iostream>
+#include <algorithm>
 
 namespace acg::details {
 

@@ -1,7 +1,7 @@
 #pragma once
+#include <functional>
 #include <imgui.h>
 #include <optional>
-#include <functional>
 
 #include <vulkan/vulkan.hpp>
 
@@ -13,8 +13,9 @@ class UiPass {
 public:
   struct Config {
     bool is_ui_only;
+    bool enable_node_editor = true;
 
-    std::optional<std::function<void()> > call_on_init{std::nullopt};
+    std::optional<std::function<void()>> call_on_init{std::nullopt};
 
     void Hook();
   };
@@ -25,8 +26,7 @@ public:
 
   void RecreateSwapchain();
 
-  [[nodiscard("The recorded command buffer should not be discarded.")]] vk::CommandBuffer& Render(
-      ImDrawData* data);
+  vk::CommandBuffer &Render(ImDrawData *data);
 
 private:
   void CreateFramebuffers();
@@ -37,6 +37,8 @@ private:
 
   void Cleanup();
 
+  bool enable_node_editor_ = false;
+
   vk::CommandPool command_pool_;
   std::vector<vk::CommandBuffer> command_buffers_;
   vk::RenderPass render_pass_;
@@ -44,6 +46,6 @@ private:
   std::vector<vk::Framebuffer> framebuffers_;
 };
 
-}  // namespace details
-}  // namespace gui
-}  // namespace acg
+} // namespace details
+} // namespace gui
+} // namespace acg

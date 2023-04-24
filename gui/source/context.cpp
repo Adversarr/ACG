@@ -111,9 +111,10 @@ std::unique_ptr<VkContext2> context2_instance;
 void VkContext2::Hooker::Hook() {
   acg::details::InitHook hook;
   using namespace details;
-  hook.on_init = [*this]() {
+    Hooker hk = *this;
+  hook.on_init = [hk]() {
     ACG_CHECK(context2_instance.get() == nullptr, "Vk context double initialize");
-    context2_instance.reset(new VkContext2(*this));
+    context2_instance.reset(new VkContext2(hk));
   };
   hook.on_exit = []() { context2_instance.reset(); };
   hook.priority = 10;

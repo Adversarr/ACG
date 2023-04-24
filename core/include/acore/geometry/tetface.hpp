@@ -18,4 +18,7 @@ private:
 };
 
 } // namespace acg::geometry
+
+#ifdef ACG_INCLUDE_IMPL
 #include "details/tetface-inl.hpp" // IWYU pragma: export
+#endif

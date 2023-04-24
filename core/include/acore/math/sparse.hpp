@@ -5,22 +5,21 @@
  ****************************************/
 
 #pragma once
-#include <Eigen/SparseCore>
 
-#include "common.hpp"
-#include "traits.hpp"
+#include <Eigen/SparseCore>
+#include <acore/math/common.hpp> // IWYU pragma: export
+#include <acore/math/traits.hpp> // IWYU pragma: export
 
 // NOLINTBEGIN(readability-identifier-naming)
 namespace acg {
 // Sparse Matrix
-template <typename Scalar, int Options = 0> using SpMat
-    = Eigen::SparseMatrix<Scalar, Options, acg::Index>;
+template <typename Scalar, int Options = 0>
+using SpMat = Eigen::SparseMatrix<Scalar, Options, acg::Index>;
 
 // Sparse Vector
-template <typename Scalar, int Options = 0> using SpVec
-    = Eigen::SparseVector<Scalar, Options, acg::Index>;
+template <typename Scalar, int Options = 0>
+using SpVec = Eigen::SparseVector<Scalar, Options, acg::Index>;
 
-namespace details {
 template <typename Sca, int Options> struct Trait<SpMat<Sca, Options>> {
   static constexpr int rows = Eigen::Dynamic;
   static constexpr int cols = Eigen::Dynamic;
@@ -33,6 +32,5 @@ template <typename Sca, int Options> struct Trait<SpMat<Sca, Options>> {
   using type = SpMat<Sca, Options>;
   using transpose = type;
 };
-}  // namespace details
-}  // namespace acg
+} // namespace acg
 // NOLINTEND(readability-identifier-naming)

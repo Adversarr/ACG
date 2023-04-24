@@ -60,13 +60,13 @@ struct Point {
  */
 struct Ubo {
   alignas(16) glm::mat4 mvp;
-  alignas(16) glm::vec3 eye_position;
-  alignas(16) glm::vec4 ambient_light_color{1.f, 1.f, 1.f, .01f};  // w is intensity
-  alignas(16) glm::vec3 light_color{1.0, 1.0, 1.0};
-  alignas(16) glm::vec3 light_position{2.0, 0.0, 1.0};
+  // alignas(16) glm::vec3 eye_position;
+  // alignas(16) glm::vec4 ambient_light_color{1.f, 1.f, 1.f, .01f};  // w is intensity
+  // alignas(16) glm::vec3 light_color{1.0, 1.0, 1.0};
+  // alignas(16) glm::vec3 light_position{2.0, 0.0, 1.0};
 
-  // Different Shader may use this option for different usage.
-  alignas(16) int options[4] = {0, 0, 0, 0};
+  // // Different Shader may use this option for different usage.
+  // alignas(16) int options[4] = {0, 0, 0, 0};
 };
 
 }  // namespace acg::gui

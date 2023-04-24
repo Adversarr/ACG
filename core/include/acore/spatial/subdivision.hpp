@@ -8,18 +8,22 @@
 
 #include "common.hpp"
 
+
+
 namespace acg::spatial {
 
-template <typename F, typename D, int dim, UInt32 subdivision_count = 4, UInt32 max_depth = 4>
+template <typename F, typename D, int dim, UInt32 subdivision_count = 4,
+          UInt32 max_depth = 4>
 class SubDivisionAABB {
 public:
   using container_type = std::vector<std::pair<AABB<F, dim>, D>>;
   // using iterator_type = typename container_type::iterator;
   // using const_iterator_type = typename container_type::const_iterator_type;
-  static constexpr UInt32 subdivision_count_total = utils::god::pow<dim>(subdivision_count);
+  static constexpr UInt32 subdivision_count_total =
+      utils::god::pow<dim>(subdivision_count);
   static_assert(max_depth > 0, "Max depth should be greater than 0.");
-  static_assert(utils::god::pow<max_depth>(subdivision_count_total)
-                    < std::numeric_limits<size_t>::max(),
+  static_assert(utils::god::pow<max_depth>(subdivision_count_total) <
+                    std::numeric_limits<size_t>::max(),
                 "subdivision too large.");
 
   /**
@@ -27,7 +31,7 @@ public:
    *
    * @return
    */
-  size_t Size() const noexcept;
+  size_t Size() const noexcept { return data_.size(); }
 
   /**
    * @brief Insert a given aabb into the tree.
@@ -60,10 +64,8 @@ public:
   std::vector<std::pair<size_t, size_t>> QueryInternal() const;
 
   explicit SubDivisionAABB(F unit_length = 1.0, F epsilon = 1e-6)
-      : epsilon_(epsilon),
-        unit_(unit_length),
-        indexer_(std::make_from_tuple<NdRangeIndexer<dim>>(
-            utils::god::tuple_duplicate<dim>(subdivision_count))) {}
+      : epsilon_(epsilon), unit_(unit_length),
+        indexer_(IndexVec<dim>::Constant(subdivision_count)) {}
 
   struct Node {
     AABB<F, dim> box_;
@@ -99,9 +101,11 @@ private:
 
   size_t EnsureEntry(const AABB<F, dim> &aabb);
 
-  void QueryVisit(std::vector<size_t> &retval, size_t node, const AABB<F, dim> &aabb) const;
+  void QueryVisit(std::vector<size_t> &retval, size_t node,
+                  const AABB<F, dim> &aabb) const;
 
-  void QueryVisitInternal(std::vector<std::pair<size_t, size_t>> &retval, size_t node) const;
+  void QueryVisitInternal(std::vector<std::pair<size_t, size_t>> &retval,
+                          size_t node) const;
 
   std::vector<std::pair<AABB<F, dim>, D>> data_;
   std::vector<Node> nodes_;
@@ -113,8 +117,8 @@ private:
   // @brief Indicates the maximal length for the root aabb.
   const F epsilon_ = std::numeric_limits<F>::min();
   const F unit_;
-  NdRangeIndexer<dim> indexer_;
+  DiscreteStorageSequentialTransform<dim> indexer_;
 };
 
-}  // namespace acg::spatial
-#include "details/subdivision-inl.hpp"
+} // namespace acg::spatial
+#include "details/subdivision-inl.hpp" // IWYU pragma: export
